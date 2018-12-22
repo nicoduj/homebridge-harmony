@@ -261,25 +261,51 @@ HarmonyPlatform.prototype = {
           
           this.log("Got status for " + service.controlService.displayName);
           var characteristic = service.controlService.getCharacteristic(service.characteristics[0]);
-          if (data && data.data && data.code && data.code == 200 && data.msg && data.msg == "OK")
+          if (data && data.data && data.code && (data.code == 200 || data.code == 100))
           {
-            characteristic.updateValue(data.data.result == service.controlService.id,undefined,'fromSetValue');
+            try
+            {
+              callback(undefined, data.data.result == service.controlService.id);
+            }
+            catch(error)
+            {
+              characteristic.updateValue(data.data.result == service.controlService.id,undefined,'fromSetValue');
+            }
           }
           else if (data)
           {
             this.log("WARNING : could not get status :" + JSON.stringify(data));
+            try
+            {
+              callback(undefined, characteristic.on.value);
+            }
+            catch(error)
+            {
+              characteristic.updateValue(characteristic.value,undefined,'fromSetValue');
+            }
           }
           else
           {
             this.log("ERROR : could not set status, no data");
+            try
+            {
+              callback(undefined, characteristic.on.value);
+            }
+            catch(error)
+            {
+              characteristic.updateValue(characteristic.value,undefined,'fromSetValue');
+            }
           }
         });
 
         this.wsp.open()
           .then(() => this.wsp.sendPacked(payload))
-          .catch((e) => this.log("Error : " + e));
+          .catch((e) => {
+              this.log("Error : " + e);
+              callback(undefined, false);
+            });
 
-        callback(undefined, characteristic.on.value);
+
 
       }.bind(this));
   },
