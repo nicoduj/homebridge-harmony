@@ -243,12 +243,8 @@ HarmonyPlatform.prototype = {
         this.wsp.onUnpackedMessage.addListener((data) => {
           this.wsp.removeAllListeners();
           this.log("Got status for " + service.controlService.displayName);
-          if (data.data.result == service.controlService.id) {
-            callback(undefined, true);
-          }
-          else {
-            callback(undefined, false);
-          }
+
+          callback(null, data.data.result == service.controlService.id);
         });
 
         this.wsp.open()
