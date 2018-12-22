@@ -43,6 +43,6 @@ Option TurnOffActivityName was renamed to turnOffActivityName in 0.0.3 (sorry fo
 ### Inspiration 
 
 Thanks to : https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py
-Fro WebSocket protocol on harmony !
+for WebSocket protocol on harmony !
 
 
