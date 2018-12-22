@@ -66,7 +66,7 @@ HarmonyPlatform.prototype = {
           that.account_id = body.data.accountId;
 
           wsUrl = `ws://${that.hubIP}:${DEFAULT_HUB_PORT}/?domain=${that.domain}&hubId=${that.remote_id}`;
-    
+
           that.wsp = new WebSocketAsPromised(wsUrl, {
             createWebSocket: url => new W3CWebSocket(url),
             packMessage: data => JSON.stringify(data),
@@ -91,8 +91,6 @@ HarmonyPlatform.prototype = {
           }
 
           that.wsp.onUnpackedMessage.addListener((data) => {
-
-            that.wsp.close();
             that.wsp.removeAllListeners();
             var foundAccessories = [];
             var services = [];
@@ -156,48 +154,41 @@ HarmonyPlatform.prototype = {
       }
     }
 
-    var that = this;
-    that.wsp.onUnpackedMessage.addListener((data) => {
-      that.wsp.close();
-      that.wsp.removeAllListeners();
+    this.wsp.onUnpackedMessage.addListener((data) => {
+      this.wsp.removeAllListeners();
 
-      
       for (var s = 0; s < homebridgeAccessory.services.length; s++) {
         var service = homebridgeAccessory.services[s];
         var characteristic = service.controlService.getCharacteristic(service.characteristics[0]);
 
         if (service.controlService.id == params.activityId)
         {
-          that.log(service.controlService.displayName + " launched");
+          this.log(service.controlService.displayName + " launched");
         }
-        
-        if (service.controlService.id !=-1 && service.controlService.id != params.activityId && characteristic.value) 
+
+        if (service.controlService.id !=-1 && service.controlService.id != params.activityId && characteristic.value)
         {
-          that.log("Switching off " + service.controlService.displayName);
+          this.log("Switching off " + service.controlService.displayName);
           characteristic.updateValue(false,undefined,'fromSetValue');
         }
 
         if (service.controlService.id == -1 && params.activityId == -1)
         {
-          that.log("Everything is off, turning on off Activity " + service.controlService.displayName);
+          this.log("Everything is off, turning on off Activity " + service.controlService.displayName);
           characteristic.updateValue(true,undefined,'fromSetValue');
         }
 
         if (service.controlService.id == -1 && params.activityId != -1 && characteristic.value)
         {
-          that.log("New activity on , turning off off Activity " + service.controlService.displayName);
+          this.log("New activity on , turning off off Activity " + service.controlService.displayName);
           characteristic.updateValue(false,undefined,'fromSetValue');
         }
-
-
       }
-
-
     });
 
-    that.wsp.open()
-      .then(() => that.wsp.sendPacked(payload))
-      .catch((e) => { that.log("Error :" + e); });
+    this.wsp.open()
+      .then(() => this.wsp.sendPacked(payload))
+      .catch((e) => { this.log("Error :" + e); });
 
   },
   getInformationService: function (homebridgeAccessory) {
@@ -249,11 +240,9 @@ HarmonyPlatform.prototype = {
         }
 
 
-        var that = this;
-        that.wsp.onUnpackedMessage.addListener((data) => {
-          that.wsp.close();
-          that.wsp.removeAllListeners();
-          that.log("Got status for " + service.controlService.displayName);
+        this.wsp.onUnpackedMessage.addListener((data) => {
+          this.wsp.removeAllListeners();
+          this.log("Got status for " + service.controlService.displayName);
           if (data.data.result == service.controlService.id) {
             callback(undefined, true);
           }
@@ -262,8 +251,8 @@ HarmonyPlatform.prototype = {
           }
         });
 
-        that.wsp.open()
-          .then(() => that.wsp.sendPacked(payload))
+        this.wsp.open()
+          .then(() => this.wsp.sendPacked(payload))
           .catch((e) => { console.error(e); callback(undefined, false); });
 
       }.bind(this));
@@ -291,4 +280,3 @@ HarmonyPlatform.prototype = {
 function HarmonyAccessory(services) {
   this.services = services;
 }
-
