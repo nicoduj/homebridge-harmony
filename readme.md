@@ -7,11 +7,13 @@ First try to a homebridge plugin for harmony using websockets.
 Work In Progress
 
 Known issues :  
-    - If you change activities too quickly, some unexpected behavior might occur (not checking the progress of activity launching currently) 
-    - support Only one hub. If you have multiple one, try deifning multiple platforms in your config (not tested since I have only one hub)
-    - still verbose on logs , for debugging purpose
-    - no dynamic discovery of the hub
-!!!!!!
+*If you change activities too quickly, some unexpected behavior might occur (not checking the progress of activity launching currently) 
+*Support Only one hub. If you have multiple one, try deifning multiple platforms in your config (not tested since I have only one hub)
+*Still verbose on logs , for debugging purpose
+*No dynamic discovery of the hub
+
+!!!!!!!
+
 
 `npm install -g homebridge-harmony`
 
