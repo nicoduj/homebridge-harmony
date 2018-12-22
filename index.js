@@ -10,7 +10,7 @@ function HarmonyPlatform(log, config) {
   this.log = log;
   this.hubIP = config["hubIP"];
   this.showTurnOffActivity = config["showTurnOffActivity"];
-  this.TurnOffActivityName  = config["TurnOffActivityName"];
+  this.TurnOffActivityName  = config["turnOffActivityName"];
   this.name = config["name"];
   this._msgId = 0;
 }
@@ -66,7 +66,7 @@ HarmonyPlatform.prototype = {
           that.account_id = body.data.accountId;
 
           wsUrl = `ws://${that.hubIP}:${DEFAULT_HUB_PORT}/?domain=${that.domain}&hubId=${that.remote_id}`;
-
+    
           that.wsp = new WebSocketAsPromised(wsUrl, {
             createWebSocket: url => new W3CWebSocket(url),
             packMessage: data => JSON.stringify(data),
@@ -182,6 +182,14 @@ HarmonyPlatform.prototype = {
           that.log("Everything is off, turning on off Activity " + service.controlService.displayName);
           characteristic.updateValue(true,undefined,'fromSetValue');
         }
+
+        if (service.controlService.id == -1 && params.activityId != -1 && characteristic.value)
+        {
+          that.log("New activity on , turning off off Activity " + service.controlService.displayName);
+          characteristic.updateValue(false,undefined,'fromSetValue');
+        }
+
+
       }
 
 

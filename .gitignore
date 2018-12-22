@@ -38,3 +38,5 @@ Thumbs.db
 package-lock.json
 node_modules
 .Secret
+
+sample.json

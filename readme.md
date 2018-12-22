@@ -23,7 +23,7 @@ Known issues :
             "name": "NicoHarmonyHub2",
             "hubIP": "192.168.1.42",
             "showTurnOffActivity" : true,
-            "TurnOffActivityName" : "HC Off"
+            "turnOffActivityName" : "HC Off"
         }
     ]
 
@@ -36,6 +36,9 @@ Need a static IP for your hub
 Use showTurnOffActivity property if you want a switch for turning off eveything (might be usefull for automations)
 You can specify its name with TurnOffActivityName property.
 
+
+!!!!!!WARNING!!!!!!!
+Option TurnOffActivityName was renamed to turnOffActivityName in 0.0.3 (sorry for that)
 
 ### Inspiration 
 
