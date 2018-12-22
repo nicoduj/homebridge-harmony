@@ -12,6 +12,7 @@ function HarmonyPlatform(log, config) {
   this.showTurnOffActivity = config["showTurnOffActivity"];
   this.TurnOffActivityName  = config["turnOffActivityName"];
   this.name = config["name"];
+  this.devMode = config["DEVMODE"];
   this._msgId = 0;
 }
 
@@ -43,6 +44,8 @@ HarmonyPlatform.prototype = {
       "cmd": "connect.discoveryinfo?get",
       "params": {}
     }
+
+    var foundAccessories = [];
 
     request({
       url: hubUrl,
@@ -94,7 +97,6 @@ HarmonyPlatform.prototype = {
 
             that.wsp.close();
             that.wsp.removeAllListeners();
-            var foundAccessories = [];
             var services = [];
 
             var activities = data.data.activity;
@@ -106,6 +108,10 @@ HarmonyPlatform.prototype = {
                 if (activities[i].id == -1 && that.TurnOffActivityName)
                 {
                   switchName = that.TurnOffActivityName
+                }
+                if (that.devMode)
+                {
+                  switchName = "DEV" + switchName;
                 }
                 that.log("Discovered Activity : " + switchName);
                 var service = {
@@ -134,11 +140,11 @@ HarmonyPlatform.prototype = {
 
           that.wsp.open()
             .then(() => that.wsp.sendPacked(payload))
-            .catch((e) => { that.log("Error :" + e); callback(null); });
+            .catch((e) => { that.log("Error :" + e); callback(foundAccessories); });
         }
         else {
           that.log("Error : No config retrieved from hub, check IP and connectivity");
-          callback(null);
+          callback(foundAccessories);
         }
       });
 
@@ -188,11 +194,7 @@ HarmonyPlatform.prototype = {
           that.log("New activity on , turning off off Activity " + service.controlService.displayName);
           characteristic.updateValue(false,undefined,'fromSetValue');
         }
-
-
       }
-
-
     });
 
     that.wsp.open()
@@ -248,23 +250,27 @@ HarmonyPlatform.prototype = {
           }
         }
 
-
         var that = this;
         that.wsp.onUnpackedMessage.addListener((data) => {
           that.wsp.close();
           that.wsp.removeAllListeners();
           that.log("Got status for " + service.controlService.displayName);
+          var characteristic = service.controlService.getCharacteristic(service.characteristics[0]);
+
           if (data.data.result == service.controlService.id) {
-            callback(undefined, true);
+            characteristic.updateValue(true,undefined,'fromSetValue');
+
           }
           else {
-            callback(undefined, false);
+            characteristic.updateValue(false,undefined,'fromSetValue');
           }
         });
 
         that.wsp.open()
           .then(() => that.wsp.sendPacked(payload))
-          .catch((e) => { console.error(e); callback(undefined, false); });
+          .catch((e) => { that.log("Error : " + e); });
+
+        callback(undefined, false);
 
       }.bind(this));
   },
