@@ -162,33 +162,44 @@ HarmonyPlatform.prototype = {
 
     this.wsp.onUnpackedMessage.addListener((data) => {
       this.wsp.removeAllListeners();
+      if (data && data.code && data.code == 200 && data.msg && data.msg == "OK")
+      {
 
-      for (var s = 0; s < homebridgeAccessory.services.length; s++) {
-        var service = homebridgeAccessory.services[s];
-        var characteristic = service.controlService.getCharacteristic(service.characteristics[0]);
+        for (var s = 0; s < homebridgeAccessory.services.length; s++) {
+          var service = homebridgeAccessory.services[s];
+          var characteristic = service.controlService.getCharacteristic(service.characteristics[0]);
 
-        if (service.controlService.id == params.activityId)
-        {
-          this.log(service.controlService.displayName + " launched");
+          if (service.controlService.id == params.activityId)
+          {
+            this.log(service.controlService.displayName + " launched");
+          }
+
+          if (service.controlService.id !=-1 && service.controlService.id != params.activityId && characteristic.value)
+          {
+            this.log("Switching off " + service.controlService.displayName);
+            characteristic.updateValue(false,undefined,'fromSetValue');
+          }
+
+          if (service.controlService.id == -1 && params.activityId == -1)
+          {
+            this.log("Everything is off, turning on off Activity " + service.controlService.displayName);
+            characteristic.updateValue(true,undefined,'fromSetValue');
+          }
+
+          if (service.controlService.id == -1 && params.activityId != -1 && characteristic.value)
+          {
+            this.log("New activity on , turning off off Activity " + service.controlService.displayName);
+            characteristic.updateValue(false,undefined,'fromSetValue');
+          }
         }
-
-        if (service.controlService.id !=-1 && service.controlService.id != params.activityId && characteristic.value)
-        {
-          this.log("Switching off " + service.controlService.displayName);
-          characteristic.updateValue(false,undefined,'fromSetValue');
-        }
-
-        if (service.controlService.id == -1 && params.activityId == -1)
-        {
-          this.log("Everything is off, turning on off Activity " + service.controlService.displayName);
-          characteristic.updateValue(true,undefined,'fromSetValue');
-        }
-
-        if (service.controlService.id == -1 && params.activityId != -1 && characteristic.value)
-        {
-          this.log("New activity on , turning off off Activity " + service.controlService.displayName);
-          characteristic.updateValue(false,undefined,'fromSetValue');
-        }
+      }
+      else if (data)
+      {
+        this.log("WARNING : could not set status :" + JSON.stringify(data));
+      }
+      else
+      {
+        this.log("ERROR : could not set status, no data");
       }
     });
 
@@ -247,9 +258,21 @@ HarmonyPlatform.prototype = {
 
         this.wsp.onUnpackedMessage.addListener((data) => {
           this.wsp.removeAllListeners();
+          
           this.log("Got status for " + service.controlService.displayName);
           var characteristic = service.controlService.getCharacteristic(service.characteristics[0]);
-          characteristic.updateValue(data.data.result == service.controlService.id,undefined,'fromSetValue');
+          if (data && data.data && data.code && data.code == 200 && data.msg && data.msg == "OK")
+          {
+            characteristic.updateValue(data.data.result == service.controlService.id,undefined,'fromSetValue');
+          }
+          else if (data)
+          {
+            this.log("WARNING : could not get status :" + JSON.stringify(data));
+          }
+          else
+          {
+            this.log("ERROR : could not set status, no data");
+          }
         });
 
         this.wsp.open()
