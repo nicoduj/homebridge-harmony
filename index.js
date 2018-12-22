@@ -12,6 +12,7 @@ function HarmonyPlatform(log, config) {
   this.showTurnOffActivity = config["showTurnOffActivity"];
   this.TurnOffActivityName  = config["turnOffActivityName"];
   this.name = config["name"];
+  this.devMode = config["DEVMODE"];
   this._msgId = 0;
 }
 
@@ -43,6 +44,8 @@ HarmonyPlatform.prototype = {
       "cmd": "connect.discoveryinfo?get",
       "params": {}
     }
+
+    var foundAccessories = [];
 
     request({
       url: hubUrl,
@@ -92,7 +95,6 @@ HarmonyPlatform.prototype = {
 
           that.wsp.onUnpackedMessage.addListener((data) => {
             that.wsp.removeAllListeners();
-            var foundAccessories = [];
             var services = [];
 
             var activities = data.data.activity;
@@ -104,6 +106,10 @@ HarmonyPlatform.prototype = {
                 if (activities[i].id == -1 && that.TurnOffActivityName)
                 {
                   switchName = that.TurnOffActivityName
+                }
+                if (that.devMode)
+                {
+                  switchName = "DEV" + switchName;
                 }
                 that.log("Discovered Activity : " + switchName);
                 var service = {
@@ -132,11 +138,11 @@ HarmonyPlatform.prototype = {
 
           that.wsp.open()
             .then(() => that.wsp.sendPacked(payload))
-            .catch((e) => { that.log("Error :" + e); callback(null); });
+            .catch((e) => { that.log("Error :" + e); callback(foundAccessories); });
         }
         else {
           that.log("Error : No config retrieved from hub, check IP and connectivity");
-          callback(null);
+          callback(foundAccessories);
         }
       });
 
@@ -239,7 +245,6 @@ HarmonyPlatform.prototype = {
           }
         }
 
-
         this.wsp.onUnpackedMessage.addListener((data) => {
           this.wsp.removeAllListeners();
           this.log("Got status for " + service.controlService.displayName);
@@ -249,7 +254,9 @@ HarmonyPlatform.prototype = {
 
         this.wsp.open()
           .then(() => this.wsp.sendPacked(payload))
-          .catch((e) => { console.error(e); callback(undefined, false); });
+          .catch((e) => { this.log("Error : " + e); });
+
+        callback(undefined, false);
 
       }.bind(this));
   },
