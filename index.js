@@ -6,17 +6,16 @@ const url = require('url');
 const W3CWebSocket = require('websocket').w3cwebsocket;
 const WebSocketAsPromised = require('websocket-as-promised');
 
-
-
-function HarmonyPlatform(log, config){
-  this.log       = log;
-  this.hupIP     = config["hubIP"];
+function HarmonyPlatform(log, config) {
+  this.log = log;
+  this.hubIP = config["hubIP"];
+  this.showTurnOffActivity = config["showTurnOffActivity"];
+  this.TurnOffActivityName  = config["TurnOffActivityName"];
+  this.name = config["name"];
   this._msgId = 0;
-
-
 }
 
-module.exports = function(homebridge) {
+module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
   HomebridgeAPI = homebridge;
@@ -25,7 +24,7 @@ module.exports = function(homebridge) {
 
 HarmonyPlatform.prototype = {
 
-  accessories: function(callback) {
+  accessories: function (callback) {
     this.log("Loading activities...");
 
     var that = this;
@@ -35,229 +34,250 @@ HarmonyPlatform.prototype = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'Accept-Charset': 'utf-8',
-  }
-  
-  var hubUrl = `http://${this.hupIP}:${DEFAULT_HUB_PORT}/`
-  
- var jsonBody = {
+    }
+
+    var hubUrl = `http://${this.hubIP}:${DEFAULT_HUB_PORT}/`
+
+    var jsonBody = {
       "id ": 1,
       "cmd": "connect.discoveryinfo?get",
       "params": {}
-  }
-  
-  request({
+    }
+
+    request({
       url: hubUrl,
       method: 'POST',
       headers: headers,
       body: jsonBody,
       json: true
-  }, 
+    },
       function (error, response, body) {
-          if (error) {
-              that.log(error.message);
+        if (error) {
+          that.log("Error retrieving info from hub : " + error.message);
+        }
+        else if (response && response.statusCode !== 200) {
+          that.log("Did not received 200 statuts, but  " + response.statusCode + " instead from hub");
+        }
+        else if (body && body.data) {
+          that.friendlyName = body.data.friendlyName;
+          that.remote_id = body.data.remoteId;
+          that.domain = (url.parse(body.data.discoveryServerUri).hostname);
+          that.email = body.data.email;
+          that.account_id = body.data.accountId;
+
+          wsUrl = `ws://${that.hubIP}:${DEFAULT_HUB_PORT}/?domain=${that.domain}&hubId=${that.remote_id}`;
+
+          that.wsp = new WebSocketAsPromised(wsUrl, {
+            createWebSocket: url => new W3CWebSocket(url),
+            packMessage: data => JSON.stringify(data),
+            unpackMessage: message => JSON.parse(message)
+          });
+
+          that._msgId = that._msgId + 1;
+
+          params = {
+            "verb": "get",
+            "format": "json"
           }
-          else if (response && response.statusCode !== 200) {
-            that.log('No 200 return ' + response.statusCode);
+
+          payload = {
+            "hubId": that.remote_id,
+            "timeout": 30,
+            "hbus": {
+              "cmd": `vnd.logitech.harmony/vnd.logitech.harmony.engine?config`,
+              "id": that._msgId,
+              "params": params
+            }
           }
-          else if (body && body.data) {
-              that.friendlyName = body.data.friendlyName;
-              that.remote_id = body.data.remoteId;
-              that.domain =  (url.parse(body.data.discoveryServerUri).hostname) ; 
-              that.email = body.data.email;
-              that.account_id = body.data.accountId;
-  
-              wsUrl = `ws://${that.hupIP}:${DEFAULT_HUB_PORT}/?domain=${that.domain}&hubId=${that.remote_id}`;
 
-              that.wsp = new WebSocketAsPromised(wsUrl, {
-                createWebSocket: url => new W3CWebSocket(url),
-                packMessage: data => JSON.stringify(data),
-                unpackMessage: message => JSON.parse(message)
-              });
+          that.wsp.onUnpackedMessage.addListener((data) => {
 
-              that._msgId = that._msgId + 1;
+            that.wsp.close();
+            that.wsp.removeAllListeners();
+            var foundAccessories = [];
+            var services = [];
 
-              params = {
-                  "verb"  : "get",
-                  "format": "json"
+            var activities = data.data.activity;
+
+            for (var i = 0, len = activities.length; i < len; i++) {
+
+              if (activities[i].id != -1 || that.showTurnOffActivity) {
+                var switchName = activities[i].label;
+                if (activities[i].id == -1 && that.TurnOffActivityName)
+                {
+                  switchName = that.TurnOffActivityName
+                }
+                that.log("Discovered Activity : " + switchName);
+                var service = {
+                  controlService: new Service.Switch(switchName) ,
+                  characteristics: [Characteristic.On]
+                };
+                service.controlService.subtype = switchName;
+                service.controlService.id = activities[i].id;
+                services.push(service);
               }
-  
-              payload = {
-                  "hubId"  : that.remote_id,
-                  "timeout": 30,
-                  "hbus"   : {
-                      "cmd": `vnd.logitech.harmony/vnd.logitech.harmony.engine?config`,
-                      "id" : that._msgId,
-                      "params": params
-                  }
-              }
-  
-              that.wsp.onUnpackedMessage.addListener((data) => 
-                                                  {
-                                                    that.wsp.close();
-                                                    that.wsp.removeAllListeners();
-                                                    var foundAccessories = [];
-                                                    var services = [];
+            }
+            accessory = new HarmonyAccessory(services);
+            accessory.getServices = function () {
+              return that.getServices(accessory);
+            };
+            accessory.platform = that;
+            accessory.remoteAccessory = activities;
+            accessory.name = that.name;
+            accessory.model = "Harmony";
+            accessory.manufacturer = "Harmony";
+            accessory.serialNumber = "<unknown>";
+            foundAccessories.push(accessory);
 
-                                                    var activities = data.data.activity;
+            callback(foundAccessories);
+          });
 
-                                                    for (var i = 0, len = activities.length; i < len; i++) {
-                                                        
-                                                        if (activities[i].id != -1)
-                                                        {
-                                                          that.log(activities[i].label + "/" + activities[i].id);
-                                                          var service = {
-                                                            controlService: new Service.Switch(activities[i].label),
-                                                            characteristics: [Characteristic.On]
-                                                          };
-                                                          service.controlService.subtype = activities[i].label;
-                                                          service.controlService.id = activities[i].id;
-                                                          services.push(service);
-                                                        }
-                                                    }
-                                                    accessory = new HarmonyAccessory(services);
-                                                    accessory.getServices = function() {
-                                                      return that.getServices(accessory);
-                                                    };
-                                                    accessory.platform 			= that;
-                                                    accessory.remoteAccessory	= activities;
-                                                    accessory.name				= "Harmony" + data.id;
-                                                    accessory.model				= "Harmony";
-                                                    accessory.manufacturer		= "Harmony";
-                                                    accessory.serialNumber		= "<unknown>";
-                                                    foundAccessories.push(accessory);
-
-                                                    callback(foundAccessories);
-                                                  });
-  
-              that.wsp.open()
-                .then(() => that.wsp.sendPacked(payload))
-                .catch((e) => {console.error(e); callback(null);});
-
-          }
-          else {
-              console.log('No body');
-              callback(null);
-          } 
-    });
+          that.wsp.open()
+            .then(() => that.wsp.sendPacked(payload))
+            .catch((e) => { that.log("Error :" + e); callback(null); });
+        }
+        else {
+          that.log("Error : No config retrieved from hub, check IP and connectivity");
+          callback(null);
+        }
+      });
 
   },
-  command: function(cmd,params, homebridgeAccessory) {
-
-  this._msgId = this._msgId + 1;
-  payload = {
-      "hubId"  : this.remote_id,
-      "timeout": 30,
-      "hbus"   : {
-          "cmd": cmd,
-          "id" : this._msgId,
-          "params": params
-      }
-  }
-
-  var that = this;
-  that.wsp.onUnpackedMessage.addListener((data) => 
-                                      {
-                                        that.wsp.close();
-                                        that.wsp.removeAllListeners();
-                                        that.log("launch for " + params.activityId);
-                                      });
-
-  that.wsp.open()
-    .then(() => that.wsp.sendPacked(payload))
-    .catch((e) => {console.error(e); callback();});
-
-  },
-getInformationService: function(homebridgeAccessory) {
-  var informationService = new Service.AccessoryInformation();
-  informationService
-  .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
-  .setCharacteristic(Characteristic.Manufacturer, homebridgeAccessory.manufacturer)
-  .setCharacteristic(Characteristic.Model, homebridgeAccessory.model)
-  .setCharacteristic(Characteristic.SerialNumber, homebridgeAccessory.serialNumber);
-  return informationService;
-},
-
-bindCharacteristicEvents: function(characteristic, service, homebridgeAccessory) {
-
-  characteristic
-  .on('set', function(value, callback, context) {
-    if (context !== 'fromSetValue') {
-      params = {
-        "async": "false",
-        "timestamp": 0,
-        "args": {
-            "rule": "start"
-        },
-        "activityId": value?service.controlService.id:"-1"
-      };
-      cmd = 'harmony.activityengine?runactivity';
-      homebridgeAccessory.platform.command(cmd,params,homebridgeAccessory);
-    }
-    callback();
-  }.bind(this) );
-  characteristic
-  .on('get', function(callback) {
-
-    this.log("get status for " + service.controlService.displayName);
+  command: function (cmd, params, homebridgeAccessory) {
 
     this._msgId = this._msgId + 1;
-
-    params = {
-        "verb"  : "get",
-        "format": "json"
-    }
-
     payload = {
-        "hubId"  : this.remote_id,
-        "timeout": 30,
-        "hbus"   : {
-            "cmd": 'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity',
-            "id" : this._msgId,
-            "params": params
-        }
+      "hubId": this.remote_id,
+      "timeout": 30,
+      "hbus": {
+        "cmd": cmd,
+        "id": this._msgId,
+        "params": params
+      }
     }
-
 
     var that = this;
-    that.wsp.onUnpackedMessage.addListener((data) => 
-                                        {
-                                          that.wsp.close();
-                                          that.wsp.removeAllListeners();
-                                          that.log (data.data.result + "vs" + service.controlService.id);
-                                          if (data.data.result == service.controlService.id)
-                                          {
-                                            callback(undefined, true);
-                                          }
-                                          else
-                                          {
-                                            callback(undefined, false);
-                                          }         
-                                        });
+    that.wsp.onUnpackedMessage.addListener((data) => {
+      that.wsp.close();
+      that.wsp.removeAllListeners();
+
+      
+      for (var s = 0; s < homebridgeAccessory.services.length; s++) {
+        var service = homebridgeAccessory.services[s];
+        var characteristic = service.controlService.getCharacteristic(service.characteristics[0]);
+
+        if (service.controlService.id == params.activityId)
+        {
+          that.log(service.controlService.displayName + " launched");
+        }
+        
+        if (service.controlService.id !=-1 && service.controlService.id != params.activityId && characteristic.value) 
+        {
+          that.log("Switching off " + service.controlService.displayName);
+          characteristic.updateValue(false,undefined,'fromSetValue');
+        }
+
+        if (service.controlService.id == -1 && params.activityId == -1)
+        {
+          that.log("Everything is off, turning on off Activity " + service.controlService.displayName);
+          characteristic.updateValue(true,undefined,'fromSetValue');
+        }
+      }
+
+
+    });
 
     that.wsp.open()
       .then(() => that.wsp.sendPacked(payload))
-      .catch((e) => {console.error(e); callback(undefined, false);});
-  
-  }.bind(this) );
-},
+      .catch((e) => { that.log("Error :" + e); });
+
+  },
+  getInformationService: function (homebridgeAccessory) {
+    var informationService = new Service.AccessoryInformation();
+    informationService
+      .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
+      .setCharacteristic(Characteristic.Manufacturer, homebridgeAccessory.manufacturer)
+      .setCharacteristic(Characteristic.Model, homebridgeAccessory.model)
+      .setCharacteristic(Characteristic.SerialNumber, homebridgeAccessory.serialNumber);
+    return informationService;
+  },
+
+  bindCharacteristicEvents: function (characteristic, service, homebridgeAccessory) {
+
+    characteristic
+      .on('set', function (value, callback, context) {
+        if (context !== 'fromSetValue') {
+          params = {
+            "async": "false",
+            "timestamp": 0,
+            "args": {
+              "rule": "start"
+            },
+            "activityId": value ? service.controlService.id : "-1"
+          };
+          cmd = 'harmony.activityengine?runactivity';
+          homebridgeAccessory.platform.command(cmd, params, homebridgeAccessory);
+        }
+        callback();
+      }.bind(this));
+    characteristic
+      .on('get', function (callback) {
+
+        this._msgId = this._msgId + 1;
+
+        params = {
+          "verb": "get",
+          "format": "json"
+        }
+
+        payload = {
+          "hubId": this.remote_id,
+          "timeout": 30,
+          "hbus": {
+            "cmd": 'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity',
+            "id": this._msgId,
+            "params": params
+          }
+        }
 
 
-getServices: function(homebridgeAccessory) {
-  var services = [];
-  var informationService = homebridgeAccessory.platform.getInformationService(homebridgeAccessory);
-  services.push(informationService);
-  for (var s = 0; s < homebridgeAccessory.services.length; s++) {
-    var service = homebridgeAccessory.services[s];
-    for (var i=0; i < service.characteristics.length; i++) {
-      var characteristic = service.controlService.getCharacteristic(service.characteristics[i]);
-      if (characteristic == undefined)
-      characteristic = service.controlService.addCharacteristic(service.characteristics[i]);
-      homebridgeAccessory.platform.bindCharacteristicEvents(characteristic, service, homebridgeAccessory);
+        var that = this;
+        that.wsp.onUnpackedMessage.addListener((data) => {
+          that.wsp.close();
+          that.wsp.removeAllListeners();
+          that.log("Got status for " + service.controlService.displayName);
+          if (data.data.result == service.controlService.id) {
+            callback(undefined, true);
+          }
+          else {
+            callback(undefined, false);
+          }
+        });
+
+        that.wsp.open()
+          .then(() => that.wsp.sendPacked(payload))
+          .catch((e) => { console.error(e); callback(undefined, false); });
+
+      }.bind(this));
+  },
+
+
+  getServices: function (homebridgeAccessory) {
+    var services = [];
+    var informationService = homebridgeAccessory.platform.getInformationService(homebridgeAccessory);
+    services.push(informationService);
+    for (var s = 0; s < homebridgeAccessory.services.length; s++) {
+      var service = homebridgeAccessory.services[s];
+      for (var i = 0; i < service.characteristics.length; i++) {
+        var characteristic = service.controlService.getCharacteristic(service.characteristics[i]);
+        if (characteristic == undefined)
+          characteristic = service.controlService.addCharacteristic(service.characteristics[i]);
+        homebridgeAccessory.platform.bindCharacteristicEvents(characteristic, service, homebridgeAccessory);
+      }
+      services.push(service.controlService);
     }
-    services.push(service.controlService);
+    return services;
   }
-  return services;
-}
 }
 
 function HarmonyAccessory(services) {
