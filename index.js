@@ -194,7 +194,7 @@ HarmonyPlatform.prototype = {
 
     this.wsp.open()
       .then(() => this.wsp.sendPacked(payload))
-      .catch((e) => { this.log("Error :" + e); });
+      .catch((e) => this.log("Error :" + e));
 
   },
   getInformationService: function (homebridgeAccessory) {
@@ -248,13 +248,13 @@ HarmonyPlatform.prototype = {
         this.wsp.onUnpackedMessage.addListener((data) => {
           this.wsp.removeAllListeners();
           this.log("Got status for " + service.controlService.displayName);
-
-          callback(null, data.data.result == service.controlService.id);
+          var characteristic = service.controlService.getCharacteristic(service.characteristics[0]);
+          characteristic.updateValue(data.data.result == service.controlService.id,undefined,'fromSetValue');
         });
 
         this.wsp.open()
           .then(() => this.wsp.sendPacked(payload))
-          .catch((e) => { this.log("Error : " + e); });
+          .catch((e) => this.log("Error : " + e));
 
         callback(undefined, false);
 
