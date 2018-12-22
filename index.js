@@ -279,7 +279,7 @@ HarmonyPlatform.prototype = {
           .then(() => this.wsp.sendPacked(payload))
           .catch((e) => this.log("Error : " + e));
 
-        callback(undefined, false);
+        callback(undefined, characteristic.on.value);
 
       }.bind(this));
   },
