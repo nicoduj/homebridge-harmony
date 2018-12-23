@@ -1,17 +1,15 @@
 
 # Homebridge-harmony
 
-First try to a homebridge plugin for harmony using websockets.
+An homebridge plugin for harmony hub using websockets.
 
 
 ## Work In Progress
 
 Known issues :  
 * If you change activities too quickly, some unexpected behavior might occur (not checking the progress of activity launching currently) 
-* Support Only one hub. If you have multiple one, try deifning multiple platforms in your config (not tested since I have only one hub)
-* Still verbose on logs , for debugging purpose
-* No dynamic discovery of the hub
-
+* Still verbose on logs, for debugging purpose
+* No dynamic discovery of the hub(s)
 
 
 `npm install -g homebridge-harmony`
@@ -28,14 +26,23 @@ Known issues :
         }
     ]
 
+| Option        | Values           | Mandatory / Default  |
+| ------------- |-------------| -----|
+| platform      | HarmonyHub | YES |
+| name      | Name you want to give to your hub. Use different ones if you have multiple hubs     |   YES |
+| hubIP | IP of your hub. You MUST set a static IP to it on your network      |    YES |
+| showTurnOffActivity | show a switch for turning off every activity. The switch is On when the is no current Activity. Off otherwise. Triggering it while On will do nothing and it will come back to its on state     |    NO / False |
+| turnOffActivityName | Name you want to give to that TurnOffActivity.      |    NO/ PowerOff |
 
+
+If you have multiple hubs, try defining multiple platforms in your config **with different names** (seems to work accordingly to @perlbo : https://github.com/KraigM/homebridge-harmonyhub/issues/149 )
 
 ### Notes  
 
-Need a static IP for your hub
+As mentionned, you need a static IP for your hub
 
 Use showTurnOffActivity property if you want a switch for turning off eveything (might be usefull for automations)
-You can specify its name with TurnOffActivityName property.
+You can specify its name with turnOffActivityName property.
 
 
 !!!!!!WARNING!!!!!!!
