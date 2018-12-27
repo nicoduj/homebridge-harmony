@@ -9,45 +9,41 @@
 > * Still verbose on logs, for debugging purpose
 > * No dynamic discovery of the hub(s)
 
-`npm install -g homebridge-harmony`
+## Installation
 
-## Homebridge configuration
+1. Install Homebridge using: `npm install -g homebridge`
+2. Install this plugin using: `npm install -g homebridge-harmony`
+3. Update your Homebridge `config.json` using the sample below.
 
-    "platforms": [
-        {
-            "platform": "HarmonyHub",
-            "name": "NicoHarmonyHub2",
-            "hubIP": "192.168.1.42",
-            "showTurnOffActivity" : true,
-            "turnOffActivityName" : "HC Off"
-        }
-    ]
+## Configuration
 
-| Option        | Values           | Mandatory / Default  |
-| ------------- |-------------| -----|
-| platform      | HarmonyHub | YES |
-| name      | Name you want to give to your hub. Use different ones if you have multiple hubs     |   YES |
-| hubIP | IP of your hub. You MUST set a static IP to it on your network      |    YES |
-| showTurnOffActivity | show a switch for turning off every activity. The switch is On when the is no current Activity. Off otherwise. Triggering it while On will do nothing and it will come back to its on state     |    NO / False |
-| turnOffActivityName | Name you want to give to that TurnOffActivity.      |    NO/ PowerOff |
+```json
+"platforms": [
+  {
+    "platform": "HarmonyHub",
+    "name": "NicoHarmonyHub2",
+    "hubIP": "192.168.1.42",
+    "showTurnOffActivity" : true,
+    "turnOffActivityName" : "HC Off"
+  }
+]
+```
 
+Fields:
 
-If you have multiple hubs, try defining multiple platforms in your config **with different names** (seems to work accordingly to @perlbo : https://github.com/KraigM/homebridge-harmonyhub/issues/149 )
+* `platform` must be "HarmonyHub" (required).
+* `name` is the name of the published accessory (required).
+  * Use a different name for each entry if you have multiple hubs ([source](https://github.com/KraigM/homebridge-harmonyhub/issues/149)).
+* `hubIP` is the static IP address of the hub (required). A static IP address is required.
+* `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
+  * The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
+* `turnOffActivityName` customizes the name of the "switch" enabled by `showTurnOffActivity` (defaults to "PowerOff").
 
-### Notes
+## Changelog
 
-As mentionned, you need a static IP for your hub
+- 0.0.3
+  - [BREAKING] `TurnOffActivityName` was renamed to `turnOffActivityName`.
 
-Use showTurnOffActivity property if you want a switch for turning off eveything (might be usefull for automations)
-You can specify its name with turnOffActivityName property.
+## Inspiration
 
-
-!!!!!!WARNING!!!!!!!
-Option TurnOffActivityName was renamed to turnOffActivityName in 0.0.3 (sorry for that)
-
-### Inspiration
-
-Thanks to : https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py
-for WebSocket protocol on harmony !
-
-
+Thanks to [iandday/pyharmony/pyharmony/client.py](https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py) for the Harmoney WebSocket protocol implementation.
