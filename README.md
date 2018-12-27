@@ -2,13 +2,12 @@
 
 [Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/nfarina/homebridge) using WebSockets.
 
-## Work In Progress
-
-Known issues :
-* If you change activities too quickly, some unexpected behavior might occur (not checking the progress of activity launching currently)
-* Still verbose on logs, for debugging purpose
-* No dynamic discovery of the hub(s)
-
+> ## Work In Progress
+>
+> List of known issues:
+> * If you change activities too quickly, some unexpected behavior might occur (not checking the progress of activity launching currently)
+> * Still verbose on logs, for debugging purpose
+> * No dynamic discovery of the hub(s)
 
 `npm install -g homebridge-harmony`
 
