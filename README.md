@@ -1,8 +1,6 @@
+# homebridge-harmony
 
-# Homebridge-harmony
-
-An homebridge plugin for harmony hub using websockets.
-
+[Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/nfarina/homebridge) using WebSockets.
 
 ## Work In Progress
 
