@@ -6,8 +6,8 @@ An homebridge plugin for harmony hub using websockets.
 
 ## Work In Progress
 
-Known issues :  
-* If you change activities too quickly, some unexpected behavior might occur (not checking the progress of activity launching currently) 
+Known issues :
+* If you change activities too quickly, some unexpected behavior might occur (not checking the progress of activity launching currently)
 * Still verbose on logs, for debugging purpose
 * No dynamic discovery of the hub(s)
 
@@ -37,7 +37,7 @@ Known issues :
 
 If you have multiple hubs, try defining multiple platforms in your config **with different names** (seems to work accordingly to @perlbo : https://github.com/KraigM/homebridge-harmonyhub/issues/149 )
 
-### Notes  
+### Notes
 
 As mentionned, you need a static IP for your hub
 
@@ -48,7 +48,7 @@ You can specify its name with turnOffActivityName property.
 !!!!!!WARNING!!!!!!!
 Option TurnOffActivityName was renamed to turnOffActivityName in 0.0.3 (sorry for that)
 
-### Inspiration 
+### Inspiration
 
 Thanks to : https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py
 for WebSocket protocol on harmony !
