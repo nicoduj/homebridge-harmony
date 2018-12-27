@@ -5,9 +5,10 @@
 > ## Work In Progress
 >
 > List of known issues:
-> * If you change activities too quickly, some unexpected behavior might occur (not checking the progress of activity launching currently)
-> * Still verbose on logs, for debugging purpose
-> * No dynamic discovery of the hub(s)
+>
+> - If you change activities too quickly, some unexpected behavior might occur
+> - Still verbose on logs, for debugging purpose
+> - No dynamic discovery of the hub(s)
 
 ## Installation
 
@@ -20,7 +21,7 @@
 ```json
 "platforms": [
   {
-    "platform": "HarmonyHub",
+    "platform": "HarmonyHubWebSocket",
     "name": "NicoHarmonyHub2",
     "hubIP": "192.168.1.42",
     "showTurnOffActivity" : true,
@@ -31,16 +32,20 @@
 
 Fields:
 
-* `platform` must be "HarmonyHub" (required).
-* `name` is the name of the published accessory (required).
-  * Use a different name for each entry if you have multiple hubs ([source](https://github.com/KraigM/homebridge-harmonyhub/issues/149)).
-* `hubIP` is the static IP address of the hub (required). A static IP address is required.
-* `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
-  * The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
-* `turnOffActivityName` customizes the name of the "switch" enabled by `showTurnOffActivity` (defaults to "PowerOff").
+- `platform` must be "HarmonyHubWebSocket" (required).
+- `name` is the name of the published accessory (required).
+  - Use a different name for each entry if you have multiple hubs ([source](https://github.com/KraigM/homebridge-harmonyhub/issues/149)).
+- `hubIP` is the static IP address of the hub (required). A static IP address is required.
+- `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
+  - The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
+- `turnOffActivityName` customizes the name of the "switch" enabled by `showTurnOffActivity` (defaults to "PowerOff").
 
 ## Changelog
 
+- 0.0.6
+  - [BREAKING] `platform` was renamed to `HarmonyHubWebSocket` to avoid conflicts with previous plugins commonly used.
+  - [NEW] introduces retry mechanism if error codes 202 / 100 returns by hub while starting an activity
+  - [UPDATE] updates node dependency to 6.0.0 and homebridge to 0.4.21
 - 0.0.3
   - [BREAKING] `TurnOffActivityName` was renamed to `turnOffActivityName`.
 

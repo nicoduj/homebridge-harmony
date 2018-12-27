@@ -10,10 +10,12 @@ function HarmonyPlatform(log, config) {
   this.log = log;
   this.hubIP = config['hubIP'];
   this.showTurnOffActivity = config['showTurnOffActivity'];
-  this.TurnOffActivityName = config['turnOffActivityName'];
+  this.turnOffActivityName = config['turnOffActivityName'];
   this.name = config['name'];
   this.devMode = config['DEVMODE'];
   this._msgId = 0;
+
+  this._currentSetAttemps = 0;
 }
 
 module.exports = function(homebridge) {
@@ -22,7 +24,7 @@ module.exports = function(homebridge) {
   HomebridgeAPI = homebridge;
   homebridge.registerPlatform(
     'homebridge-harmonyHub',
-    'HarmonyHub',
+    'HarmonyHubWebSocket',
     HarmonyPlatform,
   );
 };
@@ -110,8 +112,8 @@ HarmonyPlatform.prototype = {
             for (var i = 0, len = activities.length; i < len; i++) {
               if (activities[i].id != -1 || that.showTurnOffActivity) {
                 var switchName = activities[i].label;
-                if (activities[i].id == -1 && that.TurnOffActivityName) {
-                  switchName = that.TurnOffActivityName;
+                if (activities[i].id == -1 && that.turnOffActivityName) {
+                  switchName = that.turnOffActivityName;
                 }
                 if (that.devMode) {
                   switchName = 'DEV' + switchName;
@@ -178,49 +180,81 @@ HarmonyPlatform.prototype = {
         data.msg &&
         data.msg == 'OK'
       ) {
+        this._currentSetAttemps = 0;
+
         for (var s = 0; s < homebridgeAccessory.services.length; s++) {
-          var service = homebridgeAccessory.services[s];
-          var characteristic = service.controlService.getCharacteristic(
-            service.characteristics[0],
+          var serviceControl = homebridgeAccessory.services[s].controlService;
+          var characteristic = serviceControl.getCharacteristic(
+            Characteristic.On,
           );
 
-          if (service.controlService.id == params.activityId) {
-            this.log(service.controlService.displayName + ' launched');
+          if (
+            serviceControl.id != -1 &&
+            serviceControl.id == params.activityId
+          ) {
+            this.log(serviceControl.displayName + ' launched');
           }
 
           if (
-            service.controlService.id != -1 &&
-            service.controlService.id != params.activityId &&
+            serviceControl.id != -1 &&
+            serviceControl.id != params.activityId &&
             characteristic.value
           ) {
-            this.log('Switching off ' + service.controlService.displayName);
+            this.log('Switching off ' + serviceControl.displayName);
             characteristic.updateValue(false, undefined, 'fromSetValue');
           }
 
-          if (service.controlService.id == -1 && params.activityId == -1) {
+          if (serviceControl.id == -1 && params.activityId == -1) {
             this.log(
               'Everything is off, turning on off Activity ' +
-                service.controlService.displayName,
+                serviceControl.displayName,
             );
             characteristic.updateValue(true, undefined, 'fromSetValue');
           }
 
-          if (
-            service.controlService.id == -1 &&
-            params.activityId != -1 &&
-            characteristic.value
-          ) {
+          if (serviceControl.id == -1 && params.activityId != -1) {
             this.log(
               'New activity on , turning off off Activity ' +
-                service.controlService.displayName,
+                serviceControl.displayName,
             );
             characteristic.updateValue(false, undefined, 'fromSetValue');
           }
         }
       } else if (data) {
-        this.log('WARNING : could not set status :' + JSON.stringify(data));
+        if (data.code == 202 || data.code == 100) {
+          this._currentSetAttemps = this._currentSetAttemps + 1;
+          //get characteristic
+          this.log('WARNING : could not SET status : ' + JSON.stringify(data));
+
+          var charactToSet;
+          for (var s = 0; s < homebridgeAccessory.services.length; s++) {
+            var serviceControl = homebridgeAccessory.services[s].controlService;
+            var characteristic = serviceControl.getCharacteristic(
+              Characteristic.On,
+            );
+            if (serviceControl.id == params.activityId) {
+              charactToSet = characteristic;
+              break;
+            }
+          }
+
+          //we try again since an activity is in progress and we couldn't update the one.
+          var that = this;
+          setTimeout(function() {
+            if (that._currentSetAttemps < 10) {
+              that.log('RETRY to SET ON : ' + serviceControl.displayName);
+              charactToSet.setValue(true, undefined, undefined);
+            } else {
+              that.log(
+                'ERROR : could not SET status, no more RETRY : ' +
+                  JSON.stringify(data),
+              );
+              charactToSet.updateValue(false, undefined, 'fromSetValue');
+            }
+          }, 1000);
+        }
       } else {
-        this.log('ERROR : could not set status, no data');
+        this.log('ERROR : could not SET status, no data');
       }
     });
 
@@ -296,24 +330,37 @@ HarmonyPlatform.prototype = {
         this.wsp.onUnpackedMessage.addListener(data => {
           this.wsp.removeAllListeners();
 
-          this.log('Got status for ' + service.controlService.displayName);
-          var characteristic = service.controlService.getCharacteristic(
-            service.characteristics[0],
+          var serviceControl = service.controlService;
+          var characteristic = serviceControl.getCharacteristic(
+            Characteristic.On,
           );
+
           if (
             data &&
             data.data &&
             data.code &&
             (data.code == 200 || data.code == 100)
           ) {
+            var characteristicIsOn = false;
+
+            if (data.data.result == serviceControl.id) {
+              characteristicIsOn = true;
+            }
+
+            this.log(
+              'Got status for ' +
+                serviceControl.displayName +
+                ' - was ' +
+                characteristic.value +
+                ' set to ' +
+                characteristicIsOn,
+            );
+
             try {
-              callback(
-                undefined,
-                data.data.result == service.controlService.id,
-              );
+              callback(undefined, characteristicIsOn);
             } catch (error) {
               characteristic.updateValue(
-                data.data.result == service.controlService.id,
+                characteristicIsOn,
                 undefined,
                 'fromSetValue',
               );
@@ -321,7 +368,7 @@ HarmonyPlatform.prototype = {
           } else if (data) {
             this.log('WARNING : could not get status :' + JSON.stringify(data));
             try {
-              callback(undefined, characteristic.on.value);
+              callback(undefined, characteristic.value);
             } catch (error) {
               characteristic.updateValue(
                 characteristic.value,
@@ -332,7 +379,7 @@ HarmonyPlatform.prototype = {
           } else {
             this.log('ERROR : could not set status, no data');
             try {
-              callback(undefined, characteristic.on.value);
+              callback(undefined, characteristic.value);
             } catch (error) {
               characteristic.updateValue(
                 characteristic.value,
