@@ -32,5 +32,19 @@
     "url": "https://github.com/nicoduj/homebridge-harmony/issues"
   },
   "homepage": "https://github.com/nicoduj/homebridge-harmony#readme",
-  "devDependencies": {}
+  "devDependencies": {
+    "husky": "^1.2.1",
+    "prettier": "1.15.3",
+    "pretty-quick": "^1.8.0"
+  },
+  "prettier": {
+    "bracketSpacing": false,
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
+  }
 }
