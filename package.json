@@ -5,7 +5,7 @@
   "description": "Publish your harmony activities as homekit accessories",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node index.js && echo \"No syntax errors! (node $(node -v))\""
   },
   "license": "ISC",
   "repository": {
@@ -40,7 +40,7 @@
   "prettier": {
     "bracketSpacing": false,
     "singleQuote": true,
-    "trailingComma": "all"
+    "trailingComma": "es5"
   },
   "husky": {
     "hooks": {
