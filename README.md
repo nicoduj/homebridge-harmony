@@ -7,7 +7,6 @@
 > List of known issues:
 >
 > - If you change activities too quickly, some unexpected behavior might occur
-> - Still verbose on logs, for debugging purpose
 > - No dynamic discovery of the hub(s)
 
 ## Installation
@@ -25,7 +24,8 @@
     "name": "NicoHarmonyHub2",
     "hubIP": "192.168.1.42",
     "showTurnOffActivity" : true,
-    "turnOffActivityName" : "HC Off"
+    "turnOffActivityName" : "HC Off",
+    "refreshTimer" : 30
   }
 ]
 ```
@@ -39,9 +39,14 @@ Fields:
 - `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
   - The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
 - `turnOffActivityName` customizes the name of the "switch" enabled by `showTurnOffActivity` (defaults to "PowerOff").
+- `refreshTimer` enable refresh of activities state every X seconds, for automation purpose if you need to activate something else based on a state chnage of an activity. Be aware it might make you hub smoke since the plugin will ask its status very often :) (defaults : disable).
 
 ## Changelog
 
+- 0.0.7
+  - [NEW] refreshTimer option (for automation purpose)
+  - [NEW] ip of hub is used as serial number of the device.
+  - [UPDATE] logs are now less verbose, ACTIVATE -D switch on homebridge if you have any trouble in order to get full logs
 - 0.0.6
   - [BREAKING] `platform` was renamed to `HarmonyHubWebSocket` to avoid conflicts with previous plugins commonly used.
   - [NEW] introduces retry mechanism if error codes 202 / 100 returns by hub while starting an activity

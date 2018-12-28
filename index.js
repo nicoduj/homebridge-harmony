@@ -13,6 +13,7 @@ function HarmonyPlatform(log, config) {
   this.turnOffActivityName = config['turnOffActivityName'];
   this.name = config['name'];
   this.devMode = config['DEVMODE'];
+  this.refreshTimer = config['refreshTimer'];
   this._msgId = 0;
 
   this._currentSetAttemps = 0;
@@ -107,6 +108,7 @@ HarmonyPlatform.prototype = {
             that.wsp.removeAllListeners();
             var services = [];
 
+            that.log.debug('Hub config : ' + JSON.stringify(data));
             var activities = data.data.activity;
 
             for (var i = 0, len = activities.length; i < len; i++) {
@@ -137,9 +139,20 @@ HarmonyPlatform.prototype = {
             accessory.name = that.name;
             accessory.model = 'Harmony';
             accessory.manufacturer = 'Harmony';
-            accessory.serialNumber = '<unknown>';
+            accessory.serialNumber = that.hubIP;
             foundAccessories.push(accessory);
 
+            //timer for background refresh
+            if (that.refreshTimer && that.refreshTimer > 0) {
+              that.log(
+                'Setting Timer for background refresh every  : ' +
+                  that.refreshTimer * 1000
+              ) + 's';
+              that.timerID = setInterval(
+                () => that.refreshAccessories(accessory),
+                that.refreshTimer * 1000
+              );
+            }
             callback(foundAccessories);
           });
 
@@ -158,6 +171,103 @@ HarmonyPlatform.prototype = {
         }
       }
     );
+  },
+  updateAccessory: function(characteristic, characteristicIsOn, callback) {
+    try {
+      if (callback) callback(undefined, characteristicIsOn);
+      else {
+        characteristic.updateValue(characteristicIsOn, undefined, undefined);
+      }
+    } catch (error) {
+      characteristic.updateValue(characteristicIsOn, undefined, undefined);
+    }
+  },
+  refreshAccessory: function(service, homebridgeAccessory, callback) {
+    this._msgId = this._msgId + 1;
+
+    params = {
+      verb: 'get',
+      format: 'json',
+    };
+
+    payload = {
+      hubId: this.remote_id,
+      timeout: 30,
+      hbus: {
+        cmd:
+          'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity',
+        id: this._msgId,
+        params: params,
+      },
+    };
+
+    this.wsp.onUnpackedMessage.addListener(data => {
+      this.wsp.removeAllListeners();
+
+      var serviceControl = service.controlService;
+      var characteristic = serviceControl.getCharacteristic(Characteristic.On);
+
+      if (
+        data &&
+        data.data &&
+        data.code &&
+        (data.code == 200 || data.code == 100)
+      ) {
+        var characteristicIsOn = false;
+
+        if (data.data.result == serviceControl.id) {
+          characteristicIsOn = true;
+        }
+
+        this.log.debug(
+          'Got status for ' +
+            serviceControl.displayName +
+            ' - was ' +
+            characteristic.value +
+            ' set to ' +
+            characteristicIsOn
+        );
+        homebridgeAccessory.platform.updateAccessory(
+          characteristic,
+          characteristicIsOn,
+          callback
+        );
+      } else if (data) {
+        this.log.debug(
+          'WARNING : could not get status :' + JSON.stringify(data)
+        );
+        homebridgeAccessory.platform.updateAccessory(
+          characteristic,
+          characteristic.value,
+          callback
+        );
+      } else {
+        this.log('ERROR : could not set status, no data');
+        homebridgeAccessory.platform.updateAccessory(
+          characteristic,
+          characteristic.value,
+          callback
+        );
+      }
+    });
+
+    this.wsp
+      .open()
+      .then(() => this.wsp.sendPacked(payload))
+      .catch(e => {
+        this.log('Error : ' + e);
+        callback(undefined, false);
+      });
+  },
+  refreshAccessories: function(homebridgeAccessory) {
+    for (var s = 0; s < homebridgeAccessory.services.length; s++) {
+      var service = homebridgeAccessory.services[s];
+      homebridgeAccessory.platform.refreshAccessory(
+        service,
+        homebridgeAccessory,
+        undefined
+      );
+    }
   },
   command: function(cmd, params, homebridgeAccessory) {
     this._msgId = this._msgId + 1;
@@ -188,43 +298,44 @@ HarmonyPlatform.prototype = {
             Characteristic.On
           );
 
-          if (
-            serviceControl.id != -1 &&
-            serviceControl.id == params.activityId
-          ) {
-            this.log(serviceControl.displayName + ' launched');
+          if (serviceControl.id == params.activityId) {
+            this.log(serviceControl.displayName + ' activated');
           }
 
+          //we disable previous activiies that were on
           if (
             serviceControl.id != -1 &&
             serviceControl.id != params.activityId &&
             characteristic.value
           ) {
-            this.log('Switching off ' + serviceControl.displayName);
-            characteristic.updateValue(false, undefined, 'fromSetValue');
+            this.log.debug('Switching off ' + serviceControl.displayName);
+            characteristic.updateValue(false, undefined, undefined);
           }
 
-          if (serviceControl.id == -1 && params.activityId == -1) {
-            this.log(
-              'Everything is off, turning on off Activity ' +
-                serviceControl.displayName
-            );
-            characteristic.updateValue(true, undefined, 'fromSetValue');
-          }
-
+          //we turn off Off Activity if another activity was launched
           if (serviceControl.id == -1 && params.activityId != -1) {
-            this.log(
+            this.log.debug(
               'New activity on , turning off off Activity ' +
                 serviceControl.displayName
             );
-            characteristic.updateValue(false, undefined, 'fromSetValue');
+            characteristic.updateValue(false, undefined, undefined);
+          }
+
+          //we turn on Off Activity if we turned off an activity (or turn on the general switch)
+          if (serviceControl.id == -1 && params.activityId == -1) {
+            this.log.debug(
+              'Turning on off Activity ' + serviceControl.displayName
+            );
+            characteristic.updateValue(true, undefined, undefined);
           }
         }
       } else if (data) {
         if (data.code == 202 || data.code == 100) {
           this._currentSetAttemps = this._currentSetAttemps + 1;
           //get characteristic
-          this.log('WARNING : could not SET status : ' + JSON.stringify(data));
+          this.log.debug(
+            'WARNING : could not SET status : ' + JSON.stringify(data)
+          );
 
           var charactToSet;
           for (var s = 0; s < homebridgeAccessory.services.length; s++) {
@@ -238,20 +349,20 @@ HarmonyPlatform.prototype = {
             }
           }
 
-          //we try again since an activity is in progress and we couldn't update the one.
+          //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
           var that = this;
           setTimeout(function() {
             if (that._currentSetAttemps < 10) {
-              that.log('RETRY to SET ON : ' + serviceControl.displayName);
+              that.log.debug('RETRY to SET ON : ' + serviceControl.displayName);
               charactToSet.setValue(true, undefined, undefined);
             } else {
               that.log(
                 'ERROR : could not SET status, no more RETRY : ' +
-                  JSON.stringify(data)
+                  +serviceControl.displayName
               );
-              charactToSet.updateValue(false, undefined, 'fromSetValue');
+              charactToSet.updateValue(false, undefined, undefined);
             }
-          }, 1000);
+          }, 2000);
         }
       } else {
         this.log('ERROR : could not SET status, no data');
@@ -262,6 +373,38 @@ HarmonyPlatform.prototype = {
       .open()
       .then(() => this.wsp.sendPacked(payload))
       .catch(e => this.log('Error :' + e));
+  },
+  bindCharacteristicEvents: function(
+    characteristic,
+    service,
+    homebridgeAccessory
+  ) {
+    characteristic.on(
+      'set',
+      function(value, callback, context) {
+        params = {
+          async: 'false',
+          timestamp: 0,
+          args: {
+            rule: 'start',
+          },
+          activityId: value ? service.controlService.id : '-1',
+        };
+        cmd = 'harmony.activityengine?runactivity';
+        homebridgeAccessory.platform.command(cmd, params, homebridgeAccessory);
+        callback();
+      }.bind(this)
+    );
+    characteristic.on(
+      'get',
+      function(callback) {
+        homebridgeAccessory.platform.refreshAccessory(
+          service,
+          homebridgeAccessory,
+          callback
+        );
+      }.bind(this)
+    );
   },
   getInformationService: function(homebridgeAccessory) {
     var informationService = new Service.AccessoryInformation();
@@ -278,129 +421,6 @@ HarmonyPlatform.prototype = {
       );
     return informationService;
   },
-
-  bindCharacteristicEvents: function(
-    characteristic,
-    service,
-    homebridgeAccessory
-  ) {
-    characteristic.on(
-      'set',
-      function(value, callback, context) {
-        if (context !== 'fromSetValue') {
-          params = {
-            async: 'false',
-            timestamp: 0,
-            args: {
-              rule: 'start',
-            },
-            activityId: value ? service.controlService.id : '-1',
-          };
-          cmd = 'harmony.activityengine?runactivity';
-          homebridgeAccessory.platform.command(
-            cmd,
-            params,
-            homebridgeAccessory
-          );
-        }
-        callback();
-      }.bind(this)
-    );
-    characteristic.on(
-      'get',
-      function(callback) {
-        this._msgId = this._msgId + 1;
-
-        params = {
-          verb: 'get',
-          format: 'json',
-        };
-
-        payload = {
-          hubId: this.remote_id,
-          timeout: 30,
-          hbus: {
-            cmd:
-              'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity',
-            id: this._msgId,
-            params: params,
-          },
-        };
-
-        this.wsp.onUnpackedMessage.addListener(data => {
-          this.wsp.removeAllListeners();
-
-          var serviceControl = service.controlService;
-          var characteristic = serviceControl.getCharacteristic(
-            Characteristic.On
-          );
-
-          if (
-            data &&
-            data.data &&
-            data.code &&
-            (data.code == 200 || data.code == 100)
-          ) {
-            var characteristicIsOn = false;
-
-            if (data.data.result == serviceControl.id) {
-              characteristicIsOn = true;
-            }
-
-            this.log(
-              'Got status for ' +
-                serviceControl.displayName +
-                ' - was ' +
-                characteristic.value +
-                ' set to ' +
-                characteristicIsOn
-            );
-
-            try {
-              callback(undefined, characteristicIsOn);
-            } catch (error) {
-              characteristic.updateValue(
-                characteristicIsOn,
-                undefined,
-                'fromSetValue'
-              );
-            }
-          } else if (data) {
-            this.log('WARNING : could not get status :' + JSON.stringify(data));
-            try {
-              callback(undefined, characteristic.value);
-            } catch (error) {
-              characteristic.updateValue(
-                characteristic.value,
-                undefined,
-                'fromSetValue'
-              );
-            }
-          } else {
-            this.log('ERROR : could not set status, no data');
-            try {
-              callback(undefined, characteristic.value);
-            } catch (error) {
-              characteristic.updateValue(
-                characteristic.value,
-                undefined,
-                'fromSetValue'
-              );
-            }
-          }
-        });
-
-        this.wsp
-          .open()
-          .then(() => this.wsp.sendPacked(payload))
-          .catch(e => {
-            this.log('Error : ' + e);
-            callback(undefined, false);
-          });
-      }.bind(this)
-    );
-  },
-
   getServices: function(homebridgeAccessory) {
     var services = [];
     var informationService = homebridgeAccessory.platform.getInformationService(
