@@ -40,7 +40,7 @@
   "prettier": {
     "bracketSpacing": false,
     "singleQuote": true,
-    "trailingComma": "all"
+    "trailingComma": "es5"
   },
   "husky": {
     "hooks": {

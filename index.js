@@ -25,7 +25,7 @@ module.exports = function(homebridge) {
   homebridge.registerPlatform(
     'homebridge-harmonyHub',
     'HarmonyHubWebSocket',
-    HarmonyPlatform,
+    HarmonyPlatform
   );
 };
 
@@ -67,7 +67,7 @@ HarmonyPlatform.prototype = {
           that.log(
             'Did not received 200 statuts, but  ' +
               response.statusCode +
-              ' instead from hub',
+              ' instead from hub'
           );
         } else if (body && body.data) {
           that.friendlyName = body.data.friendlyName;
@@ -152,11 +152,11 @@ HarmonyPlatform.prototype = {
             });
         } else {
           that.log(
-            'Error : No config retrieved from hub, check IP and connectivity',
+            'Error : No config retrieved from hub, check IP and connectivity'
           );
           callback(foundAccessories);
         }
-      },
+      }
     );
   },
   command: function(cmd, params, homebridgeAccessory) {
@@ -185,7 +185,7 @@ HarmonyPlatform.prototype = {
         for (var s = 0; s < homebridgeAccessory.services.length; s++) {
           var serviceControl = homebridgeAccessory.services[s].controlService;
           var characteristic = serviceControl.getCharacteristic(
-            Characteristic.On,
+            Characteristic.On
           );
 
           if (
@@ -207,7 +207,7 @@ HarmonyPlatform.prototype = {
           if (serviceControl.id == -1 && params.activityId == -1) {
             this.log(
               'Everything is off, turning on off Activity ' +
-                serviceControl.displayName,
+                serviceControl.displayName
             );
             characteristic.updateValue(true, undefined, 'fromSetValue');
           }
@@ -215,7 +215,7 @@ HarmonyPlatform.prototype = {
           if (serviceControl.id == -1 && params.activityId != -1) {
             this.log(
               'New activity on , turning off off Activity ' +
-                serviceControl.displayName,
+                serviceControl.displayName
             );
             characteristic.updateValue(false, undefined, 'fromSetValue');
           }
@@ -230,7 +230,7 @@ HarmonyPlatform.prototype = {
           for (var s = 0; s < homebridgeAccessory.services.length; s++) {
             var serviceControl = homebridgeAccessory.services[s].controlService;
             var characteristic = serviceControl.getCharacteristic(
-              Characteristic.On,
+              Characteristic.On
             );
             if (serviceControl.id == params.activityId) {
               charactToSet = characteristic;
@@ -247,7 +247,7 @@ HarmonyPlatform.prototype = {
             } else {
               that.log(
                 'ERROR : could not SET status, no more RETRY : ' +
-                  JSON.stringify(data),
+                  JSON.stringify(data)
               );
               charactToSet.updateValue(false, undefined, 'fromSetValue');
             }
@@ -269,12 +269,12 @@ HarmonyPlatform.prototype = {
       .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
       .setCharacteristic(
         Characteristic.Manufacturer,
-        homebridgeAccessory.manufacturer,
+        homebridgeAccessory.manufacturer
       )
       .setCharacteristic(Characteristic.Model, homebridgeAccessory.model)
       .setCharacteristic(
         Characteristic.SerialNumber,
-        homebridgeAccessory.serialNumber,
+        homebridgeAccessory.serialNumber
       );
     return informationService;
   },
@@ -282,7 +282,7 @@ HarmonyPlatform.prototype = {
   bindCharacteristicEvents: function(
     characteristic,
     service,
-    homebridgeAccessory,
+    homebridgeAccessory
   ) {
     characteristic.on(
       'set',
@@ -300,11 +300,11 @@ HarmonyPlatform.prototype = {
           homebridgeAccessory.platform.command(
             cmd,
             params,
-            homebridgeAccessory,
+            homebridgeAccessory
           );
         }
         callback();
-      }.bind(this),
+      }.bind(this)
     );
     characteristic.on(
       'get',
@@ -332,7 +332,7 @@ HarmonyPlatform.prototype = {
 
           var serviceControl = service.controlService;
           var characteristic = serviceControl.getCharacteristic(
-            Characteristic.On,
+            Characteristic.On
           );
 
           if (
@@ -353,7 +353,7 @@ HarmonyPlatform.prototype = {
                 ' - was ' +
                 characteristic.value +
                 ' set to ' +
-                characteristicIsOn,
+                characteristicIsOn
             );
 
             try {
@@ -362,7 +362,7 @@ HarmonyPlatform.prototype = {
               characteristic.updateValue(
                 characteristicIsOn,
                 undefined,
-                'fromSetValue',
+                'fromSetValue'
               );
             }
           } else if (data) {
@@ -373,7 +373,7 @@ HarmonyPlatform.prototype = {
               characteristic.updateValue(
                 characteristic.value,
                 undefined,
-                'fromSetValue',
+                'fromSetValue'
               );
             }
           } else {
@@ -384,7 +384,7 @@ HarmonyPlatform.prototype = {
               characteristic.updateValue(
                 characteristic.value,
                 undefined,
-                'fromSetValue',
+                'fromSetValue'
               );
             }
           }
@@ -397,30 +397,30 @@ HarmonyPlatform.prototype = {
             this.log('Error : ' + e);
             callback(undefined, false);
           });
-      }.bind(this),
+      }.bind(this)
     );
   },
 
   getServices: function(homebridgeAccessory) {
     var services = [];
     var informationService = homebridgeAccessory.platform.getInformationService(
-      homebridgeAccessory,
+      homebridgeAccessory
     );
     services.push(informationService);
     for (var s = 0; s < homebridgeAccessory.services.length; s++) {
       var service = homebridgeAccessory.services[s];
       for (var i = 0; i < service.characteristics.length; i++) {
         var characteristic = service.controlService.getCharacteristic(
-          service.characteristics[i],
+          service.characteristics[i]
         );
         if (characteristic == undefined)
           characteristic = service.controlService.addCharacteristic(
-            service.characteristics[i],
+            service.characteristics[i]
           );
         homebridgeAccessory.platform.bindCharacteristicEvents(
           characteristic,
           service,
-          homebridgeAccessory,
+          homebridgeAccessory
         );
       }
       services.push(service.controlService);
