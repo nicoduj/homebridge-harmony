@@ -43,6 +43,9 @@ Fields:
 
 ## Changelog
 
+- 0.0.8
+  - [UPDATE] less Hub calls for currentActivity (refreshed only if it is not older than 2secondes)
+  - [UPDATE] some code refactoring
 - 0.0.7
   - [NEW] refreshTimer option (for automation purpose)
   - [NEW] ip of hub is used as serial number of the device.

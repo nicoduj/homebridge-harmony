@@ -1,4 +1,8 @@
 DEFAULT_HUB_PORT = '8088';
+TIMEOUT_REFRESH_CURRENT_ACTIVITY = 1500;
+CURRENT_ACTIVITY_NOT_SET_VALUE = -9999;
+MAX_ATTEMPS_STATUS_UPDATE = 12;
+DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE = 2000;
 
 var Service, Characteristic, HomebridgeAPI;
 var request = require('request');
@@ -15,7 +19,8 @@ function HarmonyPlatform(log, config) {
   this.devMode = config['DEVMODE'];
   this.refreshTimer = config['refreshTimer'];
   this._msgId = 0;
-
+  this._currentActivity = -9999;
+  this._currentActivityLastUpdate = undefined;
   this._currentSetAttemps = 0;
 }
 
@@ -146,10 +151,11 @@ HarmonyPlatform.prototype = {
             if (that.refreshTimer && that.refreshTimer > 0) {
               that.log(
                 'Setting Timer for background refresh every  : ' +
-                  that.refreshTimer * 1000
-              ) + 's';
+                  that.refreshTimer +
+                  's'
+              );
               that.timerID = setInterval(
-                () => that.refreshAccessories(accessory),
+                () => that.refreshAccessory(accessory),
                 that.refreshTimer * 1000
               );
             }
@@ -172,7 +178,8 @@ HarmonyPlatform.prototype = {
       }
     );
   },
-  updateAccessory: function(characteristic, characteristicIsOn, callback) {
+
+  updateCharacteristic: function(characteristic, characteristicIsOn, callback) {
     try {
       if (callback) callback(undefined, characteristicIsOn);
       else {
@@ -182,42 +189,86 @@ HarmonyPlatform.prototype = {
       characteristic.updateValue(characteristicIsOn, undefined, undefined);
     }
   },
-  refreshAccessory: function(service, homebridgeAccessory, callback) {
-    this._msgId = this._msgId + 1;
 
-    params = {
-      verb: 'get',
-      format: 'json',
-    };
+  refreshCurrentActivity: function(callback) {
+    if (
+      this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE &&
+      this._currentActivityLastUpdate &&
+      Date.now() - this._currentActivityLastUpdate <
+        TIMEOUT_REFRESH_CURRENT_ACTIVITY
+    ) {
+      // we don't refresh since status was retrieved not so far away
+      this.log.debug(
+        'INFO : NO refresh needed since last update was on :' +
+          this._currentActivity +
+          ' and current Activity is set'
+      );
+      callback();
+    } else {
+      this.log.debug(
+        'INFO : Refresh needed since last update is too old or current Activity is not set : ' +
+          this._currentActivity
+      );
 
-    payload = {
-      hubId: this.remote_id,
-      timeout: 30,
-      hbus: {
-        cmd:
-          'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity',
-        id: this._msgId,
-        params: params,
-      },
-    };
+      this._msgId = this._msgId + 1;
 
-    this.wsp.onUnpackedMessage.addListener(data => {
-      this.wsp.removeAllListeners();
+      params = {
+        verb: 'get',
+        format: 'json',
+      };
 
-      var serviceControl = service.controlService;
-      var characteristic = serviceControl.getCharacteristic(Characteristic.On);
+      payload = {
+        hubId: this.remote_id,
+        timeout: 30,
+        hbus: {
+          cmd:
+            'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity',
+          id: this._msgId,
+          params: params,
+        },
+      };
 
-      if (
-        data &&
-        data.data &&
-        data.code &&
-        (data.code == 200 || data.code == 100)
-      ) {
-        var characteristicIsOn = false;
+      this.wsp.onUnpackedMessage.addListener(data => {
+        this.wsp.removeAllListeners();
 
-        if (data.data.result == serviceControl.id) {
-          characteristicIsOn = true;
+        if (
+          data &&
+          data.data &&
+          data.code &&
+          (data.code == 200 || data.code == 100)
+        ) {
+          this._currentActivity = data.data.result;
+          this._currentActivityLastUpdate = Date.now();
+        } else {
+          this.log.debug(
+            'WARNING : could not refresh current Activity :' + data
+              ? JSON.stringify(data)
+              : 'no data'
+          );
+          this._currentActivity = CURRENT_ACTIVITY_NOT_SET_VALUE;
         }
+        callback();
+      });
+
+      this.wsp
+        .open()
+        .then(() => this.wsp.sendPacked(payload))
+        .catch(e => {
+          this.log('Error : ' + e);
+          this._currentActivity = CURRENT_ACTIVITY_NOT_SET_VALUE;
+          callback();
+        });
+    }
+  },
+
+  refreshService: function(service, homebridgeAccessory, callback) {
+    this.refreshCurrentActivity(() => {
+      if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
+        var serviceControl = service.controlService;
+        var characteristic = serviceControl.getCharacteristic(
+          Characteristic.On
+        );
+        var characteristicIsOn = this._currentActivity == serviceControl.id;
 
         this.log.debug(
           'Got status for ' +
@@ -227,48 +278,33 @@ HarmonyPlatform.prototype = {
             ' set to ' +
             characteristicIsOn
         );
-        homebridgeAccessory.platform.updateAccessory(
+        homebridgeAccessory.platform.updateCharacteristic(
           characteristic,
           characteristicIsOn,
           callback
         );
-      } else if (data) {
-        this.log.debug(
-          'WARNING : could not get status :' + JSON.stringify(data)
-        );
-        homebridgeAccessory.platform.updateAccessory(
-          characteristic,
-          characteristic.value,
-          callback
-        );
       } else {
-        this.log('ERROR : could not set status, no data');
-        homebridgeAccessory.platform.updateAccessory(
+        this.log.debug('WARNING : no current Activity');
+        homebridgeAccessory.platform.updateCharacteristic(
           characteristic,
           characteristic.value,
           callback
         );
       }
     });
-
-    this.wsp
-      .open()
-      .then(() => this.wsp.sendPacked(payload))
-      .catch(e => {
-        this.log('Error : ' + e);
-        callback(undefined, false);
-      });
   },
-  refreshAccessories: function(homebridgeAccessory) {
+
+  refreshAccessory: function(homebridgeAccessory) {
     for (var s = 0; s < homebridgeAccessory.services.length; s++) {
       var service = homebridgeAccessory.services[s];
-      homebridgeAccessory.platform.refreshAccessory(
+      homebridgeAccessory.platform.refreshService(
         service,
         homebridgeAccessory,
         undefined
       );
     }
   },
+
   command: function(cmd, params, homebridgeAccessory) {
     this._msgId = this._msgId + 1;
     payload = {
@@ -352,7 +388,7 @@ HarmonyPlatform.prototype = {
           //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
           var that = this;
           setTimeout(function() {
-            if (that._currentSetAttemps < 10) {
+            if (that._currentSetAttemps < MAX_ATTEMPS_STATUS_UPDATE) {
               that.log.debug('RETRY to SET ON : ' + serviceControl.displayName);
               charactToSet.setValue(true, undefined, undefined);
             } else {
@@ -362,7 +398,7 @@ HarmonyPlatform.prototype = {
               );
               charactToSet.updateValue(false, undefined, undefined);
             }
-          }, 2000);
+          }, DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
         }
       } else {
         this.log('ERROR : could not SET status, no data');
@@ -374,6 +410,7 @@ HarmonyPlatform.prototype = {
       .then(() => this.wsp.sendPacked(payload))
       .catch(e => this.log('Error :' + e));
   },
+
   bindCharacteristicEvents: function(
     characteristic,
     service,
@@ -398,7 +435,7 @@ HarmonyPlatform.prototype = {
     characteristic.on(
       'get',
       function(callback) {
-        homebridgeAccessory.platform.refreshAccessory(
+        homebridgeAccessory.platform.refreshService(
           service,
           homebridgeAccessory,
           callback
@@ -406,6 +443,7 @@ HarmonyPlatform.prototype = {
       }.bind(this)
     );
   },
+
   getInformationService: function(homebridgeAccessory) {
     var informationService = new Service.AccessoryInformation();
     informationService
@@ -421,6 +459,7 @@ HarmonyPlatform.prototype = {
       );
     return informationService;
   },
+
   getServices: function(homebridgeAccessory) {
     var services = [];
     var informationService = homebridgeAccessory.platform.getInformationService(
