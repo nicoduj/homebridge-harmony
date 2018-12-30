@@ -43,8 +43,8 @@ Fields:
 
 ## Changelog
 
-- 0.0.8
-  - [UPDATE] less Hub calls for currentActivity (refreshed only if it is not older than 2secondes)
+- 0.0.8 _ still under testing not released
+  - [UPDATE] less Hub calls for currentActivity (refreshed only if it is not older than 2 secondes)
   - [UPDATE] some code refactoring
 - 0.0.7
   - [NEW] refreshTimer option (for automation purpose)
