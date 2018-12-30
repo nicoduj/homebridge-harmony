@@ -262,12 +262,11 @@ HarmonyPlatform.prototype = {
   },
 
   refreshService: function(service, homebridgeAccessory, callback) {
+    var serviceControl = service.controlService;
+    var characteristic = serviceControl.getCharacteristic(Characteristic.On);
+
     this.refreshCurrentActivity(() => {
       if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
-        var serviceControl = service.controlService;
-        var characteristic = serviceControl.getCharacteristic(
-          Characteristic.On
-        );
         var characteristicIsOn = this._currentActivity == serviceControl.id;
 
         this.log.debug(
