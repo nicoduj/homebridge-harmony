@@ -166,7 +166,7 @@ HarmonyPlatform.prototype = {
             .open()
             .then(() => that.wsp.sendPacked(payload))
             .catch(e => {
-              that.log('Error :' + e);
+              that.log('ERROR : GetConfiguration :' + e);
               callback(foundAccessories);
             });
         } else {
@@ -254,7 +254,7 @@ HarmonyPlatform.prototype = {
         .open()
         .then(() => this.wsp.sendPacked(payload))
         .catch(e => {
-          this.log('Error : ' + e);
+          this.log('ERROR : RefreshCurrentActivity : ' + e);
           this._currentActivity = CURRENT_ACTIVITY_NOT_SET_VALUE;
           callback();
         });
@@ -407,7 +407,7 @@ HarmonyPlatform.prototype = {
     this.wsp
       .open()
       .then(() => this.wsp.sendPacked(payload))
-      .catch(e => this.log('Error :' + e));
+      .catch(e => this.log('ERROR : sendCommand :' + e));
   },
 
   bindCharacteristicEvents: function(
