@@ -43,7 +43,7 @@ Fields:
 
 ## Changelog
 
-- 0.0.8 \_ still under testing not released
+- 0.0.8
   - [NEW] add skipedIfSameStateActivities config list (see fields descrption).
   - [UPDATE] less Hub calls for currentActivity (refreshed only if it is not older than 2 secondes)
   - [UPDATE] some code refactoring
