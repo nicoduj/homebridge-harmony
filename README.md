@@ -24,8 +24,8 @@
     "name": "NicoHarmonyHub2",
     "hubIP": "192.168.1.42",
     "showTurnOffActivity" : true,
-    "turnOffActivityName" : "HC Off",
-    "refreshTimer" : 30
+    "refreshTimer" : 30,
+    "skipedIfSameStateActivities" : ["PowerOff","La musique"]
   }
 ]
 ```
@@ -38,14 +38,16 @@ Fields:
 - `hubIP` is the static IP address of the hub (required). A static IP address is required.
 - `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
   - The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
-- `turnOffActivityName` customizes the name of the "switch" enabled by `showTurnOffActivity` (defaults to "PowerOff").
 - `refreshTimer` enable refresh of activities state every X seconds, for automation purpose if you need to activate something else based on a state chnage of an activity. Be aware it might make you hub smoke since the plugin will ask its status very often :) (defaults : disable).
+- `skipedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app
 
 ## Changelog
 
-- 0.0.8 _ still under testing not released
+- 0.0.8 \_ still under testing not released
+  - [NEW] add skipedIfSameStateActivities config list (see fields descrption).
   - [UPDATE] less Hub calls for currentActivity (refreshed only if it is not older than 2 secondes)
   - [UPDATE] some code refactoring
+  - [UPDATE] turnOffActivityName option removed (switch can be renamed in homekit directly)
 - 0.0.7
   - [NEW] refreshTimer option (for automation purpose)
   - [NEW] ip of hub is used as serial number of the device.
