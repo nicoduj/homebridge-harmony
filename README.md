@@ -34,7 +34,7 @@ Fields:
 
 - `platform` must be "HarmonyHubWebSocket" (required).
 - `name` is the name of the published accessory (required).
-  - Use a different name for each entry if you have multiple hubs ([source](https://github.com/KraigM/homebridge-harmonyhub/issues/149)).
+  - Use a different name for each entry if you have multiple hubs.
 - `hubIP` is the static IP address of the hub (required). A static IP address is required.
 - `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
   - The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
@@ -43,6 +43,8 @@ Fields:
 
 ## Changelog
 
+- 0.0.9
+  - [FIX] skipedIfSameStateActivities propery no more mandatory
 - 0.0.8
   - [NEW] add skipedIfSameStateActivities config list (see fields descrption).
   - [UPDATE] less Hub calls for currentActivity (refreshed only if it is not older than 2 secondes)

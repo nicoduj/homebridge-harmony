@@ -457,6 +457,7 @@ HarmonyPlatform.prototype = {
         var currentValue = characteristic.value;
         //Actitiy in skipedIfSameState
         if (
+          this.skipedIfSameStateActivities &&
           this.skipedIfSameStateActivities.includes(
             service.controlService.subtype
           )
