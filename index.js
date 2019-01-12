@@ -18,6 +18,8 @@ function HarmonyPlatform(log, config) {
   this.name = config['name'];
   this.devMode = config['DEVMODE'];
   this.refreshTimer = config['refreshTimer'];
+  this.addAllActivitiesToSkipedIfSameStateActivitiesList =
+    config['addAllActivitiesToSkipedIfSameStateActivitiesList'];
   this.skipedIfSameStateActivities = config['skipedIfSameStateActivities'];
   this._currentActivity = -9999;
   this._currentActivityLastUpdate = undefined;
@@ -25,7 +27,9 @@ function HarmonyPlatform(log, config) {
 
   this.log.debug(
     'INFO : following activites controls will be ignored if they are in the same state : ' +
-      this.skipedIfSameStateActivities
+      (this.addAllActivitiesToSkipedIfSameStateActivitiesList
+        ? 'ALL'
+        : this.skipedIfSameStateActivities)
   );
 }
 
@@ -41,21 +45,22 @@ module.exports = function(homebridge) {
 };
 
 HarmonyPlatform.prototype = {
-  setTimer: function(on) {
+  setTimer: function(homebridgeAccessory, on) {
     if (this.refreshTimer && this.refreshTimer > 0) {
-      if (on && !this.timerID) {
+      if (on && this.timerID == undefined) {
         this.log.debug(
           'Setting Timer for background refresh every  : ' +
             this.refreshTimer +
             's'
         );
         this.timerID = setInterval(
-          () => this.refreshAccessory(accessory),
+          () => this.refreshAccessory(homebridgeAccessory),
           this.refreshTimer * 1000
         );
-      } else if (!on && this.timerID) {
+      } else if (!on && this.timerID !== undefined) {
         this.log.debug('Clearing Timer');
         clearInterval(this.timerID);
+        this.timerID = undefined;
       }
     }
   },
@@ -162,20 +167,20 @@ HarmonyPlatform.prototype = {
                     services.push(service);
                   }
                 }
-                accessory = new HarmonyAccessory(services);
-                accessory.getServices = function() {
-                  return that.getServices(accessory);
+                var myHarmonyAccessory = new HarmonyAccessory(services);
+                myHarmonyAccessory.getServices = function() {
+                  return that.getServices(myHarmonyAccessory);
                 };
-                accessory.platform = that;
-                accessory.remoteAccessory = activities;
-                accessory.name = that.name;
-                accessory.model = 'Harmony';
-                accessory.manufacturer = 'Harmony';
-                accessory.serialNumber = that.hubIP;
-                foundAccessories.push(accessory);
+                myHarmonyAccessory.platform = that;
+                myHarmonyAccessory.remoteAccessory = activities;
+                myHarmonyAccessory.name = that.name;
+                myHarmonyAccessory.model = 'Harmony';
+                myHarmonyAccessory.manufacturer = 'Harmony';
+                myHarmonyAccessory.serialNumber = that.hubIP;
+                foundAccessories.push(myHarmonyAccessory);
 
                 //timer for background refresh
-                that.setTimer(true);
+                that.setTimer(myHarmonyAccessory, true);
 
                 callback(foundAccessories);
               })
@@ -322,7 +327,7 @@ HarmonyPlatform.prototype = {
 
   command: function(cmd, params, homebridgeAccessory) {
     //timer for background refresh
-    this.setTimer(false);
+    this.setTimer(homebridgeAccessory, false);
 
     payload = {
       hubId: this.remote_id,
@@ -388,7 +393,7 @@ HarmonyPlatform.prototype = {
             }
             this._currentActivity = params.activityId;
             //timer for background refresh
-            this.setTimer(true);
+            this.setTimer(homebridgeAccessory, true);
           } else if (data) {
             if (data.code == 202 || data.code == 100) {
               this._currentSetAttemps = this._currentSetAttemps + 1;
@@ -425,14 +430,14 @@ HarmonyPlatform.prototype = {
                   );
                   charactToSet.updateValue(false);
                   //timer for background refresh
-                  that.setTimer(true);
+                  that.setTimer(homebridgeAccessory, true);
                 }
               }, DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
             }
           } else {
             this.log('ERROR : could not SET status, no data');
             //timer for background refresh
-            this.setTimer(true);
+            this.setTimer(homebridgeAccessory, true);
           }
         })
       )
@@ -440,7 +445,7 @@ HarmonyPlatform.prototype = {
       .catch(e => {
         this.log('ERROR : sendCommand :' + e);
         //timer for background refresh
-        this.setTimer(true);
+        this.setTimer(homebridgeAccessory, true);
       });
   },
 
@@ -457,10 +462,11 @@ HarmonyPlatform.prototype = {
         var currentValue = characteristic.value;
         //Actitiy in skipedIfSameState
         if (
-          this.skipedIfSameStateActivities &&
-          this.skipedIfSameStateActivities.includes(
-            service.controlService.subtype
-          )
+          this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
+          (this.skipedIfSameStateActivities &&
+            this.skipedIfSameStateActivities.includes(
+              service.controlService.subtype
+            ))
         ) {
           this.log.debug(
             'INFO : SET on an activty in skipedIfsameState list ' +
@@ -481,7 +487,7 @@ HarmonyPlatform.prototype = {
           }
           //ELSE, we do the command only if state is different.
           else {
-            doCommand = currentValue != value;
+            doCommand = currentValue !== value;
           }
           if (doCommand) {
             this.log.debug(
