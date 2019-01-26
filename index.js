@@ -368,44 +368,44 @@ HarmonyPlatform.prototype = {
           ) {
             this._currentSetAttemps = 0;
 
-            for (var s = 0; s < homebridgeAccessory.services.length; s++) {
-              var serviceControl =
-                homebridgeAccessory.services[s].controlService;
-              var characteristic = serviceControl.getCharacteristic(
+            var serviceControl = homebridgeAccessory.services[0].controlService;
+            this.log(serviceControl.displayName + ' activated');
+
+            for (var s = 0; s < this._foundAccessories.length; s++) {
+              var otherServiceControl = this._foundAccessories[s].services[0]
+                .controlService;
+              var characteristic = otherServiceControl.getCharacteristic(
                 Characteristic.On
               );
 
-              if (serviceControl.id == params.activityId) {
-                this.log(serviceControl.displayName + ' activated');
-              }
+              if (otherServiceControl.id != serviceControl.id) {
+                //we disable previous activiies that were on
+                if (otherServiceControl.id != -1 && characteristic.value) {
+                  this.log.debug(
+                    'Switching off ' + otherServiceControl.displayName
+                  );
+                  characteristic.updateValue(false);
+                }
 
-              //we disable previous activiies that were on
-              if (
-                serviceControl.id != -1 &&
-                serviceControl.id != params.activityId &&
-                characteristic.value
-              ) {
-                this.log.debug('Switching off ' + serviceControl.displayName);
-                characteristic.updateValue(false);
-              }
+                //we turn off Off Activity if another activity was launched
+                if (otherServiceControl.id == -1 && params.activityId != -1) {
+                  this.log.debug(
+                    'New activity on , turning off off Activity ' +
+                      otherServiceControl.displayName
+                  );
+                  characteristic.updateValue(false);
+                }
 
-              //we turn off Off Activity if another activity was launched
-              if (serviceControl.id == -1 && params.activityId != -1) {
-                this.log.debug(
-                  'New activity on , turning off off Activity ' +
-                    serviceControl.displayName
-                );
-                characteristic.updateValue(false);
-              }
-
-              //we turn on Off Activity if we turned off an activity (or turn on the general switch)
-              if (serviceControl.id == -1 && params.activityId == -1) {
-                this.log.debug(
-                  'Turning on off Activity ' + serviceControl.displayName
-                );
-                characteristic.updateValue(true);
+                //we turn on Off Activity if we turned off an activity (or turn on the general switch)
+                if (otherServiceControl.id == -1 && params.activityId == -1) {
+                  this.log.debug(
+                    'Turning on off Activity ' + serviceControl.displayName
+                  );
+                  characteristic.updateValue(true);
+                }
               }
             }
+
             this._currentActivity = params.activityId;
             //timer for background refresh
             this.setTimer(true);
@@ -417,18 +417,11 @@ HarmonyPlatform.prototype = {
                 'WARNING : could not SET status : ' + JSON.stringify(data)
               );
 
-              var charactToSet;
-              for (var s = 0; s < homebridgeAccessory.services.length; s++) {
-                var serviceControl =
-                  homebridgeAccessory.services[s].controlService;
-                var characteristic = serviceControl.getCharacteristic(
-                  Characteristic.On
-                );
-                if (serviceControl.id == params.activityId) {
-                  charactToSet = characteristic;
-                  break;
-                }
-              }
+              var serviceControl =
+                homebridgeAccessory.services[0].controlService;
+              var charactToSet = serviceControl.getCharacteristic(
+                Characteristic.On
+              );
 
               //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
               var that = this;

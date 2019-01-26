@@ -44,6 +44,9 @@ Fields:
 
 ## Changelog
 
+- 0.1.1
+  - [FIX] crash after launching an activity
+  - [FIX] other activities not updated when activating one
 - 0.1.0
   - [NEW] each activity is published as an accessory - You might need to empty your cache folder .
 - 0.0.9
