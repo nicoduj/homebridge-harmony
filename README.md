@@ -44,6 +44,8 @@ Fields:
 
 ## Changelog
 
+- 0.1.2
+  - [FIX] power off activity was able to be switched off when on.
 - 0.1.1
   - [FIX] crash after launching an activity
   - [FIX] other activities not updated when activating one
