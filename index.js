@@ -385,31 +385,33 @@ HarmonyPlatform.prototype = {
                 Characteristic.On
               );
 
-              if (otherServiceControl.id != serviceControl.id) {
-                //we disable previous activiies that were on
-                if (otherServiceControl.id != -1 && characteristic.value) {
-                  this.log.debug(
-                    'Switching off ' + otherServiceControl.displayName
-                  );
-                  characteristic.updateValue(false);
-                }
+              //we disable previous activiies that were on
+              if (
+                otherServiceControl.id != -1 &&
+                otherServiceControl.id != params.activityId &&
+                characteristic.value
+              ) {
+                this.log.debug(
+                  'Switching off ' + otherServiceControl.displayName
+                );
+                characteristic.updateValue(false);
+              }
 
-                //we turn off Off Activity if another activity was launched
-                if (otherServiceControl.id == -1 && params.activityId != -1) {
-                  this.log.debug(
-                    'New activity on , turning off off Activity ' +
-                      otherServiceControl.displayName
-                  );
-                  characteristic.updateValue(false);
-                }
+              //we turn off Off Activity if another activity was launched
+              if (otherServiceControl.id == -1 && params.activityId != -1) {
+                this.log.debug(
+                  'New activity on , turning off off Activity ' +
+                    otherServiceControl.displayName
+                );
+                characteristic.updateValue(false);
+              }
 
-                //we turn on Off Activity if we turned off an activity (or turn on the general switch)
-                if (otherServiceControl.id == -1 && params.activityId == -1) {
-                  this.log.debug(
-                    'Turning on off Activity ' + serviceControl.displayName
-                  );
-                  characteristic.updateValue(true);
-                }
+              //we turn on Off Activity if we turned off an activity (or turn on the general switch)
+              if (otherServiceControl.id == -1 && params.activityId == -1) {
+                this.log.debug(
+                  'Turning on off Activity ' + serviceControl.displayName
+                );
+                characteristic.updateValue(true);
               }
             }
 
