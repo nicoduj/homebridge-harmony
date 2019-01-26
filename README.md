@@ -44,6 +44,8 @@ Fields:
 
 ## Changelog
 
+- 0.1.0
+  - [NEW] each activity is published as an accessory - You might need to empty your cache folder .
 - 0.0.9
   - [NEW] option to add automatically all activities to skipedIfSameStateActivities
   - [FIX] skipedIfSameStateActivities propery no more mandatory
