@@ -26,6 +26,13 @@ function HarmonyPlatform(log, config, api) {
   this._currentSetAttemps = 0;
   this._foundAccessories = [];
 
+  if (
+    this.refreshTimer &&
+    this.refreshTimer > 0 &&
+    (this.refreshTimer < 15 || this.refreshTimer > 600)
+  )
+    this.refreshTimer = 300;
+
   this.log.debug(
     'INFO : following activites controls will be ignored if they are in the same state : ' +
       (this.addAllActivitiesToSkipedIfSameStateActivitiesList

@@ -38,7 +38,7 @@ Fields:
 - `hubIP` is the static IP address of the hub (required). A static IP address is required.
 - `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
   - The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
-- `refreshTimer` enable refresh of activities state every X seconds, for automation purpose if you need to activate something else based on a state chnage of an activity. Be aware it might make you hub smoke since the plugin will ask its status very often :) (defaults : disable).
+- `refreshTimer` enable refresh of activities state every X seconds, for automation purpose if you need to activate something else based on a state chnage of an activity. Be aware it might make you hub smoke since the plugin will ask its status very often :) (defaults : disable, accepted range : 15-600s).
 - `skipedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app
 - `addAllActivitiesToSkipedIfSameStateActivitiesList` option to add all activities automatically to skipedIfSameStateActivities behavior. (defaults : false)
 
