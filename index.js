@@ -385,7 +385,7 @@ HarmonyPlatform.prototype = {
                 Characteristic.On
               );
 
-              //we disable previous activiies that were on
+              //we disable previous activities that were on
               if (
                 otherServiceControl.id != -1 &&
                 otherServiceControl.id != params.activityId &&
