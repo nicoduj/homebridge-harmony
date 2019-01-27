@@ -5,7 +5,7 @@ MAX_ATTEMPS_STATUS_UPDATE = 12;
 DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE = 2000;
 DELAY_TO_UPDATE_STATUS = 800;
 
-var Service, Characteristic, HomebridgeAPI;
+var Service, Characteristic;
 var request = require('request');
 const url = require('url');
 const W3CWebSocket = require('websocket').w3cwebsocket;
@@ -94,16 +94,16 @@ HarmonyPlatform.prototype = {
 
     var that = this;
 
-    var headers = {
+    let headers = {
       Origin: 'http://localhost.nebula.myharmony.com',
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'Accept-Charset': 'utf-8',
     };
 
-    var hubUrl = `http://${this.hubIP}:${DEFAULT_HUB_PORT}/`;
+    let hubUrl = `http://${this.hubIP}:${DEFAULT_HUB_PORT}/`;
 
-    var jsonBody = {
+    let jsonBody = {
       'id ': 1,
       cmd: 'connect.discoveryinfo?get',
       params: {},
@@ -170,19 +170,19 @@ HarmonyPlatform.prototype = {
                 that.wsp.removeAllListeners();
 
                 that.log.debug('Hub config : ' + JSON.stringify(data));
-                var activities = data.data.activity;
+                let activities = data.data.activity;
 
-                for (var i = 0, len = activities.length; i < len; i++) {
+                for (let i = 0, len = activities.length; i < len; i++) {
                   if (activities[i].id != -1 || that.showTurnOffActivity) {
                     let services = [];
 
-                    var switchName = activities[i].label;
+                    let switchName = activities[i].label;
 
                     if (that.devMode) {
                       switchName = 'DEV' + switchName;
                     }
                     that.log('Discovered Activity : ' + switchName);
-                    var service = {
+                    let service = {
                       controlService: new Service.Switch(switchName),
                       characteristics: [Characteristic.On],
                     };
@@ -311,7 +311,7 @@ HarmonyPlatform.prototype = {
 
     this.refreshCurrentActivity(() => {
       if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
-        var characteristicIsOn = this._currentActivity == serviceControl.id;
+        let characteristicIsOn = this._currentActivity == serviceControl.id;
 
         this.log.debug(
           'Got status for ' +
@@ -338,10 +338,10 @@ HarmonyPlatform.prototype = {
   },
 
   refreshAccessory: function() {
-    for (var a = 0; a < this._foundAccessories.length; a++) {
-      var myHarmonyAccessory = this._foundAccessories[a];
-      for (var s = 0; s < myHarmonyAccessory.services.length; s++) {
-        var service = myHarmonyAccessory.services[s];
+    for (let a = 0; a < this._foundAccessories.length; a++) {
+      let myHarmonyAccessory = this._foundAccessories[a];
+      for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
+        let service = myHarmonyAccessory.services[s];
         this.refreshService(service, myHarmonyAccessory, undefined);
       }
     }
@@ -375,13 +375,13 @@ HarmonyPlatform.prototype = {
           ) {
             this._currentSetAttemps = 0;
 
-            var serviceControl = homebridgeAccessory.services[0].controlService;
+            let serviceControl = homebridgeAccessory.services[0].controlService;
             this.log(serviceControl.displayName + ' activated');
 
-            for (var s = 0; s < this._foundAccessories.length; s++) {
-              var otherServiceControl = this._foundAccessories[s].services[0]
+            for (let s = 0; s < this._foundAccessories.length; s++) {
+              let otherServiceControl = this._foundAccessories[s].services[0]
                 .controlService;
-              var characteristic = otherServiceControl.getCharacteristic(
+              let characteristic = otherServiceControl.getCharacteristic(
                 Characteristic.On
               );
 
@@ -474,9 +474,9 @@ HarmonyPlatform.prototype = {
     characteristic.on(
       'set',
       function(value, callback, context) {
-        var doCommand = true;
-        var commandToSend = value ? service.controlService.id : '-1';
-        var currentValue = characteristic.value;
+        let doCommand = true;
+        let commandToSend = value ? service.controlService.id : '-1';
+        let currentValue = characteristic.value;
         //Actitiy in skipedIfSameState
         if (
           this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
@@ -564,7 +564,7 @@ HarmonyPlatform.prototype = {
   },
 
   getInformationService: function(homebridgeAccessory) {
-    var informationService = new Service.AccessoryInformation();
+    let informationService = new Service.AccessoryInformation();
     informationService
       .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
       .setCharacteristic(
@@ -580,15 +580,15 @@ HarmonyPlatform.prototype = {
   },
 
   getServices: function(homebridgeAccessory) {
-    var services = [];
-    var informationService = homebridgeAccessory.platform.getInformationService(
+    let services = [];
+    let informationService = homebridgeAccessory.platform.getInformationService(
       homebridgeAccessory
     );
     services.push(informationService);
-    for (var s = 0; s < homebridgeAccessory.services.length; s++) {
-      var service = homebridgeAccessory.services[s];
-      for (var i = 0; i < service.characteristics.length; i++) {
-        var characteristic = service.controlService.getCharacteristic(
+    for (let s = 0; s < homebridgeAccessory.services.length; s++) {
+      let service = homebridgeAccessory.services[s];
+      for (let i = 0; i < service.characteristics.length; i++) {
+        let characteristic = service.controlService.getCharacteristic(
           service.characteristics[i]
         );
         if (characteristic == undefined)
