@@ -176,7 +176,7 @@ HarmonyPlatform.prototype = {
                   if (activities[i].id != -1 || that.showTurnOffActivity) {
                     let services = [];
 
-                    let switchName = activities[i].label;
+                    let switchName = this.name + '-' + activities[i].label;
 
                     if (that.devMode) {
                       switchName = 'DEV' + switchName;
