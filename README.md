@@ -46,6 +46,8 @@ Fields:
 
 ## Changelog
 
+- 0.1.5
+  - [FIX] default value for publishActivitiesAsIndividualAccessories (true)
 - 0.1.4
   - [NEW] option for using old way with one accessory for all activities #29
   - [FIX] add some delay before launching background refresh after successfull activity command since if refreshTimer is low the current activity get back to the wrong one

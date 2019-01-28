@@ -25,6 +25,9 @@ function HarmonyPlatform(log, config, api) {
   this.publishActivitiesAsIndividualAccessories =
     config['publishActivitiesAsIndividualAccessories'];
 
+  if (this.publishActivitiesAsIndividualAccessories == undefined)
+    this.publishActivitiesAsIndividualAccessories = true;
+
   this._currentActivity = -9999;
   this._currentActivityLastUpdate = undefined;
   this._currentSetAttemps = 0;
@@ -195,6 +198,7 @@ HarmonyPlatform.prototype = {
                     services.push(service);
 
                     if (that.publishActivitiesAsIndividualAccessories) {
+                      that.log('Adding Accessory : ' + switchName);
                       let myHarmonyAccessory = new HarmonyAccessory(services);
                       myHarmonyAccessory.getServices = function() {
                         return that.getServices(myHarmonyAccessory);
@@ -211,6 +215,7 @@ HarmonyPlatform.prototype = {
                 }
 
                 if (!that.publishActivitiesAsIndividualAccessories) {
+                  that.log('Adding Accessory : ' + that.name);
                   let myHarmonyAccessory = new HarmonyAccessory(services);
                   myHarmonyAccessory.getServices = function() {
                     return that.getServices(myHarmonyAccessory);
