@@ -29,7 +29,7 @@ function HarmonyPlatform(log, config, api) {
   if (
     this.refreshTimer &&
     this.refreshTimer > 0 &&
-    (this.refreshTimer < 15 || this.refreshTimer > 600)
+    (this.refreshTimer < 5 || this.refreshTimer > 600)
   )
     this.refreshTimer = 300;
 
@@ -211,13 +211,13 @@ HarmonyPlatform.prototype = {
             .then(() => that.wsp.sendPacked(payload))
             .catch(e => {
               that.log('ERROR : GetConfiguration :' + e);
-              callback(foundAccessories);
+              callback(that._foundAccessories);
             });
         } else {
           that.log(
             'Error : No config retrieved from hub, check IP and connectivity'
           );
-          callback(foundAccessories);
+          callback(that._foundAccessories);
         }
       }
     );
@@ -437,9 +437,9 @@ HarmonyPlatform.prototype = {
               setTimeout(function() {
                 if (that._currentSetAttemps < MAX_ATTEMPS_STATUS_UPDATE) {
                   that.log.debug(
-                    'RETRY to SET ON : ' + serviceControl.displayName
+                    'RETRY to send command on : ' + serviceControl.displayName
                   );
-                  charactToSet.setValue(true, callback, undefined);
+                  that.command(cmd, params, homebridgeAccessory);
                 } else {
                   that.log(
                     'ERROR : could not SET status, no more RETRY : ' +
