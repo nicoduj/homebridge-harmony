@@ -25,7 +25,8 @@
     "hubIP": "192.168.1.42",
     "showTurnOffActivity" : true,
     "refreshTimer" : 10,
-    "skipedIfSameStateActivities" : ["PowerOff","La musique"]
+    "skipedIfSameStateActivities" : ["PowerOff","La musique"],
+    "publishActivitiesAsIndividualAccessories" : true
   }
 ]
 ```
@@ -41,9 +42,13 @@ Fields:
 - `refreshTimer` enable refresh of activities state every X seconds, for automation purpose if you need to activate something else based on a state chnage of an activity. Be aware it might make you hub smoke since the plugin will ask its status very often :) (defaults : disable, accepted range : 5-600s).
 - `skipedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app
 - `addAllActivitiesToSkipedIfSameStateActivitiesList` option to add all activities automatically to skipedIfSameStateActivities behavior. (defaults : false)
+- `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
 
 ## Changelog
 
+- 0.1.4
+  - [NEW] option for using old way with one accessory for all activities #29
+  - [FIX] add some delay before launching background refresh after successfull activity command since if refreshTimer is low the current activity get back to the wrong one
 - 0.1.3
   - [FIX] fixing error in case of operation in progress (callback undefined in on_Timeout) #32
   - [FIX] fixing error in case of multiple hubs #28

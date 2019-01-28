@@ -4,6 +4,7 @@ CURRENT_ACTIVITY_NOT_SET_VALUE = -9999;
 MAX_ATTEMPS_STATUS_UPDATE = 12;
 DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE = 2000;
 DELAY_TO_UPDATE_STATUS = 800;
+DELAY_TO_RELAUNCH_TIMER = 8000;
 
 var Service, Characteristic;
 var request = require('request');
@@ -21,6 +22,9 @@ function HarmonyPlatform(log, config, api) {
   this.addAllActivitiesToSkipedIfSameStateActivitiesList =
     config['addAllActivitiesToSkipedIfSameStateActivitiesList'];
   this.skipedIfSameStateActivities = config['skipedIfSameStateActivities'];
+  this.publishActivitiesAsIndividualAccessories =
+    config['publishActivitiesAsIndividualAccessories'];
+
   this._currentActivity = -9999;
   this._currentActivityLastUpdate = undefined;
   this._currentSetAttemps = 0;
@@ -172,10 +176,10 @@ HarmonyPlatform.prototype = {
                 that.log.debug('Hub config : ' + JSON.stringify(data));
                 let activities = data.data.activity;
 
+                let services = [];
+
                 for (let i = 0, len = activities.length; i < len; i++) {
                   if (activities[i].id != -1 || that.showTurnOffActivity) {
-                    let services = [];
-
                     let switchName = that.name + '-' + activities[i].label;
 
                     if (that.devMode) {
@@ -190,18 +194,35 @@ HarmonyPlatform.prototype = {
                     service.controlService.id = activities[i].id;
                     services.push(service);
 
-                    let myHarmonyAccessory = new HarmonyAccessory(services);
-                    myHarmonyAccessory.getServices = function() {
-                      return that.getServices(myHarmonyAccessory);
-                    };
-                    myHarmonyAccessory.platform = that;
-                    myHarmonyAccessory.name = switchName;
-                    myHarmonyAccessory.model = that.name;
-                    myHarmonyAccessory.manufacturer = 'Harmony';
-                    myHarmonyAccessory.serialNumber = that.hubIP;
-                    that._foundAccessories.push(myHarmonyAccessory);
+                    if (that.publishActivitiesAsIndividualAccessories) {
+                      let myHarmonyAccessory = new HarmonyAccessory(services);
+                      myHarmonyAccessory.getServices = function() {
+                        return that.getServices(myHarmonyAccessory);
+                      };
+                      myHarmonyAccessory.platform = that;
+                      myHarmonyAccessory.name = switchName;
+                      myHarmonyAccessory.model = that.name;
+                      myHarmonyAccessory.manufacturer = 'Harmony';
+                      myHarmonyAccessory.serialNumber = that.hubIP;
+                      that._foundAccessories.push(myHarmonyAccessory);
+                      services = [];
+                    }
                   }
                 }
+
+                if (!that.publishActivitiesAsIndividualAccessories) {
+                  let myHarmonyAccessory = new HarmonyAccessory(services);
+                  myHarmonyAccessory.getServices = function() {
+                    return that.getServices(myHarmonyAccessory);
+                  };
+                  myHarmonyAccessory.platform = that;
+                  myHarmonyAccessory.name = that.name;
+                  myHarmonyAccessory.model = that.name;
+                  myHarmonyAccessory.manufacturer = 'Harmony';
+                  myHarmonyAccessory.serialNumber = that.hubIP;
+                  that._foundAccessories.push(myHarmonyAccessory);
+                }
+
                 //timer for background refresh
                 that.setTimer(true);
 
@@ -366,6 +387,20 @@ HarmonyPlatform.prototype = {
       .then(() =>
         this.wsp.onUnpackedMessage.addListener(data => {
           this.wsp.removeAllListeners();
+
+          var serviceControl;
+
+          for (let a = 0; a < homebridgeAccessory.services.length; a++) {
+            if (
+              homebridgeAccessory.services[a].controlService.id ==
+              params.activityId
+            ) {
+              serviceControl = homebridgeAccessory.services[a].controlService;
+              this.log(serviceControl.displayName + ' activated');
+              break;
+            }
+          }
+
           if (
             data &&
             data.code &&
@@ -375,49 +410,54 @@ HarmonyPlatform.prototype = {
           ) {
             this._currentSetAttemps = 0;
 
-            let serviceControl = homebridgeAccessory.services[0].controlService;
-            this.log(serviceControl.displayName + ' activated');
+            for (let a = 0; a < this._foundAccessories.length; a++) {
+              let foundHarmonyAccessory = this._foundAccessories[a];
+              for (let s = 0; s < foundHarmonyAccessory.services.length; s++) {
+                let otherServiceControl =
+                  foundHarmonyAccessory.services[s].controlService;
 
-            for (let s = 0; s < this._foundAccessories.length; s++) {
-              let otherServiceControl = this._foundAccessories[s].services[0]
-                .controlService;
-              let characteristic = otherServiceControl.getCharacteristic(
-                Characteristic.On
-              );
-
-              //we disable previous activities that were on
-              if (
-                otherServiceControl.id != -1 &&
-                otherServiceControl.id != params.activityId &&
-                characteristic.value
-              ) {
-                this.log.debug(
-                  'Switching off ' + otherServiceControl.displayName
+                let characteristic = otherServiceControl.getCharacteristic(
+                  Characteristic.On
                 );
-                characteristic.updateValue(false);
-              }
 
-              //we turn off Off Activity if another activity was launched
-              if (otherServiceControl.id == -1 && params.activityId != -1) {
-                this.log.debug(
-                  'New activity on , turning off off Activity ' +
-                    otherServiceControl.displayName
-                );
-                characteristic.updateValue(false);
-              }
+                //we disable previous activities that were on
+                if (
+                  otherServiceControl.id != -1 &&
+                  otherServiceControl.id != params.activityId &&
+                  characteristic.value
+                ) {
+                  this.log.debug(
+                    'Switching off ' + otherServiceControl.displayName
+                  );
+                  characteristic.updateValue(false);
+                }
 
-              //we turn on Off Activity if we turned off an activity (or turn on the general switch)
-              if (otherServiceControl.id == -1 && params.activityId == -1) {
-                this.log.debug(
-                  'Turning on off Activity ' + serviceControl.displayName
-                );
-                characteristic.updateValue(true);
+                //we turn off Off Activity if another activity was launched
+                if (otherServiceControl.id == -1 && params.activityId != -1) {
+                  this.log.debug(
+                    'New activity on , turning off off Activity ' +
+                      otherServiceControl.displayName
+                  );
+                  characteristic.updateValue(false);
+                }
+
+                //we turn on Off Activity if we turned off an activity (or turn on the general switch)
+                if (otherServiceControl.id == -1 && params.activityId == -1) {
+                  this.log.debug(
+                    'Turning on off Activity ' + serviceControl.displayName
+                  );
+                  characteristic.updateValue(true);
+                }
               }
             }
 
             this._currentActivity = params.activityId;
-            //timer for background refresh
-            this.setTimer(true);
+            //timer for background refresh - we delay it since activity can take some time to get up
+
+            var that = this;
+            setTimeout(function() {
+              that.setTimer(true);
+            }, DELAY_TO_RELAUNCH_TIMER);
           } else if (data) {
             if (data.code == 202 || data.code == 100) {
               this._currentSetAttemps = this._currentSetAttemps + 1;
@@ -426,8 +466,6 @@ HarmonyPlatform.prototype = {
                 'WARNING : could not SET status : ' + JSON.stringify(data)
               );
 
-              var serviceControl =
-                homebridgeAccessory.services[0].controlService;
               var charactToSet = serviceControl.getCharacteristic(
                 Characteristic.On
               );
