@@ -46,6 +46,8 @@ Fields:
 
 ## Changelog
 
+- 0.1.6
+  - [FIX] Better default naming #33 . You might loose your renaming / room / inclusion in automation :(
 - 0.1.5
   - [FIX] default value for publishActivitiesAsIndividualAccessories (true)
 - 0.1.4

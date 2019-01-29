@@ -183,11 +183,13 @@ HarmonyPlatform.prototype = {
 
                 for (let i = 0, len = activities.length; i < len; i++) {
                   if (activities[i].id != -1 || that.showTurnOffActivity) {
-                    let switchName = that.name + '-' + activities[i].label;
+                    let switchName = activities[i].label;
+                    let accessoryName = that.name + '-' + activities[i].label;
 
                     if (that.devMode) {
                       switchName = 'DEV' + switchName;
                     }
+
                     that.log('Discovered Activity : ' + switchName);
                     let service = {
                       controlService: new Service.Switch(switchName),
@@ -198,13 +200,13 @@ HarmonyPlatform.prototype = {
                     services.push(service);
 
                     if (that.publishActivitiesAsIndividualAccessories) {
-                      that.log('Adding Accessory : ' + switchName);
+                      that.log('Adding Accessory : ' + accessoryName);
                       let myHarmonyAccessory = new HarmonyAccessory(services);
                       myHarmonyAccessory.getServices = function() {
                         return that.getServices(myHarmonyAccessory);
                       };
                       myHarmonyAccessory.platform = that;
-                      myHarmonyAccessory.name = switchName;
+                      myHarmonyAccessory.name = accessoryName;
                       myHarmonyAccessory.model = that.name;
                       myHarmonyAccessory.manufacturer = 'Harmony';
                       myHarmonyAccessory.serialNumber = that.hubIP;
