@@ -242,8 +242,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
                         Characteristic.CurrentVisibilityState,
                       ],
                     };
-                    inputSourceService.controlService.id =
-                      'A' + activities[i].id;
+                    inputSourceService.controlService.id = activities[i].id;
                     inputSourceService.activityName = inputName;
                     inputSourceService.activityId = activities[i].id;
                     inputSourceService.controlService.subtype =
@@ -374,10 +373,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   refreshAccessory: function() {
     this.refreshCharacteristic(
-      this.mainService.getCharacteristic(characteristic.Active)
+      this.mainService.getCharacteristic(characteristic.Active),
+      undefined
     );
     this.refreshCharacteristic(
-      this.mainService.getCharacteristic(characteristic.ActiveIdentifier)
+      this.mainService.getCharacteristic(characteristic.ActiveIdentifier),
+      undefined
     );
   },
 
@@ -406,6 +407,71 @@ HarmonyPlatformAsTVPlatform.prototype = {
         }
       }
     });
+  },
+
+  sendInputCommand: function(homebridgeAccessory, value, callback) {
+    let doCommand = true;
+    let commandToSend = value;
+    //Actitiy in skipedIfSameState
+
+    let inputName = '';
+    for (let i = 0, len = this.inputServices.length; i < len; i++) {
+      if (this.inputServices[i].activityId == commandToSend) {
+        inputName = this.inputServices[i].activityName;
+        break;
+      }
+    }
+
+    if (
+      this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
+      (this.skipedIfSameStateActivities &&
+        this.skipedIfSameStateActivities.includes(inputName))
+    ) {
+      this.log.debug(
+        'INFO : SET on an activty in skipedIfsameState list ' + inputName
+      );
+
+      //GLOBAL OFF SWITCH : do command only if we are not off
+      if (commandToSend == -1) {
+        doCommand =
+          this._currentActivity != -1 &&
+          this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE;
+      }
+      //ELSE, we do the command only if state is different.
+      else {
+        doCommand = this._currentActivity !== value;
+      }
+      if (doCommand) {
+        this.log.debug('INFO : Activty ' + inputName + ' will be activated ');
+      } else {
+        this.log.debug(
+          'INFO : Activty ' + inputName + ' will not be activated '
+        );
+      }
+    } else {
+      this.log.debug(
+        'INFO : SET on an activty not in skipedIfameState list ' + inputName
+      );
+    }
+
+    if (doCommand) {
+      params = {
+        async: 'true',
+        timestamp: 0,
+        args: {
+          rule: 'start',
+        },
+        activityId: commandToSend,
+      };
+      cmd = 'harmony.activityengine?runactivity';
+      homebridgeAccessory.platform.command(cmd, params, homebridgeAccessory);
+      callback();
+    } else {
+      callback();
+      setTimeout(function() {
+        this.refreshAccessory();
+      }, DELAY_TO_UPDATE_STATUS);
+    }
   },
 
   command: function(cmd, params, homebridgeAccessory) {
@@ -602,71 +668,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic instanceof Characteristic.CurrentVisibilityState
     ) {
       characteristic.updateValue(Characteristic.CurrentVisibilityState.SHOWN);
-    }
-  },
-
-  sendInputCommand: function(homebridgeAccessory, value, callback) {
-    let doCommand = true;
-    let commandToSend = value;
-    //Actitiy in skipedIfSameState
-
-    let inputName = '';
-    for (let i = 0, len = this.inputServices.length; i < len; i++) {
-      if (this.inputServices[i].activityId == commandToSend) {
-        inputName = this.inputServices[i].activityName;
-        break;
-      }
-    }
-
-    if (
-      this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
-      (this.skipedIfSameStateActivities &&
-        this.skipedIfSameStateActivities.includes(inputName))
-    ) {
-      this.log.debug(
-        'INFO : SET on an activty in skipedIfsameState list ' + inputName
-      );
-
-      //GLOBAL OFF SWITCH : do command only if we are not off
-      if (commandToSend == -1) {
-        doCommand =
-          this._currentActivity != -1 &&
-          this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE;
-      }
-      //ELSE, we do the command only if state is different.
-      else {
-        doCommand = this._currentActivity !== value;
-      }
-      if (doCommand) {
-        this.log.debug('INFO : Activty ' + inputName + ' will be activated ');
-      } else {
-        this.log.debug(
-          'INFO : Activty ' + inputName + ' will not be activated '
-        );
-      }
-    } else {
-      this.log.debug(
-        'INFO : SET on an activty not in skipedIfameState list ' + inputName
-      );
-    }
-
-    if (doCommand) {
-      params = {
-        async: 'true',
-        timestamp: 0,
-        args: {
-          rule: 'start',
-        },
-        activityId: commandToSend,
-      };
-      cmd = 'harmony.activityengine?runactivity';
-      homebridgeAccessory.platform.command(cmd, params, homebridgeAccessory);
-      callback();
-    } else {
-      callback();
-      setTimeout(function() {
-        this.refreshAccessory();
-      }, DELAY_TO_UPDATE_STATUS);
     }
   },
 
