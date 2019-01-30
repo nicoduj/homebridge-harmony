@@ -175,7 +175,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 let services = [];
 
                 that.log('Creating Main TV Service');
-                let mainService = {
+                that.mainService = {
                   controlService: new Service.Television(
                     that.name,
                     'tvService'
@@ -185,9 +185,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
                     Characteristic.ActiveIdentifier,
                     Characteristic.ConfiguredName,
                     Characteristic.SleepDiscoveryMode,
+                    Characteristic.RemoteKey,
                   ],
                 };
-                mainService.controlService.subtype = that.name + ' TV';
+                that.mainService.controlService.subtype = that.name + ' TV';
+
+                that.inputServices = [];
 
                 for (let i = 0, len = activities.length; i < len; i++) {
                   if (activities[i].id != -1) {
@@ -197,30 +200,33 @@ HarmonyPlatformAsTVPlatform.prototype = {
                     }
 
                     if (this.mainActivity == activities[i].label) {
-                      that.mainActivityId = inputName;
-                      mainService.controlService.id = 'M' + activities[i].id;
-                      services.push(mainService);
+                      that.mainActivityId = activities[i].id;
+                      that.mainService.activityName = inputName;
+                      that.mainService.activityId = activities[i].id;
+                      that.mainService.controlService.id =
+                        'M' + activities[i].id;
+                      services.push(that.mainService);
 
-                      let tvSpeakerService = {
+                      that.tvSpeakerService = {
                         controlService: new Service.TelevisionSpeaker(
                           that.name + ' Volume',
                           'TVSpeaker'
                         ),
                         characteristics: [
-                          Characteristic.Active,
+                          Characteristic.Mute,
                           Characteristic.VolumeControlType,
+                          Characteristic.VolumeSelector,
                           Characteristic.ConfiguredName,
-                          Characteristic.SleepDiscoveryMode,
                         ],
                       };
-                      tvSpeakerService.controlService.id =
+                      that.tvSpeakerService.controlService.id =
                         'V' + activities[i].id;
-                      tvSpeakerService.controlService.subtype =
+                      that.tvSpeakerService.controlService.subtype =
                         that.name + ' Volume';
-                      mainService.controlService.addLinkedService(
-                        tvSpeakerService
+                      that.mainService.controlService.addLinkedService(
+                        that.tvSpeakerService
                       );
-                      services.push(tvSpeakerService);
+                      services.push(that.tvSpeakerService);
                     }
 
                     let inputSourceService = {
@@ -229,6 +235,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
                         'Input'
                       ),
                       characteristics: [
+                        Characteristic.Identifier,
                         Characteristic.ConfiguredName,
                         Characteristic.InputSourceType,
                         Characteristic.IsConfigured,
@@ -237,15 +244,18 @@ HarmonyPlatformAsTVPlatform.prototype = {
                     };
                     inputSourceService.controlService.id =
                       'A' + activities[i].id;
+                    inputSourceService.activityName = inputName;
+                    inputSourceService.activityId = activities[i].id;
                     inputSourceService.controlService.subtype =
                       inputName + ' Activity';
-                    mainService.controlService.addLinkedService(
+                    that.mainService.controlService.addLinkedService(
                       inputSourceService
                     );
                     services.push(inputSourceService);
+                    that.inputServices.push(inputSourceService);
                   }
                 }
-                services.push(mainService);
+                services.push(that.mainService);
 
                 that.log('Adding Accessory : ' + that.name);
                 let myHarmonyAccessory = new HarmonyAccessory(services);
@@ -280,15 +290,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
     );
   },
 
-  updateCharacteristic: function(characteristic, characteristicIsOn, callback) {
+  updateCharacteristic: function(characteristic, value, callback) {
     try {
       if (callback) {
-        callback(undefined, characteristicIsOn);
+        callback(undefined, value);
       } else {
-        characteristic.updateValue(characteristicIsOn);
+        characteristic.updateValue(value);
       }
     } catch (error) {
-      characteristic.updateValue(characteristicIsOn);
+      characteristic.updateValue(value);
     }
   },
 
@@ -362,46 +372,40 @@ HarmonyPlatformAsTVPlatform.prototype = {
     }
   },
 
-  refreshService: function(service, homebridgeAccessory, callback) {
-    var serviceControl = service.controlService;
-    var characteristic = serviceControl.getCharacteristic(Characteristic.On);
-
-    this.refreshCurrentActivity(() => {
-      if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
-        let characteristicIsOn = this._currentActivity == serviceControl.id;
-
-        this.log.debug(
-          'Got status for ' +
-            serviceControl.displayName +
-            ' - was ' +
-            characteristic.value +
-            ' set to ' +
-            characteristicIsOn
-        );
-        homebridgeAccessory.platform.updateCharacteristic(
-          characteristic,
-          characteristicIsOn,
-          callback
-        );
-      } else {
-        this.log.debug('WARNING : no current Activity');
-        homebridgeAccessory.platform.updateCharacteristic(
-          characteristic,
-          characteristic.value,
-          callback
-        );
-      }
-    });
+  refreshAccessory: function() {
+    this.refreshCharacteristic(
+      this.mainService.getCharacteristic(characteristic.Active)
+    );
+    this.refreshCharacteristic(
+      this.mainService.getCharacteristic(characteristic.ActiveIdentifier)
+    );
   },
 
-  refreshAccessory: function() {
-    for (let a = 0; a < this._foundAccessories.length; a++) {
-      let myHarmonyAccessory = this._foundAccessories[a];
-      for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
-        let service = myHarmonyAccessory.services[s];
-        this.refreshService(service, myHarmonyAccessory, undefined);
+  refreshCharacteristic: function(characteristic, callback) {
+    this.refreshCurrentActivity(() => {
+      if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
+        if (characteristic instanceof characteristic.Active) {
+          this.updateCharacteristic(
+            characteristic,
+            this._currentActivity != -1,
+            callback
+          );
+        } else if (characteristic instanceof characteristic.ActiveIdentifier) {
+          this.updateCharacteristic(
+            characteristic,
+            this._currentActivity,
+            callback
+          );
+        }
+      } else {
+        this.log.debug('WARNING : no current Activity');
+        if (characteristic instanceof characteristic.Active) {
+          this.updateCharacteristic(characteristic, false, callback);
+        } else if (characteristic instanceof characteristic.ActiveIdentifier) {
+          this.updateCharacteristic(characteristic, -1, callback);
+        }
       }
-    }
+    });
   },
 
   command: function(cmd, params, homebridgeAccessory) {
@@ -424,19 +428,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
         this.wsp.onUnpackedMessage.addListener(data => {
           this.wsp.removeAllListeners();
 
-          var serviceControl;
-
-          for (let a = 0; a < homebridgeAccessory.services.length; a++) {
-            if (
-              homebridgeAccessory.services[a].controlService.id ==
-              params.activityId
-            ) {
-              serviceControl = homebridgeAccessory.services[a].controlService;
-              this.log(serviceControl.displayName + ' activated');
-              break;
-            }
-          }
-
           if (
             data &&
             data.code &&
@@ -446,48 +437,26 @@ HarmonyPlatformAsTVPlatform.prototype = {
           ) {
             this._currentSetAttemps = 0;
 
-            for (let a = 0; a < this._foundAccessories.length; a++) {
-              let foundHarmonyAccessory = this._foundAccessories[a];
-              for (let s = 0; s < foundHarmonyAccessory.services.length; s++) {
-                let otherServiceControl =
-                  foundHarmonyAccessory.services[s].controlService;
+            this._currentActivity = params.activityId;
 
-                let characteristic = otherServiceControl.getCharacteristic(
-                  Characteristic.On
-                );
-
-                //we disable previous activities that were on
-                if (
-                  otherServiceControl.id != -1 &&
-                  otherServiceControl.id != params.activityId &&
-                  characteristic.value
-                ) {
-                  this.log.debug(
-                    'Switching off ' + otherServiceControl.displayName
-                  );
-                  characteristic.updateValue(false);
-                }
-
-                //we turn off Off Activity if another activity was launched
-                if (otherServiceControl.id == -1 && params.activityId != -1) {
-                  this.log.debug(
-                    'New activity on , turning off off Activity ' +
-                      otherServiceControl.displayName
-                  );
-                  characteristic.updateValue(false);
-                }
-
-                //we turn on Off Activity if we turned off an activity (or turn on the general switch)
-                if (otherServiceControl.id == -1 && params.activityId == -1) {
-                  this.log.debug(
-                    'Turning on off Activity ' + serviceControl.displayName
-                  );
-                  characteristic.updateValue(true);
-                }
-              }
+            if (this._currentActivity != -1) {
+              this.updateCharacteristic(
+                this.mainActivity.getCharacteristic(
+                  Characteristic.ActiveIdentifier
+                ),
+                this._currentActivity
+              );
+              this.updateCharacteristic(
+                this.mainActivity.getCharacteristic(Characteristic.Active),
+                true
+              );
+            } else {
+              this.updateCharacteristic(
+                this.mainActivity.getCharacteristic(Characteristic.Active),
+                false
+              );
             }
 
-            this._currentActivity = params.activityId;
             //timer for background refresh - we delay it since activity can take some time to get up
 
             var that = this;
@@ -502,24 +471,18 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 'WARNING : could not SET status : ' + JSON.stringify(data)
               );
 
-              var charactToSet = serviceControl.getCharacteristic(
-                Characteristic.On
-              );
-
               //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
               var that = this;
               setTimeout(function() {
                 if (that._currentSetAttemps < MAX_ATTEMPS_STATUS_UPDATE) {
-                  that.log.debug(
-                    'RETRY to send command on : ' + serviceControl.displayName
-                  );
+                  that.log.debug('RETRY to send command ' + params.activityId);
                   that.command(cmd, params, homebridgeAccessory);
                 } else {
                   that.log(
                     'ERROR : could not SET status, no more RETRY : ' +
-                      +serviceControl.displayName
+                      +params.activityId
                   );
-                  charactToSet.updateValue(false);
+                  that.refreshAccessory();
                   //timer for background refresh
                   that.setTimer(true);
                 }
@@ -545,96 +508,166 @@ HarmonyPlatformAsTVPlatform.prototype = {
     service,
     homebridgeAccessory
   ) {
-    characteristic.on(
-      'set',
-      function(value, callback, context) {
-        let doCommand = true;
-        let commandToSend = value ? service.controlService.id : '-1';
-        let currentValue = characteristic.value;
-        //Actitiy in skipedIfSameState
-        if (
-          this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
-          (this.skipedIfSameStateActivities &&
-            this.skipedIfSameStateActivities.includes(
-              service.controlService.subtype
-            ))
-        ) {
-          this.log.debug(
-            'INFO : SET on an activty in skipedIfsameState list ' +
-              service.controlService.subtype
+    if (characteristic instanceof Characteristic.Active) {
+      //set to main activity or off
+      characteristic.on(
+        'set',
+        function(value, callback, context) {
+          this.sendInputCommand(
+            homebridgeAccessory,
+            value == 1 ? this.mainActivityId : -1,
+            callback
           );
+        }.bind(this)
+      );
 
-          this.log.debug(
-            'INFO : Activty ' +
-              service.controlService.subtype +
-              ' is ' +
-              currentValue +
-              ', wants to set to ' +
-              value
+      //retrieve current activity and test -1
+      characteristic.on(
+        'get',
+        function(callback) {
+          homebridgeAccessory.platform.refreshCharacteristic(
+            characteristic,
+            callback
           );
-          //GLOBAL OFF SWITCH : do command only if it is off and we want to set it on since on state can't be reversed
-          if (service.controlService.id == -1) {
-            doCommand = !currentValue && value;
-          }
-          //ELSE, we do the command only if state is different.
-          else {
-            doCommand = currentValue !== value;
-          }
-          if (doCommand) {
-            this.log.debug(
-              'INFO : Activty ' +
-                service.controlService.subtype +
-                ' will be sent command ' +
-                commandToSend
-            );
-          } else {
-            this.log.debug(
-              'INFO : Activty ' +
-                service.controlService.subtype +
-                ' will not be sent any command '
-            );
-          }
-        } else {
-          this.log.debug(
-            'INFO : SET on an activty not in skipedIfsameState list ' +
-              service.controlService.subtype
+        }.bind(this)
+      );
+    } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
+      //set the current Activity
+      characteristic.on(
+        'set',
+        function(value, callback, context) {
+          this.sendInputCommand(homebridgeAccessory, value, callback);
+        }.bind(this)
+      );
+      characteristic.on(
+        'get',
+        function(callback) {
+          homebridgeAccessory.platform.refreshCharacteristic(
+            characteristic,
+            callback
           );
-        }
+        }.bind(this)
+      );
+    } else if (characteristic instanceof Characteristic.RemoteKey) {
+      characteristic.on(
+        'set',
+        function(value, callback, context) {
+          callback();
+        }.bind(this)
+      );
+    } else if (characteristic instanceof Characteristic.ConfiguredName) {
+      if (service instanceof Service.TelevisionSpeaker) {
+        characteristic.updateValue(this.name + 'Volume');
+      } else if (service instanceof Service.Television) {
+        characteristic.updateValue(this.name);
+      } else if (service instanceof Service.InputSource) {
+        characteristic.updateValue(service.controlService.name);
+      }
+    } else if (characteristic instanceof Characteristic.SleepDiscoveryMode) {
+      characteristic.updateValue(
+        Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE
+      );
+    } else if (characteristic instanceof Characteristic.Mute) {
+      characteristic.on(
+        'set',
+        function(value, callback, context) {
+          callback();
+        }.bind(this)
+      );
 
-        if (doCommand) {
-          params = {
-            async: 'true',
-            timestamp: 0,
-            args: {
-              rule: 'start',
-            },
-            activityId: commandToSend,
-          };
-          cmd = 'harmony.activityengine?runactivity';
-          homebridgeAccessory.platform.command(
-            cmd,
-            params,
-            homebridgeAccessory
-          );
+      characteristic.on(
+        'get',
+        function(callback) {
+          callback(null, false);
+        }.bind(this)
+      );
+    } else if (characteristic instanceof Characteristic.Active) {
+      characteristic.updateValue(Characteristic.Active.ACTIVE);
+    } else if (characteristic instanceof Characteristic.VolumeControlType) {
+      characteristic.updateValue(Characteristic.VolumeControlType.ABSOLUTE);
+    } else if (characteristic instanceof Characteristic.VolumeSelector) {
+      characteristic.on(
+        'set',
+        function(value, callback, context) {
           callback();
-        } else {
-          callback();
-          setTimeout(function() {
-            characteristic.updateValue(currentValue);
-          }, DELAY_TO_UPDATE_STATUS);
-        }
-      }.bind(this)
-    );
-    characteristic.on(
-      'get',
-      function(callback) {
-        homebridgeAccessory.platform.refreshService(
-          service,
-          homebridgeAccessory,
-          callback
+        }.bind(this)
+      );
+    } else if (characteristic instanceof Characteristic.Identifier) {
+      characteristic.updateValue(service.controlService.id.substring(1));
+    } else if (characteristic instanceof Characteristic.InputSourceType) {
+      characteristic.updateValue(Characteristic.InputSourceType.APPLICATION);
+    } else if (characteristic instanceof Characteristic.IsConfigured) {
+      characteristic.updateValue(Characteristic.IsConfigured.CONFIGURED);
+    } else if (
+      characteristic instanceof Characteristic.CurrentVisibilityState
+    ) {
+      characteristic.updateValue(Characteristic.CurrentVisibilityState.SHOWN);
+    }
+  },
+
+  sendInputCommand: function(homebridgeAccessory, value, callback) {
+    let doCommand = true;
+    let commandToSend = value;
+    //Actitiy in skipedIfSameState
+
+    let inputName = '';
+    for (let i = 0, len = this.inputServices.length; i < len; i++) {
+      if (this.inputServices[i].activityId == commandToSend) {
+        inputName = this.inputServices[i].activityName;
+        break;
+      }
+    }
+
+    if (
+      this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
+      (this.skipedIfSameStateActivities &&
+        this.skipedIfSameStateActivities.includes(inputName))
+    ) {
+      this.log.debug(
+        'INFO : SET on an activty in skipedIfsameState list ' + inputName
+      );
+
+      //GLOBAL OFF SWITCH : do command only if we are not off
+      if (commandToSend == -1) {
+        doCommand =
+          this._currentActivity != -1 &&
+          this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE;
+      }
+      //ELSE, we do the command only if state is different.
+      else {
+        doCommand = this._currentActivity !== value;
+      }
+      if (doCommand) {
+        this.log.debug('INFO : Activty ' + inputName + ' will be activated ');
+      } else {
+        this.log.debug(
+          'INFO : Activty ' + inputName + ' will not be activated '
         );
-      }.bind(this)
-    );
+      }
+    } else {
+      this.log.debug(
+        'INFO : SET on an activty not in skipedIfameState list ' + inputName
+      );
+    }
+
+    if (doCommand) {
+      params = {
+        async: 'true',
+        timestamp: 0,
+        args: {
+          rule: 'start',
+        },
+        activityId: commandToSend,
+      };
+      cmd = 'harmony.activityengine?runactivity';
+      homebridgeAccessory.platform.command(cmd, params, homebridgeAccessory);
+      callback();
+    } else {
+      callback();
+      setTimeout(function() {
+        this.refreshAccessory();
+      }, DELAY_TO_UPDATE_STATUS);
+    }
   },
 
   getInformationService: function(homebridgeAccessory) {
