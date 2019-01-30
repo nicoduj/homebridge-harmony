@@ -455,16 +455,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     }
 
     if (doCommand) {
-      params = {
-        async: 'true',
-        timestamp: 0,
-        args: {
-          rule: 'start',
-        },
-        activityId: commandToSend,
-      };
-      cmd = 'harmony.activityengine?runactivity';
-      homebridgeAccessory.platform.command(cmd, params, homebridgeAccessory);
+      homebridgeAccessory.platform.activityCommand(homebridgeAccessory);
       callback();
     } else {
       callback();
@@ -474,9 +465,19 @@ HarmonyPlatformAsTVPlatform.prototype = {
     }
   },
 
-  command: function(cmd, params, homebridgeAccessory) {
+  activityCommand: function(homebridgeAccessory) {
     //timer for background refresh
     this.setTimer(false);
+    params = {
+      async: 'true',
+      timestamp: 0,
+      args: {
+        rule: 'start',
+      },
+      activityId: commandToSend,
+    };
+
+    cmd = 'harmony.activityengine?runactivity';
 
     payload = {
       hubId: this.remote_id,
@@ -587,7 +588,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
         }.bind(this)
       );
 
-      //retrieve current activity and test -1
       characteristic.on(
         'get',
         function(callback) {
