@@ -932,7 +932,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
           if (value === Characteristic.VolumeSelector.DECREMENT) {
             this.sendCommand(this._currentInputService.VolumeDownCommand);
           } else {
-            this.sendCommand(hthis._currentInputService.VolumeUpCommand);
+            this.sendCommand(this._currentInputService.VolumeUpCommand);
           }
           callback(null);
         }.bind(this)
