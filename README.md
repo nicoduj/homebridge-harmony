@@ -24,9 +24,8 @@
     "name": "NicoHarmonyHub2",
     "hubIP": "192.168.1.42",
     "showTurnOffActivity" : true,
-    "refreshTimer" : 10,
     "skipedIfSameStateActivities" : ["PowerOff","La musique"],
-    "publishActivitiesAsIndividualAccessories" : true
+    "publishActivitiesAsIndividualAccessories" : false
   }
 ]
 ```
@@ -46,6 +45,8 @@ Fields:
 
 ## Changelog
 
+- 0.1.7
+  - [FIX] Homebridge Crash when turning off activity #36 (publishActivitiesAsIndividualAccessories mode)
 - 0.1.6
   - [FIX] Better default naming #33 . You might loose your renaming / room / inclusion in automation :(
 - 0.1.5
