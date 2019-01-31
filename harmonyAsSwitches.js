@@ -447,7 +447,7 @@ HarmonyPlatformAsSwitches.prototype = {
                 //we turn on Off Activity if we turned off an activity (or turn on the general switch)
                 if (otherServiceControl.id == -1 && params.activityId == -1) {
                   this.log.debug(
-                    'Turning on off Activity ' + serviceControl.displayName
+                    'Turning on off Activity ' + otherServiceControl.displayName
                   );
                   characteristic.updateValue(true);
                 }

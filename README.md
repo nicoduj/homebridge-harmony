@@ -8,6 +8,7 @@
 >
 > - If you change activities too quickly, some unexpected behavior might occur
 > - No dynamic discovery of the hub(s)
+> - IOS 12.2 TV MODE is still beta : only main switch and entreis "might" work for now.
 
 ## Installation
 
@@ -24,9 +25,8 @@
     "name": "NicoHarmonyHub2",
     "hubIP": "192.168.1.42",
     "showTurnOffActivity" : true,
-    "refreshTimer" : 10,
     "skipedIfSameStateActivities" : ["PowerOff","La musique"],
-    "publishActivitiesAsIndividualAccessories" : true
+    "publishActivitiesAsIndividualAccessories" : false
   }
 ]
 ```
@@ -43,9 +43,15 @@ Fields:
 - `skipedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app
 - `addAllActivitiesToSkipedIfSameStateActivitiesList` option to add all activities automatically to skipedIfSameStateActivities behavior. (defaults : false)
 - `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
+- `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.48
+- `mainActivity` set the mainactivity of the TV mode
+-
 
 ## Changelog
 
+- 0.2.0
+  - [FIX] crash when using off switch in accessory #36
+  - [NEW] beta mode for TV - IOS 12.2
 - 0.1.6
   - [FIX] Better default naming #33 . You might loose your renaming / room / inclusion in automation :(
 - 0.1.5

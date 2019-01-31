@@ -183,72 +183,102 @@ HarmonyPlatformAsTVPlatform.prototype = {
                   characteristics: [
                     Characteristic.Active,
                     Characteristic.ActiveIdentifier,
-                    Characteristic.ConfiguredName,
-                    Characteristic.SleepDiscoveryMode,
                     Characteristic.RemoteKey,
                   ],
                 };
                 that.mainService.controlService.subtype = that.name + ' TV';
+                that.mainService.controlService
+                  .setCharacteristic(Characteristic.ConfiguredName, that.name)
+                  .setCharacteristic(
+                    Characteristic.SleepDiscoveryMode,
+                    Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE
+                  );
 
                 that.inputServices = [];
-
+                that.log.debug('main activity name : ' + that.mainActivity);
                 for (let i = 0, len = activities.length; i < len; i++) {
                   if (activities[i].id != -1) {
                     let inputName = activities[i].label;
                     if (that.devMode) {
                       inputName = 'DEV' + inputName;
                     }
-
-                    if (this.mainActivity == activities[i].label) {
+                    that.log.debug('activity to configure : ' + inputName);
+                    if (that.mainActivity == inputName) {
                       that.mainActivityId = activities[i].id;
                       that.mainService.activityName = inputName;
                       that.mainService.activityId = activities[i].id;
                       that.mainService.controlService.id =
                         'M' + activities[i].id;
-                      services.push(that.mainService);
 
+                      that.log('Creating TV Speaker Service');
                       that.tvSpeakerService = {
                         controlService: new Service.TelevisionSpeaker(
-                          that.name + ' Volume',
+                          that.name,
                           'TVSpeaker'
                         ),
                         characteristics: [
                           Characteristic.Mute,
-                          Characteristic.VolumeControlType,
                           Characteristic.VolumeSelector,
-                          Characteristic.ConfiguredName,
+                          Characteristic.Volume,
                         ],
                       };
+                      that.tvSpeakerService.controlService
+                        .setCharacteristic(
+                          Characteristic.Active,
+                          Characteristic.Active.ACTIVE
+                        )
+                        .setCharacteristic(
+                          Characteristic.VolumeControlType,
+                          Characteristic.VolumeControlType.ABSOLUTE
+                        );
+
                       that.tvSpeakerService.controlService.id =
                         'V' + activities[i].id;
                       that.tvSpeakerService.controlService.subtype =
                         that.name + ' Volume';
                       that.mainService.controlService.addLinkedService(
-                        that.tvSpeakerService
+                        that.tvSpeakerService.controlService
                       );
                       services.push(that.tvSpeakerService);
                     }
-
+                    that.log('Creating InputSourceService ' + inputName);
                     let inputSourceService = {
                       controlService: new Service.InputSource(
                         inputName,
                         'Input'
                       ),
-                      characteristics: [
-                        Characteristic.Identifier,
-                        Characteristic.ConfiguredName,
-                        Characteristic.InputSourceType,
-                        Characteristic.IsConfigured,
-                        Characteristic.CurrentVisibilityState,
-                      ],
+                      characteristics: [],
                     };
                     inputSourceService.controlService.id = activities[i].id;
                     inputSourceService.activityName = inputName;
                     inputSourceService.activityId = activities[i].id;
                     inputSourceService.controlService.subtype =
                       inputName + ' Activity';
+
+                    inputSourceService.controlService
+                      .setCharacteristic(
+                        Characteristic.Identifier,
+                        activities[i].id
+                      )
+                      .setCharacteristic(
+                        Characteristic.ConfiguredName,
+                        inputName
+                      )
+                      .setCharacteristic(
+                        Characteristic.IsConfigured,
+                        Characteristic.IsConfigured.CONFIGURED
+                      )
+                      .setCharacteristic(
+                        Characteristic.InputSourceType,
+                        Characteristic.InputSourceType.APPLICATION
+                      )
+                      .setCharacteristic(
+                        Characteristic.CurrentVisibilityState,
+                        Characteristic.CurrentVisibilityState.SHOWN
+                      );
+
                     that.mainService.controlService.addLinkedService(
-                      inputSourceService
+                      inputSourceService.controlService
                     );
                     services.push(inputSourceService);
                     that.inputServices.push(inputSourceService);
@@ -373,11 +403,13 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   refreshAccessory: function() {
     this.refreshCharacteristic(
-      this.mainService.getCharacteristic(characteristic.Active),
+      this.mainService.controlService.getCharacteristic(Characteristic.Active),
       undefined
     );
     this.refreshCharacteristic(
-      this.mainService.getCharacteristic(characteristic.ActiveIdentifier),
+      this.mainService.controlService.getCharacteristic(
+        Characteristic.ActiveIdentifier
+      ),
       undefined
     );
   },
@@ -385,13 +417,13 @@ HarmonyPlatformAsTVPlatform.prototype = {
   refreshCharacteristic: function(characteristic, callback) {
     this.refreshCurrentActivity(() => {
       if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
-        if (characteristic instanceof characteristic.Active) {
+        if (characteristic instanceof Characteristic.Active) {
           this.updateCharacteristic(
             characteristic,
             this._currentActivity != -1,
             callback
           );
-        } else if (characteristic instanceof characteristic.ActiveIdentifier) {
+        } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
           this.updateCharacteristic(
             characteristic,
             this._currentActivity,
@@ -400,9 +432,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
         }
       } else {
         this.log.debug('WARNING : no current Activity');
-        if (characteristic instanceof characteristic.Active) {
+        if (characteristic instanceof Characteristic.Active) {
           this.updateCharacteristic(characteristic, false, callback);
-        } else if (characteristic instanceof characteristic.ActiveIdentifier) {
+        } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
           this.updateCharacteristic(characteristic, -1, callback);
         }
       }
@@ -455,7 +487,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
     }
 
     if (doCommand) {
-      homebridgeAccessory.platform.activityCommand(homebridgeAccessory);
+      homebridgeAccessory.platform.activityCommand(
+        homebridgeAccessory,
+        commandToSend
+      );
       callback();
     } else {
       callback();
@@ -465,7 +500,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     }
   },
 
-  activityCommand: function(homebridgeAccessory) {
+  activityCommand: function(homebridgeAccessory, commandToSend) {
     //timer for background refresh
     this.setTimer(false);
     params = {
@@ -489,11 +524,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
       },
     };
 
+    this.log.debug('INFO : sending command ' + JSON.stringify(params));
+
     this.wsp
       .open()
       .then(() =>
         this.wsp.onUnpackedMessage.addListener(data => {
           this.wsp.removeAllListeners();
+
+          this.log.debug('returned ' + JSON.stringify(data));
 
           if (
             data &&
@@ -504,22 +543,28 @@ HarmonyPlatformAsTVPlatform.prototype = {
           ) {
             this._currentSetAttemps = 0;
 
+            this.log.debug('command sent');
+
             this._currentActivity = params.activityId;
 
             if (this._currentActivity != -1) {
               this.updateCharacteristic(
-                this.mainActivity.getCharacteristic(
+                this.mainService.controlService.getCharacteristic(
                   Characteristic.ActiveIdentifier
                 ),
                 this._currentActivity
               );
               this.updateCharacteristic(
-                this.mainActivity.getCharacteristic(Characteristic.Active),
+                this.mainService.controlService.getCharacteristic(
+                  Characteristic.Active
+                ),
                 true
               );
             } else {
               this.updateCharacteristic(
-                this.mainActivity.getCharacteristic(Characteristic.Active),
+                this.mainService.controlService.getCharacteristic(
+                  Characteristic.Active
+                ),
                 false
               );
             }
@@ -530,31 +575,29 @@ HarmonyPlatformAsTVPlatform.prototype = {
             setTimeout(function() {
               that.setTimer(true);
             }, DELAY_TO_RELAUNCH_TIMER);
-          } else if (data) {
-            if (data.code == 202 || data.code == 100) {
-              this._currentSetAttemps = this._currentSetAttemps + 1;
-              //get characteristic
-              this.log.debug(
-                'WARNING : could not SET status : ' + JSON.stringify(data)
-              );
+          } else if (data && (data.code == 202 || data.code == 100)) {
+            this._currentSetAttemps = this._currentSetAttemps + 1;
+            //get characteristic
+            this.log.debug(
+              'WARNING : could not SET status : ' + JSON.stringify(data)
+            );
 
-              //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
-              var that = this;
-              setTimeout(function() {
-                if (that._currentSetAttemps < MAX_ATTEMPS_STATUS_UPDATE) {
-                  that.log.debug('RETRY to send command ' + params.activityId);
-                  that.command(cmd, params, homebridgeAccessory);
-                } else {
-                  that.log(
-                    'ERROR : could not SET status, no more RETRY : ' +
-                      +params.activityId
-                  );
-                  that.refreshAccessory();
-                  //timer for background refresh
-                  that.setTimer(true);
-                }
-              }, DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
-            }
+            //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
+            var that = this;
+            setTimeout(function() {
+              if (that._currentSetAttemps < MAX_ATTEMPS_STATUS_UPDATE) {
+                that.log.debug('RETRY to send command ' + params.activityId);
+                that.command(cmd, params, homebridgeAccessory);
+              } else {
+                that.log(
+                  'ERROR : could not SET status, no more RETRY : ' +
+                    +params.activityId
+                );
+                that.refreshAccessory();
+                //timer for background refresh
+                that.setTimer(true);
+              }
+            }, DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
           } else {
             this.log('ERROR : could not SET status, no data');
             //timer for background refresh
@@ -582,7 +625,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         function(value, callback, context) {
           this.sendInputCommand(
             homebridgeAccessory,
-            value == 1 ? this.mainActivityId : -1,
+            value == 1 ? '' + this.mainActivityId : '-1',
             callback
           );
         }.bind(this)
@@ -602,7 +645,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic.on(
         'set',
         function(value, callback, context) {
-          this.sendInputCommand(homebridgeAccessory, value, callback);
+          this.sendInputCommand(homebridgeAccessory, '' + value, callback);
         }.bind(this)
       );
       characteristic.on(
@@ -621,18 +664,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
           callback();
         }.bind(this)
       );
-    } else if (characteristic instanceof Characteristic.ConfiguredName) {
-      if (service instanceof Service.TelevisionSpeaker) {
-        characteristic.updateValue(this.name + 'Volume');
-      } else if (service instanceof Service.Television) {
-        characteristic.updateValue(this.name);
-      } else if (service instanceof Service.InputSource) {
-        characteristic.updateValue(service.controlService.name);
-      }
-    } else if (characteristic instanceof Characteristic.SleepDiscoveryMode) {
-      characteristic.updateValue(
-        Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE
-      );
     } else if (characteristic instanceof Characteristic.Mute) {
       characteristic.on(
         'set',
@@ -647,10 +678,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
           callback(null, false);
         }.bind(this)
       );
-    } else if (characteristic instanceof Characteristic.Active) {
-      characteristic.updateValue(Characteristic.Active.ACTIVE);
-    } else if (characteristic instanceof Characteristic.VolumeControlType) {
-      characteristic.updateValue(Characteristic.VolumeControlType.ABSOLUTE);
     } else if (characteristic instanceof Characteristic.VolumeSelector) {
       characteristic.on(
         'set',
@@ -658,16 +685,20 @@ HarmonyPlatformAsTVPlatform.prototype = {
           callback();
         }.bind(this)
       );
-    } else if (characteristic instanceof Characteristic.Identifier) {
-      characteristic.updateValue(service.controlService.id.substring(1));
-    } else if (characteristic instanceof Characteristic.InputSourceType) {
-      characteristic.updateValue(Characteristic.InputSourceType.APPLICATION);
-    } else if (characteristic instanceof Characteristic.IsConfigured) {
-      characteristic.updateValue(Characteristic.IsConfigured.CONFIGURED);
-    } else if (
-      characteristic instanceof Characteristic.CurrentVisibilityState
-    ) {
-      characteristic.updateValue(Characteristic.CurrentVisibilityState.SHOWN);
+    } else if (characteristic instanceof Characteristic.Volume) {
+      characteristic.on(
+        'set',
+        function(value, callback, context) {
+          callback();
+        }.bind(this)
+      );
+
+      characteristic.on(
+        'get',
+        function(callback) {
+          callback(null, 50);
+        }.bind(this)
+      );
     }
   },
 
