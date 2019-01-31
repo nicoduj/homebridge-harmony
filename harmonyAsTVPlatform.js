@@ -912,8 +912,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic.on(
         'set',
         function(value, callback) {
-          this.log('Characteristic.Mute set : ' + value);
-          this.sendCommand(this._currentInputService.MuteCommand);
+          if (this._currentActivity) {
+            this.log('Characteristic.Mute set : ' + value);
+            this.sendCommand(this._currentInputService.MuteCommand);
+          }
           callback(null);
         }.bind(this)
       );
@@ -929,10 +931,13 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic.on(
         'set',
         function(value, callback) {
-          if (value === Characteristic.VolumeSelector.DECREMENT) {
-            this.sendCommand(this._currentInputService.VolumeDownCommand);
-          } else {
-            this.sendCommand(this._currentInputService.VolumeUpCommand);
+          if (this._currentActivity) {
+            this.log('Characteristic.VolumeSelector set : ' + value);
+            if (value === Characteristic.VolumeSelector.DECREMENT) {
+              this.sendCommand(this._currentInputService.VolumeDownCommand);
+            } else {
+              this.sendCommand(this._currentInputService.VolumeUpCommand);
+            }
           }
           callback(null);
         }.bind(this)
