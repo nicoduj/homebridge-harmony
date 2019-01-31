@@ -5,7 +5,7 @@ MAX_ATTEMPS_STATUS_UPDATE = 12;
 DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE = 2000;
 DELAY_TO_UPDATE_STATUS = 800;
 DELAY_TO_RELAUNCH_TIMER = 8000;
-DELAY_FOR_COMMAND = 100;
+DELAY_FOR_COMMAND = 10;
 
 var Service, Characteristic;
 var request = require('request');
@@ -699,7 +699,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       });
   },
 
-  sendCommand: function(commandToSend, callback) {
+  sendCommand: function(commandToSend) {
     if (!commandToSend) {
       this.log.debug('Command not available ');
       return;
@@ -730,6 +730,22 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     this.wsp
       .open()
+      .then(() =>
+        this.wsp.onUnpackedMessage.addListener(data => {
+          this.wsp.removeAllListeners();
+          this.log.debug('returned ' + JSON.stringify(data));
+        })
+      )
+      .then(() => this.wsp.sendPacked(payload))
+      .catch(e => {
+        this.log('ERROR : sendCommand :' + e);
+        //timer for background refresh
+        this.setTimer(true);
+      });
+
+    /*
+    this.wsp
+      .open()
       .then(response => {
         payload.hbus.params.status = 'release';
         payload.hbus.params.timestamp = DELAY_FOR_COMMAND.toString();
@@ -737,6 +753,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       .then(() => this.wsp.sendRequest(payload))
       .then(() => this.setTimer(true))
       .then(() => callback());
+      */
   },
 
   updateCurrentInputService: function(newActivity) {
