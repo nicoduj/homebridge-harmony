@@ -8,7 +8,12 @@
 >
 > - If you change activities too quickly, some unexpected behavior might occur
 > - No dynamic discovery of the hub(s)
-> - IOS 12.2 TV MODE is still beta : only main switch and entreis "might" work for now.
+> - IOS 12.2 TV MODE is still beta. This mode will focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so).
+
+In order to activate TV Platform Mode,you need to :
+
+- set `TVPlatformMode` option to `true`,
+- set `mainActivity` with the name of one of your activity that you want to be bind as the "main" switch.
 
 ## Installation
 
@@ -18,15 +23,32 @@
 
 ## Configuration
 
+For Legacy Mode prior to ios 12.2 :
+
 ```json
 "platforms": [
   {
     "platform": "HarmonyHubWebSocket",
     "name": "NicoHarmonyHub2",
-    "hubIP": "192.168.1.42",
+    "hubIP": "192.168.1.XX",
     "showTurnOffActivity" : true,
     "skipedIfSameStateActivities" : ["PowerOff","La musique"],
     "publishActivitiesAsIndividualAccessories" : false
+  }
+]
+```
+
+For TV platform mode with ios 12.2 and homebridge 0.0.46 :
+
+```json
+"platforms": [
+  {
+    "platform": "HarmonyHubWebSocket",
+    "name": "NicoHarmonyHub2",
+    "hubIP": "192.168.1.XX",
+    "skipedIfSameStateActivities" : ["PowerOff","La musique"],
+    "TVPlatformMode" : true,
+    "mainActivity" : "LA TV"
   }
 ]
 ```
@@ -45,7 +67,6 @@ Fields:
 - `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
 - `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
 - `mainActivity` set the mainactivity of the TV mode
--
 
 ## Changelog
 
