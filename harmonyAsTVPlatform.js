@@ -5,7 +5,7 @@ MAX_ATTEMPS_STATUS_UPDATE = 12;
 DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE = 2000;
 DELAY_TO_UPDATE_STATUS = 800;
 DELAY_TO_RELAUNCH_TIMER = 8000;
-DELAY_FOR_COMMAND = 10;
+DELAY_FOR_COMMAND = 50;
 
 var Service, Characteristic;
 var request = require('request');
@@ -149,18 +149,16 @@ HarmonyPlatformAsTVPlatform.prototype = {
             extractRequestId: data => data && data.id,
           });
 
-          params = {
-            verb: 'get',
-            format: 'json',
-          };
-
           payload = {
             hubId: that.remote_id,
             timeout: 30,
             hbus: {
               cmd: `vnd.logitech.harmony/vnd.logitech.harmony.engine?config`,
               id: 0,
-              params: params,
+              params: {
+                verb: 'get',
+                format: 'json',
+              },
             },
           };
 
@@ -427,11 +425,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
           this._currentActivity
       );
 
-      params = {
-        verb: 'get',
-        format: 'json',
-      };
-
       payload = {
         hubId: this.remote_id,
         timeout: 30,
@@ -439,7 +432,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
           cmd:
             'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity',
           id: 0,
-          params: params,
+          params: {
+            verb: 'get',
+            format: 'json',
+          },
         },
       };
 
@@ -709,13 +705,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     this.setTimer(false);
 
-    params = {
-      status: 'press',
-      timestamp: '0',
-      verb: 'render',
-      action: commandToSend,
-    };
-
     cmd = 'vnd.logitech.harmony/vnd.logitech.harmony.engine?holdAction';
 
     payload = {
@@ -724,35 +713,39 @@ HarmonyPlatformAsTVPlatform.prototype = {
       hbus: {
         cmd: cmd,
         id: 0,
-        params: params,
+        params: {
+          status: 'press',
+          timestamp: '0',
+          verb: 'render',
+          action: commandToSend,
+        },
       },
     };
 
     this.wsp
       .open()
+      .then(() => this.wsp.sendRequest(payload))
+      .then(response => {
+        payload.hbus.params.status = 'release';
+        payload.hbus.params.timestamp = '' + DELAY_FOR_COMMAND;
+      })
+      .then(() => this.wsp.sendRequest(payload))
       .then(() =>
-        this.wsp.onUnpackedMessage.addListener(data => {
-          this.wsp.removeAllListeners();
-          this.log.debug('returned ' + JSON.stringify(data));
-        })
-      )
-      .then(() => this.wsp.sendPacked(payload))
-      .catch(e => {
-        this.log('ERROR : sendCommand :' + e);
         //timer for background refresh
-        this.setTimer(true);
-      });
+        this.setTimer(true)
+      );
 
     /*
     this.wsp
       .open()
       .then(response => {
         payload.hbus.params.status = 'release';
-        payload.hbus.params.timestamp = DELAY_FOR_COMMAND.toString();
+        payload.hbus.params.timestamp = ''+ DELAY_FOR_COMMAND;
       })
       .then(() => this.wsp.sendRequest(payload))
       .then(() => this.setTimer(true))
       .then(() => callback());
+ 
       */
   },
 
@@ -848,7 +841,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 this._currentActivity
             );
 
-            if (this._currentActivity) {
+            if (this._currentActivity > 0) {
               switch (true) {
                 case newValue === Characteristic.RemoteKey.ARROW_UP:
                   this.log.debug(this._currentInputService.DirectionUpCommand);
@@ -920,16 +913,16 @@ HarmonyPlatformAsTVPlatform.prototype = {
                   );
                   break;
               }
-              callback(null);
             }
           });
+          callback(null);
         }.bind(this)
       );
     } else if (characteristic instanceof Characteristic.Mute) {
       characteristic.on(
         'set',
         function(value, callback) {
-          if (this._currentActivity) {
+          if (this._currentActivity > 0) {
             this.log('Characteristic.Mute set : ' + value);
             this.sendCommand(this._currentInputService.MuteCommand);
           }
@@ -948,7 +941,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic.on(
         'set',
         function(value, callback) {
-          if (this._currentActivity) {
+          if (this._currentActivity > 0) {
             this.log('Characteristic.VolumeSelector set : ' + value);
             if (value === Characteristic.VolumeSelector.DECREMENT) {
               this.sendCommand(this._currentInputService.VolumeDownCommand);
