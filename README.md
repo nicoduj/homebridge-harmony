@@ -52,6 +52,8 @@ Fields:
 - 0.2.0
   - [FIX] crash when using off switch in accessory #36
   - [NEW] beta mode for TV - IOS 12.2
+- 0.1.7
+  - [FIX] Homebridge Crash when turning off activity #36 (publishActivitiesAsIndividualAccessories mode)
 - 0.1.6
   - [FIX] Better default naming #33 . You might loose your renaming / room / inclusion in automation :(
 - 0.1.5
