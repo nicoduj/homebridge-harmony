@@ -70,6 +70,8 @@ Fields:
 
 ## Changelog
 
+- 0.2.3
+  - [NEW] TV MODE - restoring SkipedIfSameStateActivities options #46
 - 0.2.2
   - [FIX] TV MODE - potential issue with sound control
   - [FIX] TV MODE - potential issue with inputs lost (to be confirmed)

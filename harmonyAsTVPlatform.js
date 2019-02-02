@@ -28,6 +28,9 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   this.devMode = config['DEVMODE'];
   this.refreshTimer = config['refreshTimer'];
   this.refreshByHub = config['refreshByHub'];
+  this.addAllActivitiesToSkipedIfSameStateActivitiesList =
+    config['addAllActivitiesToSkipedIfSameStateActivitiesList'];
+  this.skipedIfSameStateActivities = config['skipedIfSameStateActivities'];
 
   this.mainActivity = config['mainActivity'];
 
@@ -46,6 +49,13 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   )
     this.refreshTimer = 300;
 
+  this.log.debug(
+    'INFO : following activites controls will be ignored if they are in the same state : ' +
+      (this.addAllActivitiesToSkipedIfSameStateActivitiesList
+        ? 'ALL'
+        : this.skipedIfSameStateActivities)
+  );
+
   if (api) {
     // Save the API object as plugin needs to register new accessory via this object
     this.api = api;
@@ -54,7 +64,10 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
       'shutdown',
       function() {
         that.log('shutdown');
-        if (that.timerID) {
+
+        if (that.wspRefresh) {
+          that.wspRefresh.close();
+        } else if (that.timerID) {
           clearInterval(that.timerID);
           that.timerID = undefined;
         }
@@ -528,10 +541,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 that._foundAccessories.push(myHarmonyAccessory);
 
                 //first refresh
-                that.refreshAccessory();
-
-                //timer for background refresh
-                that.setTimer(true);
+                setTimeout(function() {
+                  that.refreshAccessory();
+                  that.setTimer(true);
+                }, 2500);
 
                 callback(that._foundAccessories);
               })
@@ -721,16 +734,23 @@ HarmonyPlatformAsTVPlatform.prototype = {
       }
     }
 
-    //GLOBAL OFF SWITCH : do command only if we are not off
-    if (commandToSend == -1) {
-      doCommand =
-        this._currentActivity != -1 &&
-        this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE;
+    if (
+      this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
+      (this.skipedIfSameStateActivities &&
+        this.skipedIfSameStateActivities.includes(inputName))
+    ) {
+      //GLOBAL OFF SWITCH : do command only if we are not off
+      if (commandToSend == -1) {
+        doCommand =
+          this._currentActivity != -1 &&
+          this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE;
+      }
+      //ELSE, we do the command only if state is different.
+      else {
+        doCommand = this._currentActivity !== value;
+      }
     }
-    //ELSE, we do the command only if state is different.
-    else {
-      doCommand = this._currentActivity !== value;
-    }
+
     if (doCommand) {
       this.log.debug(
         'INFO - sendInputCommand : Activty ' + inputName + ' will be activated '
