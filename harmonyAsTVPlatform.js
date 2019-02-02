@@ -5,7 +5,7 @@ MAX_ATTEMPS_STATUS_UPDATE = 12;
 DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE = 2000;
 DELAY_TO_UPDATE_STATUS = 800;
 DELAY_TO_RELAUNCH_TIMER = 8000;
-DELAY_FOR_COMMAND = 50;
+DELAY_FOR_COMMAND = '100';
 
 var Service, Characteristic;
 var request = require('request');
@@ -27,11 +27,7 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   this.name = config['name'];
   this.devMode = config['DEVMODE'];
   this.refreshTimer = config['refreshTimer'];
-
   this.mainActivity = config['mainActivity'];
-  this.addAllActivitiesToSkipedIfSameStateActivitiesList =
-    config['addAllActivitiesToSkipedIfSameStateActivitiesList'];
-  this.skipedIfSameStateActivities = config['skipedIfSameStateActivities'];
 
   this._currentActivity = -9999;
   this._currentActivityLastUpdate = undefined;
@@ -44,13 +40,6 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
     (this.refreshTimer < 5 || this.refreshTimer > 600)
   )
     this.refreshTimer = 300;
-
-  this.log.debug(
-    'INFO : following activites controls will be ignored if they are in the same state : ' +
-      (this.addAllActivitiesToSkipedIfSameStateActivitiesList
-        ? 'ALL'
-        : this.skipedIfSameStateActivities)
-  );
 
   if (api) {
     // Save the API object as plugin needs to register new accessory via this object
@@ -524,7 +513,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
   sendInputCommand: function(homebridgeAccessory, value) {
     let doCommand = true;
     let commandToSend = value;
-    //Actitiy in skipedIfSameState
 
     let inputName = '';
     for (let i = 0, len = this.inputServices.length; i < len; i++) {
@@ -534,36 +522,20 @@ HarmonyPlatformAsTVPlatform.prototype = {
       }
     }
 
-    if (
-      this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
-      (this.skipedIfSameStateActivities &&
-        this.skipedIfSameStateActivities.includes(inputName))
-    ) {
-      this.log.debug(
-        'INFO : SET on an activty in skipedIfsameState list ' + inputName
-      );
-
-      //GLOBAL OFF SWITCH : do command only if we are not off
-      if (commandToSend == -1) {
-        doCommand =
-          this._currentActivity != -1 &&
-          this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE;
-      }
-      //ELSE, we do the command only if state is different.
-      else {
-        doCommand = this._currentActivity !== value;
-      }
-      if (doCommand) {
-        this.log.debug('INFO : Activty ' + inputName + ' will be activated ');
-      } else {
-        this.log.debug(
-          'INFO : Activty ' + inputName + ' will not be activated '
-        );
-      }
+    //GLOBAL OFF SWITCH : do command only if we are not off
+    if (commandToSend == -1) {
+      doCommand =
+        this._currentActivity != -1 &&
+        this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE;
+    }
+    //ELSE, we do the command only if state is different.
+    else {
+      doCommand = this._currentActivity !== value;
+    }
+    if (doCommand) {
+      this.log.debug('INFO : Activty ' + inputName + ' will be activated ');
     } else {
-      this.log.debug(
-        'INFO : SET on an activty not in skipedIfameState list ' + inputName
-      );
+      this.log.debug('INFO : Activty ' + inputName + ' will not be activated ');
     }
 
     if (doCommand) {
@@ -572,8 +544,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
         commandToSend
       );
     } else {
+      var that = this;
       setTimeout(function() {
-        this.refreshAccessory();
+        that.refreshAccessory();
       }, DELAY_TO_UPDATE_STATUS);
     }
   },
@@ -581,7 +554,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
   activityCommand: function(homebridgeAccessory, commandToSend) {
     //timer for background refresh
     this.setTimer(false);
-    params = {
+    var params = {
       async: 'true',
       timestamp: 0,
       args: {
@@ -590,13 +563,11 @@ HarmonyPlatformAsTVPlatform.prototype = {
       activityId: commandToSend,
     };
 
-    cmd = 'harmony.activityengine?runactivity';
-
-    payload = {
+    var payload = {
       hubId: this.remote_id,
       timeout: 30,
       hbus: {
-        cmd: cmd,
+        cmd: 'harmony.activityengine?runactivity',
         id: 0,
         params: params,
       },
@@ -689,7 +660,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       )
       .then(() => this.wsp.sendPacked(payload))
       .catch(e => {
-        this.log('ERROR : sendCommand :' + e);
+        this.log('ERROR : sendActivityCommand :' + e);
         //timer for background refresh
         this.setTimer(true);
       });
@@ -705,13 +676,11 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     this.setTimer(false);
 
-    cmd = 'vnd.logitech.harmony/vnd.logitech.harmony.engine?holdAction';
-
-    payload = {
-      hubId: this.remote_id,
+    var payload = {
+      hubId: this.remoteId,
       timeout: 30,
       hbus: {
-        cmd: cmd,
+        cmd: 'vnd.logitech.harmony/vnd.logitech.harmony.engine?holdAction',
         id: 0,
         params: {
           status: 'press',
@@ -721,32 +690,50 @@ HarmonyPlatformAsTVPlatform.prototype = {
         },
       },
     };
-
     this.wsp
-      .open()
-      .then(() => this.wsp.sendRequest(payload))
+      .sendRequest(payload)
       .then(response => {
         payload.hbus.params.status = 'release';
-        payload.hbus.params.timestamp = '' + DELAY_FOR_COMMAND;
+        payload.hbus.params.timestamp = DELAY_FOR_COMMAND;
       })
-      .then(() => this.wsp.sendRequest(payload))
-      .then(() =>
-        //timer for background refresh
-        this.setTimer(true)
-      );
+      .then(() => {
+        this.wsp.sendRequest(payload);
+        this.setTimer(true);
+      })
+      .catch(e => {
+        this.setTimer(true);
+      });
+    /* sends multiple commands :( */
 
     /*
+    var payload = {
+      hubId: this.remote_id,
+      timeout: 30,
+      hbus: {
+        cmd: 'vnd.logitech.harmony/vnd.logitech.harmony.engine?holdAction',
+        id: 0,
+        params: {
+          status: 'press',
+          verb: 'get',
+          action: commandToSend,
+        },
+      },
+    };
+
     this.wsp
-      .open()
-      .then(response => {
-        payload.hbus.params.status = 'release';
-        payload.hbus.params.timestamp = ''+ DELAY_FOR_COMMAND;
-      })
-      .then(() => this.wsp.sendRequest(payload))
-      .then(() => this.setTimer(true))
-      .then(() => callback());
- 
-      */
+    .open()
+    .then(() => this.wsp.sendRequest(payload))
+    .then(() =>
+      //timer for background refresh
+      this.setTimer(true)
+    )
+    .catch(e => {
+      this.log('ERROR : sendCommand :' + e);
+      //timer for background refresh
+      this.setTimer(true);
+
+    });
+    */
   },
 
   updateCurrentInputService: function(newActivity) {
@@ -790,12 +777,13 @@ HarmonyPlatformAsTVPlatform.prototype = {
         'set',
         function(value, callback) {
           this.log.debug('SET Characteristic.Active ' + value);
-
-          this.sendInputCommand(
-            homebridgeAccessory,
-            value == 1 ? '' + this.mainActivityId : '-1'
-          );
-          callback(null);
+          this.refreshCurrentActivity(() => {
+            this.sendInputCommand(
+              homebridgeAccessory,
+              value == 1 ? '' + this.mainActivityId : '-1'
+            );
+            callback(null);
+          });
         }.bind(this)
       );
 
