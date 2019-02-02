@@ -46,7 +46,6 @@ For TV platform mode with ios 12.2 and homebridge 0.0.46 :
     "platform": "HarmonyHubWebSocket",
     "name": "NicoHarmonyHub2",
     "hubIP": "192.168.1.XX",
-    "skipedIfSameStateActivities" : ["PowerOff","La musique"],
     "TVPlatformMode" : true,
     "mainActivity" : "LA TV"
   }
@@ -62,6 +61,7 @@ Fields:
 - `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
   - The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
 - `refreshTimer` enable refresh of activities state every X seconds, for automation purpose if you need to activate something else based on a state chnage of an activity. Be aware it might make you hub smoke since the plugin will ask its status very often :) (defaults : disable, accepted range : 5-600s).
+- `refreshByHub` refresh trhough webSocket stateDigest of the hub - defaults to true
 - `skipedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app
 - `addAllActivitiesToSkipedIfSameStateActivitiesList` option to add all activities automatically to skipedIfSameStateActivities behavior. (defaults : false)
 - `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
@@ -70,6 +70,10 @@ Fields:
 
 ## Changelog
 
+- 0.2.2
+  - [FIX] TV MODE - potential issue with sound control
+  - [FIX] TV MODE - potential issue with inputs lost (to be confirmed)
+  - [NEW] refreshMode through stateDigest - option refreshByHub - defaults true #48
 - 0.2.1
   - [FIX] TV MODE - remote controls are sent multiple times #43
   - [FIX] TV MODE - using the remote switch back to main activity #42

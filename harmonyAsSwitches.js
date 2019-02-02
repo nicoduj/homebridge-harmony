@@ -26,6 +26,8 @@ function HarmonyPlatformAsSwitches(log, config, api) {
   this.name = config['name'];
   this.devMode = config['DEVMODE'];
   this.refreshTimer = config['refreshTimer'];
+  this.refreshByHub = config['refreshByHub'];
+
   this.addAllActivitiesToSkipedIfSameStateActivitiesList =
     config['addAllActivitiesToSkipedIfSameStateActivitiesList'];
   this.skipedIfSameStateActivities = config['skipedIfSameStateActivities'];
@@ -40,7 +42,10 @@ function HarmonyPlatformAsSwitches(log, config, api) {
   this._currentSetAttemps = 0;
   this._foundAccessories = [];
 
+  if (this.refreshByHub == undefined) this.refreshByHub = true;
+
   if (
+    !this.refreshByHub &&
     this.refreshTimer &&
     this.refreshTimer > 0 &&
     (this.refreshTimer < 5 || this.refreshTimer > 600)
@@ -73,22 +78,83 @@ function HarmonyPlatformAsSwitches(log, config, api) {
 
 HarmonyPlatformAsSwitches.prototype = {
   setTimer: function(on) {
-    if (this.refreshTimer && this.refreshTimer > 0) {
-      if (on && this.timerID == undefined) {
-        this.log.debug(
-          'Setting Timer for background refresh every  : ' +
-            this.refreshTimer +
-            's'
-        );
-        this.timerID = setInterval(
-          () => this.refreshAccessory(),
-          this.refreshTimer * 1000
-        );
-      } else if (!on && this.timerID !== undefined) {
-        this.log.debug('Clearing Timer');
-        clearInterval(this.timerID);
-        this.timerID = undefined;
+    if (!this.refreshByHub) {
+      if (this.refreshTimer && this.refreshTimer > 0) {
+        if (on && this.timerID == undefined) {
+          this.log.debug(
+            'Setting Timer for background refresh every  : ' +
+              this.refreshTimer +
+              's'
+          );
+          this.timerID = setInterval(
+            () => this.refreshAccessory(),
+            this.refreshTimer * 1000
+          );
+        } else if (!on && this.timerID !== undefined) {
+          this.log.debug('Clearing Timer');
+          clearInterval(this.timerID);
+          this.timerID = undefined;
+        }
       }
+    } else {
+      if (on) {
+        var payload = {
+          hubId: this.remote_id,
+          timeout: 30,
+          hbus: {
+            cmd: 'vnd.logitech.connect/vnd.logitech.statedigest?get',
+            id: 0,
+            params: {
+              verb: 'get',
+              format: 'json',
+            },
+          },
+        };
+
+        this.wspRefresh.onClose.addListener(() => {
+          this.wspRefresh.removeAllListeners();
+          this.log.debug('INFO - RefreshSocket - Closed');
+          clearInterval(this.timerID);
+        });
+
+        this.wspRefresh
+          .open()
+          .then(() => this._heartbeat())
+          .then(() =>
+            this.wspRefresh.onUnpackedMessage.addListener(
+              this._onMessage.bind(this)
+            )
+          )
+          .then(() => this.wspRefresh.sendPacked(payload))
+          .then(() => this.log.debug('INFO - RefreshSocket - Opened'))
+          .catch(e => {
+            this.log('ERROR - setTimer wspRefresh :' + e);
+            clearInterval(this.timerID);
+            this.log('INFO - relaunching timer');
+            var that = this;
+            setTimeout(function() {
+              that.setTimer(true);
+            }, DELAY_TO_RELAUNCH_TIMER);
+          });
+      } else {
+        this.wspRefresh.close();
+      }
+    }
+  },
+
+  _heartbeat() {
+    this.timerID = setInterval(() => this.wspRefresh.send(''), 55000);
+  },
+
+  _onMessage(message) {
+    if (
+      message.type === 'connect.stateDigest?notify' &&
+      message.data.activityStatus === 2 &&
+      message.data.activityId === message.data.runningActivityList
+    ) {
+      //need to refresh, activity is started.
+      this.log.debug('Refreshing activity' + JSON.stringify(message));
+      this.refreshAccessory();
     }
   },
 
@@ -150,6 +216,19 @@ HarmonyPlatformAsSwitches.prototype = {
             },
             extractRequestId: data => data && data.id,
           });
+
+          if (that.refreshByHub) {
+            that.wspRefresh = new WebSocketAsPromised(wsUrl, {
+              createWebSocket: url => new W3CWebSocket(url),
+              packMessage: data => JSON.stringify(data),
+              unpackMessage: message => JSON.parse(message),
+              attachRequestId: (data, requestId) => {
+                data.hbus.id = requestId;
+                return data;
+              },
+              extractRequestId: data => data && data.id,
+            });
+          }
 
           params = {
             verb: 'get',
