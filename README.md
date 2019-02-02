@@ -70,6 +70,11 @@ Fields:
 
 ## Changelog
 
+- 0.2.1
+  - [FIX] TV MODE - remote controls are sent multiple times #43
+  - [FIX] TV MODE - using the remote switch back to main activity #42
+  - [FIX] TV MODE - goes to main input when run through automation #45
+  - [FIX] TV MODE - cannot pick inputs at first launch #44 (not reproduced sinces other changes)
 - 0.2.0
   - [FIX] crash when using off switch in accessory #36
   - [NEW] beta mode for TV - IOS 12.2

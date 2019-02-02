@@ -63,7 +63,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     if (this.refreshTimer && this.refreshTimer > 0) {
       if (on && this.timerID == undefined) {
         this.log.debug(
-          'Setting Timer for background refresh every  : ' +
+          'INFO - setTimer - Setting Timer for background refresh every  : ' +
             this.refreshTimer +
             's'
         );
@@ -72,11 +72,49 @@ HarmonyPlatformAsTVPlatform.prototype = {
           this.refreshTimer * 1000
         );
       } else if (!on && this.timerID !== undefined) {
-        this.log.debug('Clearing Timer');
+        this.log.debug('INFO - setTimer - Clearing Timer');
         clearInterval(this.timerID);
         this.timerID = undefined;
       }
     }
+  },
+
+  ///CREATION / STARTUP
+
+  configureMainActivity: function(activity, services) {
+    let inputName = activity.label;
+    if (this.devMode) {
+      inputName = 'DEV' + inputName;
+    }
+    this.log('Configuring Main Activity ' + inputName);
+
+    this.mainActivityId = activity.id;
+    this.mainService.activityName = inputName;
+    this.mainService.activityId = activity.id;
+    this.mainService.controlService.id = 'M' + activity.id;
+
+    this.log('Creating TV Speaker Service');
+    this.tvSpeakerService = {
+      controlService: new Service.TelevisionSpeaker(this.name, 'TVSpeaker'),
+      characteristics: [
+        Characteristic.Mute,
+        Characteristic.VolumeSelector,
+        Characteristic.Volume,
+      ],
+    };
+    this.tvSpeakerService.controlService
+      .setCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE)
+      .setCharacteristic(
+        Characteristic.VolumeControlType,
+        Characteristic.VolumeControlType.RELATIVE
+      );
+
+    this.tvSpeakerService.controlService.id = 'V' + activity.id;
+    this.tvSpeakerService.controlService.subtype = this.name + ' Volume';
+    this.mainService.controlService.addLinkedService(
+      this.tvSpeakerService.controlService
+    );
+    services.push(this.tvSpeakerService);
   },
 
   accessories: function(callback) {
@@ -157,7 +195,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
               that.wsp.onUnpackedMessage.addListener(data => {
                 that.wsp.removeAllListeners();
 
-                that.log.debug('Hub config : ' + JSON.stringify(data));
+                that.log.debug(
+                  'INFO - accessories : Hub config : ' + JSON.stringify(data)
+                );
                 let activities = data.data.activity;
 
                 let services = [];
@@ -180,55 +220,32 @@ HarmonyPlatformAsTVPlatform.prototype = {
                   .setCharacteristic(
                     Characteristic.SleepDiscoveryMode,
                     Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE
-                  );
+                  )
+                  .setCharacteristic(Characteristic.ActiveIdentifier, -1)
+                  .setCharacteristic(Characteristic.Active, false);
 
                 that.inputServices = [];
-                that.log.debug('main activity name : ' + that.mainActivity);
+                that.log.debug(
+                  'INFO - accessories : main activity name : ' +
+                    that.mainActivity
+                );
+                let mainActivityConfigured = false;
+
                 for (let i = 0, len = activities.length; i < len; i++) {
                   if (activities[i].id != -1) {
                     let inputName = activities[i].label;
                     if (that.devMode) {
                       inputName = 'DEV' + inputName;
                     }
-                    that.log.debug('activity to configure : ' + inputName);
+                    that.log.debug(
+                      'INFO - accessories : activity to configure : ' +
+                        inputName
+                    );
                     if (that.mainActivity == inputName) {
-                      that.mainActivityId = activities[i].id;
-                      that.mainService.activityName = inputName;
-                      that.mainService.activityId = activities[i].id;
-                      that.mainService.controlService.id =
-                        'M' + activities[i].id;
-
-                      that.log('Creating TV Speaker Service');
-                      that.tvSpeakerService = {
-                        controlService: new Service.TelevisionSpeaker(
-                          that.name,
-                          'TVSpeaker'
-                        ),
-                        characteristics: [
-                          Characteristic.Mute,
-                          Characteristic.VolumeSelector,
-                          Characteristic.Volume,
-                        ],
-                      };
-                      that.tvSpeakerService.controlService
-                        .setCharacteristic(
-                          Characteristic.Active,
-                          Characteristic.Active.ACTIVE
-                        )
-                        .setCharacteristic(
-                          Characteristic.VolumeControlType,
-                          Characteristic.VolumeControlType.RELATIVE
-                        );
-
-                      that.tvSpeakerService.controlService.id =
-                        'V' + activities[i].id;
-                      that.tvSpeakerService.controlService.subtype =
-                        that.name + ' Volume';
-                      that.mainService.controlService.addLinkedService(
-                        that.tvSpeakerService.controlService
-                      );
-                      services.push(that.tvSpeakerService);
+                      that.configureMainActivity(activities[i], services);
+                      mainActivityConfigured = true;
                     }
+
                     that.log('Creating InputSourceService ' + inputName);
                     let inputSourceService = {
                       controlService: new Service.InputSource(
@@ -250,12 +267,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
                       if (controlGroup[j].name == 'Volume') {
                         for (let k = 0, len = functions.length; k < len; k++) {
                           if (functions[k].name == 'Mute') {
+                            that.log('Mapping Mute for ' + inputName);
                             inputSourceService.MuteCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'VolumeDown') {
+                            that.log('Mapping VolumeDown for ' + inputName);
                             inputSourceService.VolumeDownCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'VolumeUp') {
+                            that.log('Mapping VolumeUp for ' + inputName);
                             inputSourceService.VolumeUpCommand =
                               functions[k].action;
                           }
@@ -265,18 +285,23 @@ HarmonyPlatformAsTVPlatform.prototype = {
                       ) {
                         for (let k = 0, len = functions.length; k < len; k++) {
                           if (functions[k].name == 'DirectionDown') {
+                            that.log('Mapping DirectionDown for ' + inputName);
                             inputSourceService.DirectionDownCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'DirectionLeft') {
+                            that.log('Mapping DirectionLeft for ' + inputName);
                             inputSourceService.DirectionLeftCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'DirectionRight') {
+                            that.log('Mapping DirectionRight for ' + inputName);
                             inputSourceService.DirectionRightCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'DirectionUp') {
+                            that.log('Mapping DirectionUp for ' + inputName);
                             inputSourceService.DirectionUpCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'Select') {
+                            that.log('Mapping Select for ' + inputName);
                             inputSourceService.SelectCommand =
                               functions[k].action;
                           }
@@ -286,18 +311,23 @@ HarmonyPlatformAsTVPlatform.prototype = {
                       ) {
                         for (let k = 0, len = functions.length; k < len; k++) {
                           if (functions[k].name == 'Stop') {
+                            that.log('Mapping Stop for ' + inputName);
                             inputSourceService.StopCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'Play') {
+                            that.log('Mapping Play for ' + inputName);
                             inputSourceService.PlayCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'Rewind') {
+                            that.log('Mapping Rewind for ' + inputName);
                             inputSourceService.RewindCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'Pause') {
+                            that.log('Mapping Pause for ' + inputName);
                             inputSourceService.PauseCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'FastForward') {
+                            that.log('Mapping FastForward for ' + inputName);
                             inputSourceService.FastForwardCommand =
                               functions[k].action;
                           }
@@ -306,10 +336,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
                         activities[i].controlGroup[j].name == 'NavigationDVD'
                       ) {
                         for (let k = 0, len = functions.length; k < len; k++) {
-                          if (functions[k].name == 'Return') {
+                          if (
+                            functions[k].name == 'Return' ||
+                            functions[k].name == 'Back'
+                          ) {
+                            that.log('Mapping Return for ' + inputName);
                             inputSourceService.ReturnCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'Menu') {
+                            that.log('Mapping Menu for ' + inputName);
                             inputSourceService.MenuCommand =
                               functions[k].action;
                           }
@@ -320,10 +355,22 @@ HarmonyPlatformAsTVPlatform.prototype = {
                       ) {
                         for (let k = 0, len = functions.length; k < len; k++) {
                           if (functions[k].name == 'SkipBackward') {
+                            that.log('Mapping SkipBackward for ' + inputName);
                             inputSourceService.SkipBackwardCommand =
                               functions[k].action;
                           } else if (functions[k].name == 'SkipForward') {
+                            that.log('Mapping SkipForward for ' + inputName);
                             inputSourceService.SkipForwardCommand =
+                              functions[k].action;
+                          }
+                        }
+                      } else if (
+                        activities[i].controlGroup[j].name == 'GameType3'
+                      ) {
+                        for (let k = 0, len = functions.length; k < len; k++) {
+                          if (functions[k].name == 'Home') {
+                            that.log('Mapping Home for ' + inputName);
+                            inputSourceService.HomeCommand =
                               functions[k].action;
                           }
                         }
@@ -359,6 +406,14 @@ HarmonyPlatformAsTVPlatform.prototype = {
                     that.inputServices.push(inputSourceService);
                   }
                 }
+
+                if (!mainActivityConfigured) {
+                  that.log(
+                    'WARNING - No main Activity that match config file found, default to first one'
+                  );
+                  that.configureMainActivity(activities[0], services);
+                }
+
                 services.push(that.mainService);
 
                 that.log('Adding Accessory : ' + that.name);
@@ -373,6 +428,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 myHarmonyAccessory.serialNumber = that.hubIP;
                 that._foundAccessories.push(myHarmonyAccessory);
 
+                //first refresh
+                that.refreshAccessory();
+
                 //timer for background refresh
                 that.setTimer(true);
 
@@ -381,17 +439,70 @@ HarmonyPlatformAsTVPlatform.prototype = {
             )
             .then(() => that.wsp.sendPacked(payload))
             .catch(e => {
-              that.log('ERROR : GetConfiguration :' + e);
+              that.log('ERROR - accessories : GetConfiguration :' + e);
               callback(that._foundAccessories);
             });
         } else {
           that.log(
-            'Error : No config retrieved from hub, check IP and connectivity'
+            'Error - accessories : No config retrieved from hub, check IP and connectivity'
           );
           callback(that._foundAccessories);
         }
       }
     );
+  },
+
+  ///REFRESHING TOOLS
+
+  refreshAccessory: function() {
+    this.refreshCharacteristic(
+      this.mainService.controlService.getCharacteristic(
+        Characteristic.ActiveIdentifier
+      ),
+      () => {
+        this.refreshCharacteristic(
+          this.mainService.controlService.getCharacteristic(
+            Characteristic.Active
+          ),
+          undefined
+        );
+      }
+    );
+  },
+
+  refreshCharacteristic: function(characteristic, callback) {
+    this.refreshCurrentActivity(() => {
+      if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
+        if (characteristic instanceof Characteristic.Active) {
+          this.log.debug(
+            'INFO - refreshCharacteristic : updating Characteristic.Active to ' +
+              (this._currentActivity != -1)
+          );
+          this.updateCharacteristic(
+            characteristic,
+            this._currentActivity > 0,
+            callback
+          );
+        } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
+          this.log.debug(
+            'INFO - refreshCharacteristic : updating Characteristic.ActiveIdentifier to ' +
+              this._currentActivity
+          );
+          this.updateCharacteristic(
+            characteristic,
+            this._currentActivity,
+            callback
+          );
+        }
+      } else {
+        this.log.debug('WARNING - refreshCharacteristic : no current Activity');
+        if (characteristic instanceof Characteristic.Active) {
+          this.updateCharacteristic(characteristic, false, callback);
+        } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
+          this.updateCharacteristic(characteristic, -1, callback);
+        }
+      }
+    });
   },
 
   refreshCurrentActivity: function(callback) {
@@ -403,14 +514,14 @@ HarmonyPlatformAsTVPlatform.prototype = {
     ) {
       // we don't refresh since status was retrieved not so far away
       this.log.debug(
-        'INFO : NO refresh needed since last update was on :' +
+        'INFO - refreshCurrentActivity : NO refresh needed since last update was on :' +
           this._currentActivity +
           ' and current Activity is set'
       );
       callback();
     } else {
       this.log.debug(
-        'INFO : Refresh needed since last update is too old or current Activity is not set : ' +
+        'INFO - refreshCurrentActivity : Refresh needed since last update is too old or current Activity is not set : ' +
           this._currentActivity
       );
 
@@ -443,9 +554,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
               this.updateCurrentInputService(data.data.result);
             } else {
               this.log.debug(
-                'WARNING : could not refresh current Activity :' + data
-                  ? JSON.stringify(data)
-                  : 'no data'
+                'WARNING - refreshCurrentActivity : could not refresh current Activity :' +
+                  (data ? JSON.stringify(data) : 'no data')
               );
               this.updateCurrentInputService(CURRENT_ACTIVITY_NOT_SET_VALUE);
             }
@@ -454,62 +564,46 @@ HarmonyPlatformAsTVPlatform.prototype = {
         )
         .then(() => this.wsp.sendPacked(payload))
         .catch(e => {
-          this.log('ERROR : RefreshCurrentActivity : ' + e);
+          this.log(
+            'ERROR - refreshCurrentActivity : RefreshCurrentActivity : ' + e
+          );
           this.updateCurrentInputService(CURRENT_ACTIVITY_NOT_SET_VALUE);
           callback();
         });
     }
   },
 
-  refreshAccessory: function() {
-    this.refreshCharacteristic(
-      this.mainService.controlService.getCharacteristic(Characteristic.Active),
-      undefined
-    );
-    this.refreshCharacteristic(
-      this.mainService.controlService.getCharacteristic(
-        Characteristic.ActiveIdentifier
-      ),
-      undefined
-    );
-  },
+  updateCurrentInputService: function(newActivity) {
+    if (!newActivity) return;
 
-  refreshCharacteristic: function(characteristic, callback) {
-    this.refreshCurrentActivity(() => {
-      if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
-        if (characteristic instanceof Characteristic.Active) {
-          this.log.debug(
-            'INFO : updating Characteristic.Active to ' +
-              this._currentActivity !=
-              -1
-          );
-          this.updateCharacteristic(
-            characteristic,
-            this._currentActivity > 0,
-            callback
-          );
-        } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
-          this.log.debug(
-            'INFO : updating Characteristic.ActiveIdentifier to ' +
-              this._currentActivity
-          );
-          this.updateCharacteristic(
-            characteristic,
-            this._currentActivity,
-            callback
-          );
-        }
-      } else {
-        this.log.debug('WARNING : no current Activity');
-        if (characteristic instanceof Characteristic.Active) {
-          this.updateCharacteristic(characteristic, false, callback);
-        } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
-          this.updateCharacteristic(characteristic, -1, callback);
+    this._currentActivity = newActivity;
+    this._currentActivityLastUpdate = Date.now();
+
+    if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
+      for (let i = 0, len = this.inputServices.length; i < len; i++) {
+        if (this.inputServices[i].activityId == this._currentActivity) {
+          this._currentInputService = this.inputServices[i];
+          break;
         }
       }
-    });
+    } else {
+      this._currentInputService = -1;
+    }
   },
 
+  updateCharacteristic: function(characteristic, value, callback) {
+    try {
+      if (callback) {
+        callback(undefined, value);
+      } else {
+        characteristic.updateValue(value);
+      }
+    } catch (error) {
+      characteristic.updateValue(value);
+    }
+  },
+
+  ///COMANDS
   sendInputCommand: function(homebridgeAccessory, value) {
     let doCommand = true;
     let commandToSend = value;
@@ -533,9 +627,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
       doCommand = this._currentActivity !== value;
     }
     if (doCommand) {
-      this.log.debug('INFO : Activty ' + inputName + ' will be activated ');
+      this.log.debug(
+        'INFO - sendInputCommand : Activty ' + inputName + ' will be activated '
+      );
     } else {
-      this.log.debug('INFO : Activty ' + inputName + ' will not be activated ');
+      this.log.debug(
+        'INFO - sendInputCommand : Activty ' +
+          inputName +
+          ' will not be activated '
+      );
     }
 
     if (doCommand) {
@@ -555,7 +655,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     //timer for background refresh
     this.setTimer(false);
     var params = {
-      async: 'true',
+      async: 'false',
       timestamp: 0,
       args: {
         rule: 'start',
@@ -573,7 +673,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
       },
     };
 
-    this.log.debug('INFO : sending command ' + JSON.stringify(params));
+    this.log.debug(
+      'INFO - activityCommand : sending command ' + JSON.stringify(params)
+    );
 
     this.wsp
       .open()
@@ -581,7 +683,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
         this.wsp.onUnpackedMessage.addListener(data => {
           this.wsp.removeAllListeners();
 
-          this.log.debug('returned ' + JSON.stringify(data));
+          this.log.debug(
+            'INFO - activityCommand : Returned from hub ' + JSON.stringify(data)
+          );
 
           if (
             data &&
@@ -592,12 +696,14 @@ HarmonyPlatformAsTVPlatform.prototype = {
           ) {
             this._currentSetAttemps = 0;
 
-            this.log.debug('command sent');
+            this.log.debug('INFO - activityCommand : command sent');
 
             this.updateCurrentInputService(params.activityId);
 
             if (this._currentActivity != -1) {
-              this.log.debug('updating true');
+              this.log.debug(
+                'updating characteristics to ' + this._currentActivity
+              );
 
               this.updateCharacteristic(
                 this.mainService.controlService.getCharacteristic(
@@ -612,7 +718,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 true
               );
             } else {
-              this.log.debug('updating false');
+              this.log.debug('updating characteristics to off');
 
               this.updateCharacteristic(
                 this.mainService.controlService.getCharacteristic(
@@ -620,10 +726,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 ),
                 false
               );
+
+              this.updateCharacteristic(
+                this.mainService.controlService.getCharacteristic(
+                  Characteristic.ActiveIdentifier
+                ),
+                -1
+              );
             }
-
             //timer for background refresh - we delay it since activity can take some time to get up
-
             var that = this;
             setTimeout(function() {
               that.setTimer(true);
@@ -632,18 +743,22 @@ HarmonyPlatformAsTVPlatform.prototype = {
             this._currentSetAttemps = this._currentSetAttemps + 1;
             //get characteristic
             this.log.debug(
-              'WARNING : could not SET status : ' + JSON.stringify(data)
+              'WARNING - activityCommand : could not SET status : ' +
+                JSON.stringify(data)
             );
 
             //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
             var that = this;
             setTimeout(function() {
               if (that._currentSetAttemps < MAX_ATTEMPS_STATUS_UPDATE) {
-                that.log.debug('RETRY to send command ' + params.activityId);
+                that.log.debug(
+                  'INFO - activityCommand : RETRY to send command ' +
+                    params.activityId
+                );
                 that.activityCommand(homebridgeAccessory, commandToSend);
               } else {
                 that.log(
-                  'ERROR : could not SET status, no more RETRY : ' +
+                  'ERROR - activityCommand : could not SET status, no more RETRY : ' +
                     +params.activityId
                 );
                 that.refreshAccessory();
@@ -652,7 +767,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
               }
             }, DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
           } else {
-            this.log('ERROR : could not SET status, no data');
+            this.log('ERROR - activityCommand : could not SET status, no data');
             //timer for background refresh
             this.setTimer(true);
           }
@@ -660,7 +775,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       )
       .then(() => this.wsp.sendPacked(payload))
       .catch(e => {
-        this.log('ERROR : sendActivityCommand :' + e);
+        this.log('ERROR - activityCommand : ' + e);
         //timer for background refresh
         this.setTimer(true);
       });
@@ -668,16 +783,14 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   sendCommand: function(commandToSend) {
     if (!commandToSend) {
-      this.log.debug('Command not available ');
+      this.log.debug('INFO - sendCommand : Command not available ');
       return;
-    } else {
-      this.log.debug('Sending ' + commandToSend);
     }
 
     this.setTimer(false);
 
     var payload = {
-      hubId: this.remoteId,
+      hubId: this.remote_id,
       timeout: 30,
       hbus: {
         cmd: 'vnd.logitech.harmony/vnd.logitech.harmony.engine?holdAction',
@@ -690,107 +803,89 @@ HarmonyPlatformAsTVPlatform.prototype = {
         },
       },
     };
+
+    this.log.debug(
+      'INFO - sendCommand : sending press command  ' + JSON.stringify(payload)
+    );
+
     this.wsp
-      .sendRequest(payload)
-      .then(response => {
+      .open()
+      .then(() => this.wsp.sendPacked(payload))
+      .then(() => {
+        this.log.debug('INFO - sendCommand release config ');
         payload.hbus.params.status = 'release';
-        payload.hbus.params.timestamp = DELAY_FOR_COMMAND;
+        payload.hbus.params.timestamp = '50';
       })
       .then(() => {
-        this.wsp.sendRequest(payload);
-        this.setTimer(true);
+        this.log.debug(
+          'INFO - sendCommand2 : sending release command  ' +
+            JSON.stringify(payload)
+        );
+        this.wsp
+          .open()
+          .then(() => this.wsp.sendPacked(payload))
+          .then(() => {
+            this.log.debug('INFO - sendCommand2 done');
+            this.setTimer(true);
+          })
+          .catch(e => {
+            this.log('ERROR : sendCommand2 release :' + e);
+            //timer for background refresh
+            this.setTimer(true);
+          });
       })
       .catch(e => {
+        this.log('ERROR : sendCommand press :' + e);
+        //timer for background refresh
         this.setTimer(true);
       });
-    /* sends multiple commands :( */
-
-    /*
-    var payload = {
-      hubId: this.remote_id,
-      timeout: 30,
-      hbus: {
-        cmd: 'vnd.logitech.harmony/vnd.logitech.harmony.engine?holdAction',
-        id: 0,
-        params: {
-          status: 'press',
-          verb: 'get',
-          action: commandToSend,
-        },
-      },
-    };
-
-    this.wsp
-    .open()
-    .then(() => this.wsp.sendRequest(payload))
-    .then(() =>
-      //timer for background refresh
-      this.setTimer(true)
-    )
-    .catch(e => {
-      this.log('ERROR : sendCommand :' + e);
-      //timer for background refresh
-      this.setTimer(true);
-
-    });
-    */
   },
 
-  updateCurrentInputService: function(newActivity) {
-    if (!newActivity) return;
-
-    this._currentActivity = newActivity;
-    this._currentActivityLastUpdate = Date.now();
-
-    if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
-      for (let i = 0, len = this.inputServices.length; i < len; i++) {
-        if (this.inputServices[i].activityId == this._currentActivity) {
-          this._currentInputService = this.inputServices[i];
-          break;
-        }
-      }
-    } else {
-      this._currentInputService = undefined;
-    }
-  },
-
-  updateCharacteristic: function(characteristic, value, callback) {
-    try {
-      if (callback) {
-        callback(undefined, value);
-      } else {
-        characteristic.updateValue(value);
-      }
-    } catch (error) {
-      characteristic.updateValue(value);
-    }
-  },
-
+  //HOMEKIT CHARACTERISTICS EVENTS
   bindCharacteristicEvents: function(
     characteristic,
     service,
     homebridgeAccessory
   ) {
     if (characteristic instanceof Characteristic.Active) {
-      //set to main activity or off
+      //set to main activity / activeIdentifier or off
       characteristic.on(
         'set',
         function(value, callback) {
-          this.log.debug('SET Characteristic.Active ' + value);
-          this.refreshCurrentActivity(() => {
-            this.sendInputCommand(
-              homebridgeAccessory,
-              value == 1 ? '' + this.mainActivityId : '-1'
-            );
+          this.log.debug('INFO - SET Characteristic.Active ' + value);
+
+          if (value == 0) {
+            this.log.debug('INFO - switching off');
+            this.sendInputCommand(homebridgeAccessory, '-1');
+
             callback(null);
-          });
+          } else {
+            this.refreshCurrentActivity(() => {
+              if (this._currentActivity < 0) {
+                let activityToLaunch = service.controlService.getCharacteristic(
+                  Characteristic.ActiveIdentifier
+                ).value;
+                this.log.debug(
+                  'INFO - current Activity to launch - ' + activityToLaunch
+                );
+                if (!activityToLaunch) {
+                  activityToLaunch = this.mainActivityId;
+                }
+                this.sendInputCommand(
+                  homebridgeAccessory,
+                  '' + activityToLaunch
+                );
+              }
+              callback(null);
+            });
+          }
         }.bind(this)
       );
 
       characteristic.on(
         'get',
         function(callback) {
-          this.log.debug('GET Characteristic.Active');
+          this.log.debug('INFO - GET Characteristic.Active');
           homebridgeAccessory.platform.refreshCharacteristic(
             characteristic,
             callback
@@ -802,15 +897,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic.on(
         'set',
         function(value, callback) {
-          this.log.debug('SET Characteristic.ActiveIdentifier ' + value);
+          this.log.debug('INFO - SET Characteristic.ActiveIdentifier ' + value);
           this.sendInputCommand(homebridgeAccessory, '' + value);
-          callback();
+          callback(null);
         }.bind(this)
       );
       characteristic.on(
         'get',
         function(callback) {
-          this.log.debug('GET Characteristic.ActiveIdentifier');
+          this.log.debug('INFO - GET Characteristic.ActiveIdentifier');
           homebridgeAccessory.platform.refreshCharacteristic(
             characteristic,
             callback
@@ -823,7 +918,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         function(newValue, callback) {
           this.refreshCurrentActivity(() => {
             this.log.debug(
-              'Characteristic.RemoteKey set : ' +
+              'INFO - SET Characteristic.RemoteKey : ' +
                 newValue +
                 ' with currentActivity ' +
                 this._currentActivity
@@ -832,14 +927,16 @@ HarmonyPlatformAsTVPlatform.prototype = {
             if (this._currentActivity > 0) {
               switch (true) {
                 case newValue === Characteristic.RemoteKey.ARROW_UP:
-                  this.log.debug(this._currentInputService.DirectionUpCommand);
+                  this.log.debug(
+                    'INFO - sending DirectionUpCommand for ARROW_UP'
+                  );
                   this.sendCommand(
                     this._currentInputService.DirectionUpCommand
                   );
                   break;
                 case newValue === Characteristic.RemoteKey.ARROW_DOWN:
                   this.log.debug(
-                    this._currentInputService.DirectionDownCommand
+                    'INFO - sending DirectionDownCommand for ARROW_DOWN'
                   );
                   this.sendCommand(
                     this._currentInputService.DirectionDownCommand
@@ -847,7 +944,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
                   break;
                 case newValue === Characteristic.RemoteKey.ARROW_LEFT:
                   this.log.debug(
-                    this._currentInputService.DirectionLeftCommand
+                    'INFO - sending DirectionLeftCommand for ARROW_LEFT'
                   );
                   this.sendCommand(
                     this._currentInputService.DirectionLeftCommand
@@ -855,55 +952,64 @@ HarmonyPlatformAsTVPlatform.prototype = {
                   break;
                 case newValue === Characteristic.RemoteKey.ARROW_RIGHT:
                   this.log.debug(
-                    this._currentInputService.DirectionRightCommand
+                    'INFO - sending DirectionRightCommand for ARROW_RIGHT'
                   );
                   this.sendCommand(
                     this._currentInputService.DirectionRightCommand
                   );
                   break;
                 case newValue === Characteristic.RemoteKey.SELECT:
-                  this.log.debug(this._currentInputService.SelectCommand);
+                  this.log.debug('INFO - sending SelectCommand for SELECT');
                   this.sendCommand(this._currentInputService.SelectCommand);
                   break;
                 case newValue === Characteristic.RemoteKey.PLAY_PAUSE:
-                  this.log.debug(this._currentInputService.PlayCommand);
+                  this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
                   this.sendCommand(this._currentInputService.PlayCommand);
                   break;
                 case newValue === Characteristic.RemoteKey.INFORMATION:
-                  this.log.debug(this._currentInputService.MenuCommand);
+                  this.log.debug('INFO - sending MenuCommand for INFORMATION');
                   this.sendCommand(this._currentInputService.MenuCommand);
                   break;
                 case newValue === Characteristic.RemoteKey.BACK:
-                case newValue === Characteristic.RemoteKey.EXIT:
-                  this.log.debug(this._currentInputService.ReturnCommand);
+                  this.log.debug('INFO - sending ReturnCommand for BACK');
                   this.sendCommand(this._currentInputService.ReturnCommand);
                   break;
+                case newValue === Characteristic.RemoteKey.EXIT:
+                  this.log.debug('INFO - sending HomeCommand for EXIT');
+                  this.sendCommand(this._currentInputService.HomeCommand);
+                  break;
                 case newValue === Characteristic.RemoteKey.REWIND:
-                  this.log.debug(this._currentInputService.RewindCommand);
+                  this.log.debug('INFO - sending RewindCommand for REWIND');
                   this.sendCommand(this._currentInputService.RewindCommand);
                   break;
                 case newValue === Characteristic.RemoteKey.FAST_FORWARD:
-                  this.log.debug(this._currentInputService.FastForwardCommand);
+                  this.log.debug(
+                    'INFO - sending FastForwardCommand for FAST_FORWARD'
+                  );
                   this.sendCommand(
                     this._currentInputService.FastForwardCommand
                   );
                   break;
                 case newValue === Characteristic.RemoteKey.NEXT_TRACK:
-                  this.log.debug(this._currentInputService.SkipForwardCommand);
+                  this.log.debug(
+                    'INFO - sending SkipForwardCommand for NEXT_TRACK'
+                  );
                   this.sendCommand(
                     this._currentInputService.SkipForwardCommand
                   );
                   break;
                 case newValue === Characteristic.RemoteKey.PREVIOUS_TRACK:
-                  this.log.debug(this._currentInputService.SkipBackwardCommand);
+                  this.log.debug(
+                    'INFO - sending SkipBackwardCommand for PREVIOUS_TRACK'
+                  );
                   this.sendCommand(
                     this._currentInputService.SkipBackwardCommand
                   );
                   break;
               }
             }
+            callback(null);
           });
-          callback(null);
         }.bind(this)
       );
     } else if (characteristic instanceof Characteristic.Mute) {
@@ -911,7 +1017,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         'set',
         function(value, callback) {
           if (this._currentActivity > 0) {
-            this.log('Characteristic.Mute set : ' + value);
+            this.log('INFO - SET Characteristic.Mute : ' + value);
             this.sendCommand(this._currentInputService.MuteCommand);
           }
           callback(null);
@@ -921,7 +1027,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic.on(
         'get',
         function(callback) {
-          this.log('Characteristic.Mute get');
+          this.log('INFO - GET Characteristic.Mute');
           callback(null, false);
         }.bind(this)
       );
@@ -930,7 +1036,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         'set',
         function(value, callback) {
           if (this._currentActivity > 0) {
-            this.log('Characteristic.VolumeSelector set : ' + value);
+            this.log('INFO - SET Characteristic.VolumeSelector : ' + value);
             if (value === Characteristic.VolumeSelector.DECREMENT) {
               this.sendCommand(this._currentInputService.VolumeDownCommand);
             } else {
