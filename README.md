@@ -70,6 +70,9 @@ Fields:
 
 ## Changelog
 
+- 0.2.4
+  - [FIX] TV MODE - crash on button /volume action #50
+  - [NEW] some code refactoring between two modes (I hope nothing is broken :)
 - 0.2.3
   - [NEW] TV MODE - restoring SkipedIfSameStateActivities options #46
 - 0.2.2

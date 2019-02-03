@@ -1,6 +1,6 @@
-var HarmonyPlatformAsSwitches = require('./harmonyAsSwitches')
+const HarmonyPlatformAsSwitches = require('./harmonyAsSwitches')
   .HarmonyPlatformAsSwitches;
-var HarmonyPlatformAsTVPlatform = require('./harmonyAsTVPlatform')
+const HarmonyPlatformAsTVPlatform = require('./harmonyAsTVPlatform')
   .HarmonyPlatformAsTVPlatform;
 
 module.exports = function(homebridge) {
@@ -10,7 +10,6 @@ module.exports = function(homebridge) {
     HarmonyPlatform
   );
 };
-
 
 function HarmonyPlatform(log, config, api) {
   this.log = log;

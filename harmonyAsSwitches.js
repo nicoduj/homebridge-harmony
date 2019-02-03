@@ -1,16 +1,10 @@
-DEFAULT_HUB_PORT = '8088';
-TIMEOUT_REFRESH_CURRENT_ACTIVITY = 1500;
-CURRENT_ACTIVITY_NOT_SET_VALUE = -9999;
-MAX_ATTEMPS_STATUS_UPDATE = 12;
-DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE = 2000;
-DELAY_TO_UPDATE_STATUS = 800;
-DELAY_TO_RELAUNCH_TIMER = 8000;
-
 var Service, Characteristic;
 var request = require('request');
 const url = require('url');
 const W3CWebSocket = require('websocket').w3cwebsocket;
 const WebSocketAsPromised = require('websocket-as-promised');
+const HarmonyBase = require('./harmonyBase').HarmonyBase;
+const HarmonyConst = require('./harmonyConst');
 
 module.exports = {
   HarmonyPlatformAsSwitches: HarmonyPlatformAsSwitches,
@@ -20,44 +14,15 @@ function HarmonyPlatformAsSwitches(log, config, api) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
 
-  this.log = log;
-  this.hubIP = config['hubIP'];
+  this.harmonyBase = new HarmonyBase(api);
+  this.harmonyBase.configCommonProperties(log, config, this);
+  this.mainActivity = config['mainActivity'];
   this.showTurnOffActivity = config['showTurnOffActivity'];
-  this.name = config['name'];
-  this.devMode = config['DEVMODE'];
-  this.refreshTimer = config['refreshTimer'];
-  this.refreshByHub = config['refreshByHub'];
-
-  this.addAllActivitiesToSkipedIfSameStateActivitiesList =
-    config['addAllActivitiesToSkipedIfSameStateActivitiesList'];
-  this.skipedIfSameStateActivities = config['skipedIfSameStateActivities'];
   this.publishActivitiesAsIndividualAccessories =
     config['publishActivitiesAsIndividualAccessories'];
 
   if (this.publishActivitiesAsIndividualAccessories == undefined)
     this.publishActivitiesAsIndividualAccessories = true;
-
-  this._currentActivity = -9999;
-  this._currentActivityLastUpdate = undefined;
-  this._currentSetAttemps = 0;
-  this._foundAccessories = [];
-
-  if (this.refreshByHub == undefined) this.refreshByHub = true;
-
-  if (
-    !this.refreshByHub &&
-    this.refreshTimer &&
-    this.refreshTimer > 0 &&
-    (this.refreshTimer < 5 || this.refreshTimer > 600)
-  )
-    this.refreshTimer = 300;
-
-  this.log.debug(
-    'INFO : following activites controls will be ignored if they are in the same state : ' +
-      (this.addAllActivitiesToSkipedIfSameStateActivitiesList
-        ? 'ALL'
-        : this.skipedIfSameStateActivities)
-  );
 
   if (api) {
     // Save the API object as plugin needs to register new accessory via this object
@@ -78,72 +43,7 @@ function HarmonyPlatformAsSwitches(log, config, api) {
 
 HarmonyPlatformAsSwitches.prototype = {
   setTimer: function(on) {
-    if (!this.refreshByHub) {
-      if (this.refreshTimer && this.refreshTimer > 0) {
-        if (on && this.timerID == undefined) {
-          this.log.debug(
-            'Setting Timer for background refresh every  : ' +
-              this.refreshTimer +
-              's'
-          );
-          this.timerID = setInterval(
-            () => this.refreshAccessory(),
-            this.refreshTimer * 1000
-          );
-        } else if (!on && this.timerID !== undefined) {
-          this.log.debug('Clearing Timer');
-          clearInterval(this.timerID);
-          this.timerID = undefined;
-        }
-      }
-    } else {
-      if (on) {
-        var payload = {
-          hubId: this.remote_id,
-          timeout: 30,
-          hbus: {
-            cmd: 'vnd.logitech.connect/vnd.logitech.statedigest?get',
-            id: 0,
-            params: {
-              verb: 'get',
-              format: 'json',
-            },
-          },
-        };
-
-        this.wspRefresh.onClose.addListener(() => {
-          this.wspRefresh.removeAllListeners();
-          this.log.debug('INFO - RefreshSocket - Closed');
-          clearInterval(this.timerID);
-        });
-
-        this.wspRefresh
-          .open()
-          .then(() => this._heartbeat())
-          .then(() =>
-            this.wspRefresh.onUnpackedMessage.addListener(
-              this._onMessage.bind(this)
-            )
-          )
-          .then(() => this.wspRefresh.sendPacked(payload))
-          .then(() => this.log.debug('INFO - RefreshSocket - Opened'))
-          .catch(e => {
-            this.log('ERROR - setTimer wspRefresh :' + e);
-            clearInterval(this.timerID);
-            this.log('INFO - relaunching timer');
-            var that = this;
-            setTimeout(function() {
-              that.setTimer(true);
-            }, DELAY_TO_RELAUNCH_TIMER);
-          });
-      } else {
-        this.wspRefresh.close();
-      }
-    }
-  },
-
-  _heartbeat() {
-    this.timerID = setInterval(() => this.wspRefresh.send(''), 55000);
+    this.harmonyBase.setTimer(on, this);
   },
 
   _onMessage(message) {
@@ -158,192 +58,80 @@ HarmonyPlatformAsSwitches.prototype = {
     }
   },
 
-  accessories: function(callback) {
-    this.log('Loading activities...');
-
+  readAccessories: function(data, callback) {
     var that = this;
+    let activities = data.data.activity;
 
-    let headers = {
-      Origin: 'http://localhost.nebula.myharmony.com',
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'Accept-Charset': 'utf-8',
-    };
+    let services = [];
 
-    let hubUrl = `http://${this.hubIP}:${DEFAULT_HUB_PORT}/`;
+    for (let i = 0, len = activities.length; i < len; i++) {
+      if (activities[i].id != -1 || that.showTurnOffActivity) {
+        let switchName = activities[i].label;
+        let accessoryName = that.name + '-' + activities[i].label;
 
-    let jsonBody = {
-      'id ': 1,
-      cmd: 'connect.discoveryinfo?get',
-      params: {},
-    };
+        if (that.devMode) {
+          switchName = 'DEV' + switchName;
+        }
 
-    request(
-      {
-        url: hubUrl,
-        method: 'POST',
-        headers: headers,
-        body: jsonBody,
-        json: true,
-      },
-      function(error, response, body) {
-        if (error) {
-          that.log('Error retrieving info from hub : ' + error.message);
-        } else if (response && response.statusCode !== 200) {
-          that.log(
-            'Did not received 200 statuts, but  ' +
-              response.statusCode +
-              ' instead from hub'
-          );
-        } else if (body && body.data) {
-          that.friendlyName = body.data.friendlyName;
-          that.remote_id = body.data.remoteId;
-          that.domain = url.parse(body.data.discoveryServerUri).hostname;
-          that.email = body.data.email;
-          that.account_id = body.data.accountId;
+        that.log('Discovered Activity : ' + switchName);
+        let service = {
+          controlService: new Service.Switch(switchName),
+          characteristics: [Characteristic.On],
+        };
+        service.controlService.subtype = switchName;
+        service.controlService.id = activities[i].id;
+        services.push(service);
 
-          wsUrl = `ws://${that.hubIP}:${DEFAULT_HUB_PORT}/?domain=${
-            that.domain
-          }&hubId=${that.remote_id}`;
-
-          that.wsp = new WebSocketAsPromised(wsUrl, {
-            createWebSocket: url => new W3CWebSocket(url),
-            packMessage: data => JSON.stringify(data),
-            unpackMessage: message => JSON.parse(message),
-            attachRequestId: (data, requestId) => {
-              data.hbus.id = requestId;
-              return data;
-            },
-            extractRequestId: data => data && data.id,
-          });
-
-          if (that.refreshByHub) {
-            that.wspRefresh = new WebSocketAsPromised(wsUrl, {
-              createWebSocket: url => new W3CWebSocket(url),
-              packMessage: data => JSON.stringify(data),
-              unpackMessage: message => JSON.parse(message),
-              attachRequestId: (data, requestId) => {
-                data.hbus.id = requestId;
-                return data;
-              },
-              extractRequestId: data => data && data.id,
-            });
-          }
-
-          params = {
-            verb: 'get',
-            format: 'json',
+        if (that.publishActivitiesAsIndividualAccessories) {
+          that.log('Adding Accessory : ' + accessoryName);
+          let myHarmonyAccessory = new HarmonyAccessory(services);
+          myHarmonyAccessory.getServices = function() {
+            return that.getServices(myHarmonyAccessory);
           };
-
-          payload = {
-            hubId: that.remote_id,
-            timeout: 30,
-            hbus: {
-              cmd: `vnd.logitech.harmony/vnd.logitech.harmony.engine?config`,
-              id: 0,
-              params: params,
-            },
-          };
-
-          that.wsp
-            .open()
-            .then(() =>
-              that.wsp.onUnpackedMessage.addListener(data => {
-                that.wsp.removeAllListeners();
-
-                that.log.debug('Hub config : ' + JSON.stringify(data));
-                let activities = data.data.activity;
-
-                let services = [];
-
-                for (let i = 0, len = activities.length; i < len; i++) {
-                  if (activities[i].id != -1 || that.showTurnOffActivity) {
-                    let switchName = activities[i].label;
-                    let accessoryName = that.name + '-' + activities[i].label;
-
-                    if (that.devMode) {
-                      switchName = 'DEV' + switchName;
-                    }
-
-                    that.log('Discovered Activity : ' + switchName);
-                    let service = {
-                      controlService: new Service.Switch(switchName),
-                      characteristics: [Characteristic.On],
-                    };
-                    service.controlService.subtype = switchName;
-                    service.controlService.id = activities[i].id;
-                    services.push(service);
-
-                    if (that.publishActivitiesAsIndividualAccessories) {
-                      that.log('Adding Accessory : ' + accessoryName);
-                      let myHarmonyAccessory = new HarmonyAccessory(services);
-                      myHarmonyAccessory.getServices = function() {
-                        return that.getServices(myHarmonyAccessory);
-                      };
-                      myHarmonyAccessory.platform = that;
-                      myHarmonyAccessory.name = accessoryName;
-                      myHarmonyAccessory.model = that.name;
-                      myHarmonyAccessory.manufacturer = 'Harmony';
-                      myHarmonyAccessory.serialNumber = that.hubIP;
-                      that._foundAccessories.push(myHarmonyAccessory);
-                      services = [];
-                    }
-                  }
-                }
-
-                if (!that.publishActivitiesAsIndividualAccessories) {
-                  that.log('Adding Accessory : ' + that.name);
-                  let myHarmonyAccessory = new HarmonyAccessory(services);
-                  myHarmonyAccessory.getServices = function() {
-                    return that.getServices(myHarmonyAccessory);
-                  };
-                  myHarmonyAccessory.platform = that;
-                  myHarmonyAccessory.name = that.name;
-                  myHarmonyAccessory.model = that.name;
-                  myHarmonyAccessory.manufacturer = 'Harmony';
-                  myHarmonyAccessory.serialNumber = that.hubIP;
-                  that._foundAccessories.push(myHarmonyAccessory);
-                }
-
-                //timer for background refresh
-                that.setTimer(true);
-
-                callback(that._foundAccessories);
-              })
-            )
-            .then(() => that.wsp.sendPacked(payload))
-            .catch(e => {
-              that.log('ERROR : GetConfiguration :' + e);
-              callback(that._foundAccessories);
-            });
-        } else {
-          that.log(
-            'Error : No config retrieved from hub, check IP and connectivity'
-          );
-          callback(that._foundAccessories);
+          myHarmonyAccessory.platform = that;
+          myHarmonyAccessory.name = accessoryName;
+          myHarmonyAccessory.model = that.name;
+          myHarmonyAccessory.manufacturer = 'Harmony';
+          myHarmonyAccessory.serialNumber = that.hubIP;
+          that._foundAccessories.push(myHarmonyAccessory);
+          services = [];
         }
       }
-    );
+    }
+
+    if (!that.publishActivitiesAsIndividualAccessories) {
+      that.log('Adding Accessory : ' + that.name);
+      let myHarmonyAccessory = new HarmonyAccessory(services);
+      myHarmonyAccessory.getServices = function() {
+        return that.getServices(myHarmonyAccessory);
+      };
+      myHarmonyAccessory.platform = that;
+      myHarmonyAccessory.name = that.name;
+      myHarmonyAccessory.model = that.name;
+      myHarmonyAccessory.manufacturer = 'Harmony';
+      myHarmonyAccessory.serialNumber = that.hubIP;
+      that._foundAccessories.push(myHarmonyAccessory);
+    }
+
+    //timer for background refresh
+    setTimeout(function() {
+      that.refreshAccessory();
+      that.setTimer(true);
+    }, HarmonyConst.DELAY_LAUNCH_REFRESH);
+
+    callback(that._foundAccessories);
   },
 
-  updateCharacteristic: function(characteristic, characteristicIsOn, callback) {
-    try {
-      if (callback) {
-        callback(undefined, characteristicIsOn);
-      } else {
-        characteristic.updateValue(characteristicIsOn);
-      }
-    } catch (error) {
-      characteristic.updateValue(characteristicIsOn);
-    }
+  accessories: function(callback) {
+    this.harmonyBase.configureAccessories(this, callback);
   },
 
   refreshCurrentActivity: function(callback) {
     if (
-      this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE &&
+      this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE &&
       this._currentActivityLastUpdate &&
       Date.now() - this._currentActivityLastUpdate <
-        TIMEOUT_REFRESH_CURRENT_ACTIVITY
+        HarmonyConst.TIMEOUT_REFRESH_CURRENT_ACTIVITY
     ) {
       // we don't refresh since status was retrieved not so far away
       this.log.debug(
@@ -394,7 +182,8 @@ HarmonyPlatformAsSwitches.prototype = {
                   ? JSON.stringify(data)
                   : 'no data'
               );
-              this._currentActivity = CURRENT_ACTIVITY_NOT_SET_VALUE;
+              this._currentActivity =
+                HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE;
             }
             callback();
           })
@@ -402,7 +191,7 @@ HarmonyPlatformAsSwitches.prototype = {
         .then(() => this.wsp.sendPacked(payload))
         .catch(e => {
           this.log('ERROR : RefreshCurrentActivity : ' + e);
-          this._currentActivity = CURRENT_ACTIVITY_NOT_SET_VALUE;
+          this._currentActivity = HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE;
           callback();
         });
     }
@@ -413,7 +202,7 @@ HarmonyPlatformAsSwitches.prototype = {
     var characteristic = serviceControl.getCharacteristic(Characteristic.On);
 
     this.refreshCurrentActivity(() => {
-      if (this._currentActivity > CURRENT_ACTIVITY_NOT_SET_VALUE) {
+      if (this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
         let characteristicIsOn = this._currentActivity == serviceControl.id;
 
         this.log.debug(
@@ -424,14 +213,14 @@ HarmonyPlatformAsSwitches.prototype = {
             ' set to ' +
             characteristicIsOn
         );
-        homebridgeAccessory.platform.updateCharacteristic(
+        homebridgeAccessory.platform.harmonyBase.updateCharacteristic(
           characteristic,
           characteristicIsOn,
           callback
         );
       } else {
         this.log.debug('WARNING : no current Activity');
-        homebridgeAccessory.platform.updateCharacteristic(
+        homebridgeAccessory.platform.harmonyBase.updateCharacteristic(
           characteristic,
           characteristic.value,
           callback
@@ -539,7 +328,7 @@ HarmonyPlatformAsSwitches.prototype = {
             var that = this;
             setTimeout(function() {
               that.setTimer(true);
-            }, DELAY_TO_RELAUNCH_TIMER);
+            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_ACTIVITY);
           } else if (data) {
             if (data.code == 202 || data.code == 100) {
               this._currentSetAttemps = this._currentSetAttemps + 1;
@@ -555,7 +344,10 @@ HarmonyPlatformAsSwitches.prototype = {
               //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
               var that = this;
               setTimeout(function() {
-                if (that._currentSetAttemps < MAX_ATTEMPS_STATUS_UPDATE) {
+                if (
+                  that._currentSetAttemps <
+                  HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
+                ) {
                   that.log.debug(
                     'RETRY to send command on : ' + serviceControl.displayName
                   );
@@ -569,12 +361,15 @@ HarmonyPlatformAsSwitches.prototype = {
                   //timer for background refresh
                   that.setTimer(true);
                 }
-              }, DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
+              }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
             }
           } else {
             this.log('ERROR : could not SET status, no data');
             //timer for background refresh
-            this.setTimer(true);
+            var that = this;
+            setTimeout(function() {
+              that.setTimer(true);
+            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);
           }
         })
       )
@@ -582,7 +377,10 @@ HarmonyPlatformAsSwitches.prototype = {
       .catch(e => {
         this.log('ERROR : sendCommand :' + e);
         //timer for background refresh
-        this.setTimer(true);
+        var that = this;
+        setTimeout(function() {
+          that.setTimer(true);
+        }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);
       });
   },
 
@@ -667,7 +465,7 @@ HarmonyPlatformAsSwitches.prototype = {
           callback();
           setTimeout(function() {
             characteristic.updateValue(currentValue);
-          }, DELAY_TO_UPDATE_STATUS);
+          }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
         }
       }.bind(this)
     );
@@ -683,47 +481,8 @@ HarmonyPlatformAsSwitches.prototype = {
     );
   },
 
-  getInformationService: function(homebridgeAccessory) {
-    let informationService = new Service.AccessoryInformation();
-    informationService
-      .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
-      .setCharacteristic(
-        Characteristic.Manufacturer,
-        homebridgeAccessory.manufacturer
-      )
-      .setCharacteristic(Characteristic.Model, homebridgeAccessory.model)
-      .setCharacteristic(
-        Characteristic.SerialNumber,
-        homebridgeAccessory.serialNumber
-      );
-    return informationService;
-  },
-
   getServices: function(homebridgeAccessory) {
-    let services = [];
-    let informationService = homebridgeAccessory.platform.getInformationService(
-      homebridgeAccessory
-    );
-    services.push(informationService);
-    for (let s = 0; s < homebridgeAccessory.services.length; s++) {
-      let service = homebridgeAccessory.services[s];
-      for (let i = 0; i < service.characteristics.length; i++) {
-        let characteristic = service.controlService.getCharacteristic(
-          service.characteristics[i]
-        );
-        if (characteristic == undefined)
-          characteristic = service.controlService.addCharacteristic(
-            service.characteristics[i]
-          );
-        homebridgeAccessory.platform.bindCharacteristicEvents(
-          characteristic,
-          service,
-          homebridgeAccessory
-        );
-      }
-      services.push(service.controlService);
-    }
-    return services;
+    return this.harmonyBase.getServices(homebridgeAccessory);
   },
 };
 
