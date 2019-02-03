@@ -70,6 +70,8 @@ Fields:
 
 ## Changelog
 
+- 0.2.6
+  - [FIX] background refresh was stopping after 1 minute
 - 0.2.5
   - [FIX] bugs and refactoring
 - 0.2.4

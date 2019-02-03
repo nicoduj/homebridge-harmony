@@ -184,7 +184,7 @@ HarmonyBase.prototype = {
           harmonyPlatform.setTimer(true);
         }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER);
       }
-    }, 550000);
+    }, 55000);
   },
 
   configureAccessories: function(harmonyPlatform, callback) {
