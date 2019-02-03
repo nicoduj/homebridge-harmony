@@ -1,5 +1,3 @@
-var Service, Characteristic;
-
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
 
@@ -41,13 +39,21 @@ HarmonyPlatformAsTVPlatform.prototype = {
   },
 
   _onMessage(message) {
+    this.log.debug(
+      'INFO - _onMessage : received message : ' + JSON.stringify(message)
+    );
     if (
-      message.type === 'connect.stateDigest?notify' &&
-      message.data.activityStatus === 2 &&
-      message.data.activityId === message.data.runningActivityList
+      message.type === 'connect.stateDigest?get' ||
+      (message.type === 'connect.stateDigest?notify' &&
+        message.data.activityStatus === 2 &&
+        message.data.activityId === message.data.runningActivityList) ||
+      (message.type === 'connect.stateDigest?notify' &&
+        message.data.activityStatus === 0 &&
+        message.data.activityId === '-1' &&
+        message.data.runningActivityList === '')
     ) {
       //need to refresh, activity is started.
-      this.log.debug('Refreshing activity' + JSON.stringify(message));
+      this.log.debug('INFO - _onMessage : Refreshing activity');
 
       this.updateCurrentInputService(message.data.activityId);
 
@@ -631,7 +637,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
               } else {
                 that.log(
                   'ERROR - activityCommand : could not SET status, no more RETRY : ' +
-                    +params.activityId
+                    params.activityId
                 );
                 that.refreshAccessory();
                 //timer for background refresh

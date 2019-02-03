@@ -1,5 +1,4 @@
 var Service, Characteristic;
-
 const request = require('request');
 const url = require('url');
 const W3CWebSocket = require('websocket').w3cwebsocket;
@@ -160,11 +159,10 @@ HarmonyBase.prototype = {
           )
           .catch(e => {
             harmonyPlatform.log('ERROR - setTimer wspRefresh :' + e);
-            clearInterval(this.timerID);
+            clearInterval(harmonyPlatform.timerID);
             harmonyPlatform.log('INFO - relaunching timer');
-            var that = this;
             setTimeout(function() {
-              that.setTimer(true);
+              harmonyPlatform.setTimer(true);
             }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER);
           });
       } else {
@@ -174,10 +172,19 @@ HarmonyBase.prototype = {
   },
 
   _heartbeat(harmonyPlatform) {
-    harmonyPlatform.timerID = setInterval(
-      () => harmonyPlatform.wspRefresh.send(''),
-      55000
-    );
+    harmonyPlatform.timerID = setInterval(() => {
+      harmonyPlatform.log.debug('INFO - _heartbeat');
+      try {
+        harmonyPlatform.wspRefresh.send('');
+      } catch (error) {
+        harmonyPlatform.log('ERROR - _heartbeat :' + e);
+        clearInterval(harmonyPlatform.timerID);
+        harmonyPlatform.log('INFO - relaunching timer');
+        setTimeout(function() {
+          harmonyPlatform.setTimer(true);
+        }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER);
+      }
+    }, 550000);
   },
 
   configureAccessories: function(harmonyPlatform, callback) {

@@ -1,8 +1,3 @@
-var Service, Characteristic;
-var request = require('request');
-const url = require('url');
-const W3CWebSocket = require('websocket').w3cwebsocket;
-const WebSocketAsPromised = require('websocket-as-promised');
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
 
@@ -47,13 +42,21 @@ HarmonyPlatformAsSwitches.prototype = {
   },
 
   _onMessage(message) {
+    this.log.debug(
+      'INFO - _onMessage : received message : ' + JSON.stringify(message)
+    );
     if (
-      message.type === 'connect.stateDigest?notify' &&
-      message.data.activityStatus === 2 &&
-      message.data.activityId === message.data.runningActivityList
+      message.type === 'connect.stateDigest?get' ||
+      (message.type === 'connect.stateDigest?notify' &&
+        message.data.activityStatus === 2 &&
+        message.data.activityId === message.data.runningActivityList) ||
+      (message.type === 'connect.stateDigest?notify' &&
+        message.data.activityStatus === 0 &&
+        message.data.activityId === '-1' &&
+        message.data.runningActivityList === '')
     ) {
       //need to refresh, activity is started.
-      this.log.debug('Refreshing activity' + JSON.stringify(message));
+      this.log.debug('INFO - _onMessage :Refreshing activity');
       this.refreshAccessory();
     }
   },
@@ -135,21 +138,16 @@ HarmonyPlatformAsSwitches.prototype = {
     ) {
       // we don't refresh since status was retrieved not so far away
       this.log.debug(
-        'INFO : NO refresh needed since last update was on :' +
+        'INFO - refreshCurrentActivity : NO refresh needed since last update was on :' +
           this._currentActivity +
           ' and current Activity is set'
       );
       callback();
     } else {
       this.log.debug(
-        'INFO : Refresh needed since last update is too old or current Activity is not set : ' +
+        'INFO - refreshCurrentActivity : Refresh needed since last update is too old or current Activity is not set : ' +
           this._currentActivity
       );
-
-      params = {
-        verb: 'get',
-        format: 'json',
-      };
 
       payload = {
         hubId: this.remote_id,
@@ -158,7 +156,10 @@ HarmonyPlatformAsSwitches.prototype = {
           cmd:
             'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity',
           id: 0,
-          params: params,
+          params: {
+            verb: 'get',
+            format: 'json',
+          },
         },
       };
 
@@ -170,6 +171,7 @@ HarmonyPlatformAsSwitches.prototype = {
 
             if (
               data &&
+              data.type !== 'connect.stateDigest?notify' &&
               data.data &&
               data.code &&
               (data.code == 200 || data.code == 100)
@@ -178,9 +180,8 @@ HarmonyPlatformAsSwitches.prototype = {
               this._currentActivityLastUpdate = Date.now();
             } else {
               this.log.debug(
-                'WARNING : could not refresh current Activity :' + data
-                  ? JSON.stringify(data)
-                  : 'no data'
+                'WARNING - refreshCurrentActivity : could not refresh current Activity :' +
+                  (data ? JSON.stringify(data) : 'no data')
               );
               this._currentActivity =
                 HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE;
@@ -190,7 +191,9 @@ HarmonyPlatformAsSwitches.prototype = {
         )
         .then(() => this.wsp.sendPacked(payload))
         .catch(e => {
-          this.log('ERROR : RefreshCurrentActivity : ' + e);
+          this.log(
+            'ERROR - refreshCurrentActivity : RefreshCurrentActivity : ' + e
+          );
           this._currentActivity = HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE;
           callback();
         });
@@ -239,25 +242,41 @@ HarmonyPlatformAsSwitches.prototype = {
     }
   },
 
-  command: function(cmd, params, homebridgeAccessory) {
+  activityCommand: function(homebridgeAccessory, commandToSend) {
     //timer for background refresh
     this.setTimer(false);
+    var params = {
+      async: 'false',
+      timestamp: 0,
+      args: {
+        rule: 'start',
+      },
+      activityId: commandToSend,
+    };
 
-    payload = {
+    var payload = {
       hubId: this.remote_id,
       timeout: 30,
       hbus: {
-        cmd: cmd,
+        cmd: 'harmony.activityengine?runactivity',
         id: 0,
         params: params,
       },
     };
+
+    this.log.debug(
+      'INFO - activityCommand : sending command ' + JSON.stringify(params)
+    );
 
     this.wsp
       .open()
       .then(() =>
         this.wsp.onUnpackedMessage.addListener(data => {
           this.wsp.removeAllListeners();
+
+          this.log.debug(
+            'INFO - activityCommand : Returned from hub ' + JSON.stringify(data)
+          );
 
           var serviceControl;
 
@@ -324,47 +343,45 @@ HarmonyPlatformAsSwitches.prototype = {
 
             this._currentActivity = params.activityId;
             //timer for background refresh - we delay it since activity can take some time to get up
-
             var that = this;
             setTimeout(function() {
               that.setTimer(true);
             }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_ACTIVITY);
-          } else if (data) {
-            if (data.code == 202 || data.code == 100) {
-              this._currentSetAttemps = this._currentSetAttemps + 1;
-              //get characteristic
-              this.log.debug(
-                'WARNING : could not SET status : ' + JSON.stringify(data)
-              );
+          } else if (data && (data.code == 202 || data.code == 100)) {
+            this._currentSetAttemps = this._currentSetAttemps + 1;
+            //get characteristic
+            this.log.debug(
+              'WARNING - activityCommand : could not SET status : ' +
+                JSON.stringify(data)
+            );
 
-              var charactToSet = serviceControl.getCharacteristic(
-                Characteristic.On
-              );
+            var charactToSet = serviceControl.getCharacteristic(
+              Characteristic.On
+            );
 
-              //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
-              var that = this;
-              setTimeout(function() {
-                if (
-                  that._currentSetAttemps <
-                  HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
-                ) {
-                  that.log.debug(
-                    'RETRY to send command on : ' + serviceControl.displayName
-                  );
-                  that.command(cmd, params, homebridgeAccessory);
-                } else {
-                  that.log(
-                    'ERROR : could not SET status, no more RETRY : ' +
-                      +serviceControl.displayName
-                  );
-                  charactToSet.updateValue(false);
-                  //timer for background refresh
-                  that.setTimer(true);
-                }
-              }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
-            }
+            //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
+            var that = this;
+            setTimeout(function() {
+              if (
+                that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
+              ) {
+                that.log.debug(
+                  'INFO - activityCommand : RETRY to send command ' +
+                    serviceControl.displayName
+                );
+                that.activityCommand(homebridgeAccessory, commandToSend);
+              } else {
+                that.log(
+                  'ERROR - activityCommand : could not SET status, no more RETRY : ' +
+                    serviceControl.displayName
+                );
+                charactToSet.updateValue(false);
+                //timer for background refresh
+                that.setTimer(true);
+              }
+            }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
           } else {
-            this.log('ERROR : could not SET status, no data');
+            this.log('ERROR - activityCommand : could not SET status, no data');
             //timer for background refresh
             var that = this;
             setTimeout(function() {
@@ -375,7 +392,7 @@ HarmonyPlatformAsSwitches.prototype = {
       )
       .then(() => this.wsp.sendPacked(payload))
       .catch(e => {
-        this.log('ERROR : sendCommand :' + e);
+        this.log('ERROR - activityCommand : ' + e);
         //timer for background refresh
         var that = this;
         setTimeout(function() {
@@ -446,20 +463,7 @@ HarmonyPlatformAsSwitches.prototype = {
         }
 
         if (doCommand) {
-          params = {
-            async: 'true',
-            timestamp: 0,
-            args: {
-              rule: 'start',
-            },
-            activityId: commandToSend,
-          };
-          cmd = 'harmony.activityengine?runactivity';
-          homebridgeAccessory.platform.command(
-            cmd,
-            params,
-            homebridgeAccessory
-          );
+          this.activityCommand(homebridgeAccessory, commandToSend);
           callback();
         } else {
           callback();
