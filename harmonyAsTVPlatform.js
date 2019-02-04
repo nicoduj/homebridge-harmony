@@ -21,10 +21,7 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
       'shutdown',
       function() {
         that.log('shutdown');
-
-        if (that.wspRefresh) {
-          that.wspRefresh.close();
-        } else if (that.timerID) {
+        if (that.timerID) {
           clearInterval(that.timerID);
           that.timerID = undefined;
         }
@@ -671,7 +668,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       return;
     }
 
-    this.setTimer(false);
+    // this.setTimer(false);
 
     var payload = {
       hubId: this.remote_id,
@@ -710,24 +707,29 @@ HarmonyPlatformAsTVPlatform.prototype = {
           .open()
           .then(() => this.wsp.sendPacked(payload))
           .then(() => {
-            this.log.debug('INFO - sendCommand2 done');
+            this.log.debug(
+              'INFO - sendCommand2 done'
+            ); /*
             setTimeout(function() {
               that.setTimer(true);
-            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);
+            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);*/
           })
           .catch(e => {
             this.log('ERROR : sendCommand2 release :' + e);
             //timer for background refresh
+            /*
             setTimeout(function() {
               that.setTimer(true);
             }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);
+            */
           });
       })
       .catch(e => {
         this.log('ERROR : sendCommand press :' + e);
+        /*
         setTimeout(function() {
           that.setTimer(true);
-        }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);
+        }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);*/
       });
   },
 
@@ -806,113 +808,105 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic.on(
         'set',
         function(newValue, callback) {
-          this.refreshCurrentActivity(() => {
-            this.log.debug(
-              'INFO - SET Characteristic.RemoteKey : ' +
-                newValue +
-                ' with currentActivity ' +
-                this._currentActivity
-            );
+          //this.refreshCurrentActivity(() => {
+          this.log.debug(
+            'INFO - SET Characteristic.RemoteKey : ' +
+              newValue +
+              ' with currentActivity ' +
+              this._currentActivity
+          );
 
-            if (this._currentActivity > 0) {
-              switch (true) {
-                case newValue === Characteristic.RemoteKey.ARROW_UP:
-                  this.log.debug(
-                    'INFO - sending DirectionUpCommand for ARROW_UP'
-                  );
-                  this.sendCommand(
-                    this._currentInputService.DirectionUpCommand
-                  );
-                  break;
-                case newValue === Characteristic.RemoteKey.ARROW_DOWN:
-                  this.log.debug(
-                    'INFO - sending DirectionDownCommand for ARROW_DOWN'
-                  );
-                  this.sendCommand(
-                    this._currentInputService.DirectionDownCommand
-                  );
-                  break;
-                case newValue === Characteristic.RemoteKey.ARROW_LEFT:
-                  this.log.debug(
-                    'INFO - sending DirectionLeftCommand for ARROW_LEFT'
-                  );
-                  this.sendCommand(
-                    this._currentInputService.DirectionLeftCommand
-                  );
-                  break;
-                case newValue === Characteristic.RemoteKey.ARROW_RIGHT:
-                  this.log.debug(
-                    'INFO - sending DirectionRightCommand for ARROW_RIGHT'
-                  );
-                  this.sendCommand(
-                    this._currentInputService.DirectionRightCommand
-                  );
-                  break;
-                case newValue === Characteristic.RemoteKey.SELECT:
-                  this.log.debug('INFO - sending SelectCommand for SELECT');
-                  this.sendCommand(this._currentInputService.SelectCommand);
-                  break;
-                case newValue === Characteristic.RemoteKey.PLAY_PAUSE:
-                  this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
-                  this.sendCommand(this._currentInputService.PlayCommand);
-                  break;
-                case newValue === Characteristic.RemoteKey.INFORMATION:
-                  this.log.debug('INFO - sending MenuCommand for INFORMATION');
-                  this.sendCommand(this._currentInputService.MenuCommand);
-                  break;
-                case newValue === Characteristic.RemoteKey.BACK:
-                  this.log.debug('INFO - sending ReturnCommand for BACK');
-                  this.sendCommand(this._currentInputService.ReturnCommand);
-                  break;
-                case newValue === Characteristic.RemoteKey.EXIT:
-                  this.log.debug('INFO - sending HomeCommand for EXIT');
-                  this.sendCommand(this._currentInputService.HomeCommand);
-                  break;
-                case newValue === Characteristic.RemoteKey.REWIND:
-                  this.log.debug('INFO - sending RewindCommand for REWIND');
-                  this.sendCommand(this._currentInputService.RewindCommand);
-                  break;
-                case newValue === Characteristic.RemoteKey.FAST_FORWARD:
-                  this.log.debug(
-                    'INFO - sending FastForwardCommand for FAST_FORWARD'
-                  );
-                  this.sendCommand(
-                    this._currentInputService.FastForwardCommand
-                  );
-                  break;
-                case newValue === Characteristic.RemoteKey.NEXT_TRACK:
-                  this.log.debug(
-                    'INFO - sending SkipForwardCommand for NEXT_TRACK'
-                  );
-                  this.sendCommand(
-                    this._currentInputService.SkipForwardCommand
-                  );
-                  break;
-                case newValue === Characteristic.RemoteKey.PREVIOUS_TRACK:
-                  this.log.debug(
-                    'INFO - sending SkipBackwardCommand for PREVIOUS_TRACK'
-                  );
-                  this.sendCommand(
-                    this._currentInputService.SkipBackwardCommand
-                  );
-                  break;
-              }
+          if (this._currentActivity > 0) {
+            switch (true) {
+              case newValue === Characteristic.RemoteKey.ARROW_UP:
+                this.log.debug(
+                  'INFO - sending DirectionUpCommand for ARROW_UP'
+                );
+                this.sendCommand(this._currentInputService.DirectionUpCommand);
+                break;
+              case newValue === Characteristic.RemoteKey.ARROW_DOWN:
+                this.log.debug(
+                  'INFO - sending DirectionDownCommand for ARROW_DOWN'
+                );
+                this.sendCommand(
+                  this._currentInputService.DirectionDownCommand
+                );
+                break;
+              case newValue === Characteristic.RemoteKey.ARROW_LEFT:
+                this.log.debug(
+                  'INFO - sending DirectionLeftCommand for ARROW_LEFT'
+                );
+                this.sendCommand(
+                  this._currentInputService.DirectionLeftCommand
+                );
+                break;
+              case newValue === Characteristic.RemoteKey.ARROW_RIGHT:
+                this.log.debug(
+                  'INFO - sending DirectionRightCommand for ARROW_RIGHT'
+                );
+                this.sendCommand(
+                  this._currentInputService.DirectionRightCommand
+                );
+                break;
+              case newValue === Characteristic.RemoteKey.SELECT:
+                this.log.debug('INFO - sending SelectCommand for SELECT');
+                this.sendCommand(this._currentInputService.SelectCommand);
+                break;
+              case newValue === Characteristic.RemoteKey.PLAY_PAUSE:
+                this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
+                this.sendCommand(this._currentInputService.PlayCommand);
+                break;
+              case newValue === Characteristic.RemoteKey.INFORMATION:
+                this.log.debug('INFO - sending MenuCommand for INFORMATION');
+                this.sendCommand(this._currentInputService.MenuCommand);
+                break;
+              case newValue === Characteristic.RemoteKey.BACK:
+                this.log.debug('INFO - sending ReturnCommand for BACK');
+                this.sendCommand(this._currentInputService.ReturnCommand);
+                break;
+              case newValue === Characteristic.RemoteKey.EXIT:
+                this.log.debug('INFO - sending HomeCommand for EXIT');
+                this.sendCommand(this._currentInputService.HomeCommand);
+                break;
+              case newValue === Characteristic.RemoteKey.REWIND:
+                this.log.debug('INFO - sending RewindCommand for REWIND');
+                this.sendCommand(this._currentInputService.RewindCommand);
+                break;
+              case newValue === Characteristic.RemoteKey.FAST_FORWARD:
+                this.log.debug(
+                  'INFO - sending FastForwardCommand for FAST_FORWARD'
+                );
+                this.sendCommand(this._currentInputService.FastForwardCommand);
+                break;
+              case newValue === Characteristic.RemoteKey.NEXT_TRACK:
+                this.log.debug(
+                  'INFO - sending SkipForwardCommand for NEXT_TRACK'
+                );
+                this.sendCommand(this._currentInputService.SkipForwardCommand);
+                break;
+              case newValue === Characteristic.RemoteKey.PREVIOUS_TRACK:
+                this.log.debug(
+                  'INFO - sending SkipBackwardCommand for PREVIOUS_TRACK'
+                );
+                this.sendCommand(this._currentInputService.SkipBackwardCommand);
+                break;
             }
-            callback(null);
-          });
+          }
+          callback(null);
+          //});
         }.bind(this)
       );
     } else if (characteristic instanceof Characteristic.Mute) {
       characteristic.on(
         'set',
         function(value, callback) {
-          this.refreshCurrentActivity(() => {
-            if (this._currentActivity > 0) {
-              this.log.debug('INFO - SET Characteristic.Mute : ' + value);
-              this.sendCommand(this._currentInputService.MuteCommand);
-            }
-            callback(null);
-          });
+          //this.refreshCurrentActivity(() => {
+          if (this._currentActivity > 0) {
+            this.log.debug('INFO - SET Characteristic.Mute : ' + value);
+            this.sendCommand(this._currentInputService.MuteCommand);
+          }
+          callback(null);
+          //});
         }.bind(this)
       );
 
@@ -927,19 +921,19 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic.on(
         'set',
         function(value, callback) {
-          this.refreshCurrentActivity(() => {
-            if (this._currentActivity > 0) {
-              this.log.debug(
-                'INFO - SET Characteristic.VolumeSelector : ' + value
-              );
-              if (value === Characteristic.VolumeSelector.DECREMENT) {
-                this.sendCommand(this._currentInputService.VolumeDownCommand);
-              } else {
-                this.sendCommand(this._currentInputService.VolumeUpCommand);
-              }
+          // this.refreshCurrentActivity(() => {
+          if (this._currentActivity > 0) {
+            this.log.debug(
+              'INFO - SET Characteristic.VolumeSelector : ' + value
+            );
+            if (value === Characteristic.VolumeSelector.DECREMENT) {
+              this.sendCommand(this._currentInputService.VolumeDownCommand);
+            } else {
+              this.sendCommand(this._currentInputService.VolumeUpCommand);
             }
-            callback(null);
-          });
+          }
+          callback(null);
+          // });
         }.bind(this)
       );
     }

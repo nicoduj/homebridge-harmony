@@ -126,6 +126,8 @@ HarmonyBase.prototype = {
       }
     } else {
       if (on) {
+        clearInterval(harmonyPlatform.timerID);
+
         var payload = {
           hubId: harmonyPlatform.remote_id,
           timeout: 30,
@@ -143,6 +145,7 @@ HarmonyBase.prototype = {
           harmonyPlatform.wspRefresh.removeAllListeners();
           harmonyPlatform.log.debug('INFO - RefreshSocket - Closed');
           clearInterval(harmonyPlatform.timerID);
+          this.setTimer(true, harmonyPlatform);
         });
 
         harmonyPlatform.wspRefresh
@@ -160,29 +163,27 @@ HarmonyBase.prototype = {
           .catch(e => {
             harmonyPlatform.log('ERROR - setTimer wspRefresh :' + e);
             clearInterval(harmonyPlatform.timerID);
-            harmonyPlatform.log('INFO - relaunching timer');
-            setTimeout(function() {
-              harmonyPlatform.setTimer(true);
-            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER);
+            this.setTimer(true, harmonyPlatform);
           });
       } else {
-        harmonyPlatform.wspRefresh.close();
+        harmonyPlatform.wspRefresh.removeAllListeners();
+        clearInterval(harmonyPlatform.timerID);
       }
     }
   },
 
   _heartbeat(harmonyPlatform) {
+    clearInterval(harmonyPlatform.timerID);
+
     harmonyPlatform.timerID = setInterval(() => {
       harmonyPlatform.log.debug('INFO - _heartbeat');
       try {
         harmonyPlatform.wspRefresh.send('');
       } catch (error) {
-        harmonyPlatform.log('ERROR - _heartbeat :' + e);
+        harmonyPlatform.log('ERROR - _heartbeat :' + error);
         clearInterval(harmonyPlatform.timerID);
         harmonyPlatform.log('INFO - relaunching timer');
-        setTimeout(function() {
-          harmonyPlatform.setTimer(true);
-        }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER);
+        this.setTimer(true, harmonyPlatform);
       }
     }, 55000);
   },
@@ -206,6 +207,7 @@ HarmonyBase.prototype = {
       cmd: 'connect.discoveryinfo?get',
       params: {},
     };
+    var that = this;
 
     request(
       {

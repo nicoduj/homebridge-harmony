@@ -1,5 +1,3 @@
-:heavy_exclamation_mark::heavy_exclamation_mark:**refreshByHub is not reliable right now considère switching it off if you have any trouble**
-
 # homebridge-harmony
 
 [Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/nfarina/homebridge) using WebSockets.
@@ -72,6 +70,8 @@ Fields:
 
 ## Changelog
 
+- 0.2.7
+  - [FIX] bugs due to refresh through stateDigest - #50
 - 0.2.6
   - [FIX] background refresh was stopping after 1 minute
 - 0.2.5
