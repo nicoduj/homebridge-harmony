@@ -1,4 +1,4 @@
-** refreshByHub is not reliable right now consider switching it off if you have any trouble **
+:heavy_exclamation_mark::heavy_exclamation_mark:**refreshByHub is not reliable right now considère switching it off if you have any trouble**
 
 # homebridge-harmony
 
