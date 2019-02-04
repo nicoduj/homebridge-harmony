@@ -1,3 +1,5 @@
+** refreshByHub is not reliable right now consider switching it off if you have any trouble **
+
 # homebridge-harmony
 
 [Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/nfarina/homebridge) using WebSockets.
