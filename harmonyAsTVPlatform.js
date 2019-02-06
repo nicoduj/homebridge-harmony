@@ -17,42 +17,21 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
 }
 
 HarmonyPlatformAsTVPlatform.prototype = {
-  onMessage(message) {
-    this.log.debug(
-      'INFO - onMessage : received message : ' + JSON.stringify(message)
+  onMessage(newActivity) {
+    this.updateCurrentInputService(newActivity);
+
+    this.harmonyBase.updateCharacteristic(
+      this.mainService.controlService.getCharacteristic(Characteristic.Active),
+      this._currentActivity > 0,
+      null
     );
-    if (
-      message.type === 'connect.stateDigest?get' ||
-      (message.type === 'connect.stateDigest?notify' &&
-        message.data.activityStatus === 2 &&
-        message.data.activityId === message.data.runningActivityList) ||
-      (message.type === 'connect.stateDigest?notify' &&
-        message.data.activityStatus === 0 &&
-        message.data.activityId === '-1' &&
-        message.data.runningActivityList === '')
-    ) {
-      //need to refresh, activity is started.
-      this.log(
-        'INFO - onMessage : Refreshing activity to ' + message.data.activityId
-      );
-
-      this.updateCurrentInputService(message.data.activityId);
-
-      this.harmonyBase.updateCharacteristic(
-        this.mainService.controlService.getCharacteristic(
-          Characteristic.Active
-        ),
-        this._currentActivity > 0,
-        null
-      );
-      this.harmonyBase.updateCharacteristic(
-        this.mainService.controlService.getCharacteristic(
-          Characteristic.ActiveIdentifier
-        ),
-        this._currentActivity,
-        null
-      );
-    }
+    this.harmonyBase.updateCharacteristic(
+      this.mainService.controlService.getCharacteristic(
+        Characteristic.ActiveIdentifier
+      ),
+      this._currentActivity,
+      null
+    );
   },
 
   ///CREATION / STARTUP
@@ -317,7 +296,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
   ///REFRESHING TOOLS
 
   refreshAccessory: function() {
-    this.refreshCurrentActivity(() => {
+    this.harmonyBase.refreshCurrentActivity(this, () => {
       this.updateCurrentInputService(this._currentActivity);
 
       this.harmonyBase.updateCharacteristic(
@@ -338,7 +317,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
   },
 
   refreshCharacteristic: function(characteristic, callback) {
-    this.refreshCurrentActivity(() => {
+    this.harmonyBase.refreshCurrentActivity(this, () => {
       if (this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
         if (characteristic instanceof Characteristic.Active) {
           this.log.debug(
@@ -376,42 +355,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
     });
   },
 
-  refreshCurrentActivity: function(callback) {
-    if (
-      this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE &&
-      this._currentActivityLastUpdate &&
-      Date.now() - this._currentActivityLastUpdate <
-        HarmonyConst.TIMEOUT_REFRESH_CURRENT_ACTIVITY
-    ) {
-      // we don't refresh since status was retrieved not so far away
-      this.log.debug(
-        'INFO - refreshCurrentActivity : NO refresh needed since last update was on :' +
-          this._currentActivity +
-          ' and current Activity is set'
-      );
-      callback();
-    } else {
-      this.log.debug(
-        'INFO - refreshCurrentActivity : Refresh needed since last update is too old or current Activity is not set : ' +
-          this._currentActivity
-      );
-
-      this.harmonyBase.harmony
-        .getCurrentActivity()
-        .then(response => {
-          this.updateCurrentInputService(response);
-          callback();
-        })
-        .catch(e => {
-          this.log(
-            'ERROR - refreshCurrentActivity : RefreshCurrentActivity : ' + e
-          );
-          this.updateCurrentInputService(
-            HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
-          );
-          callback();
-        });
-    }
+  refreshCurrentActivity: function(response) {
+    this.updateCurrentInputService(response);
   },
 
   updateCurrentInputService: function(newActivity) {
@@ -607,7 +552,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
             callback(null);
           } else {
-            this.refreshCurrentActivity(() => {
+            this.harmonyBase.refreshCurrentActivity(this, () => {
               if (this._currentActivity < 0) {
                 let activityToLaunch = service.controlService.getCharacteristic(
                   Characteristic.ActiveIdentifier
@@ -663,7 +608,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic.on(
         'set',
         function(newValue, callback) {
-          //this.refreshCurrentActivity(() => {
           this.log.debug(
             'INFO - SET Characteristic.RemoteKey : ' +
               newValue +
@@ -748,20 +692,17 @@ HarmonyPlatformAsTVPlatform.prototype = {
             }
           }
           callback(null);
-          //});
         }.bind(this)
       );
     } else if (characteristic instanceof Characteristic.Mute) {
       characteristic.on(
         'set',
         function(value, callback) {
-          //this.refreshCurrentActivity(() => {
           if (this._currentActivity > 0) {
             this.log.debug('INFO - SET Characteristic.Mute : ' + value);
             this.sendCommand(this._currentInputService.MuteCommand);
           }
           callback(null);
-          //});
         }.bind(this)
       );
 
@@ -776,7 +717,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
       characteristic.on(
         'set',
         function(value, callback) {
-          // this.refreshCurrentActivity(() => {
           if (this._currentActivity > 0) {
             this.log.debug(
               'INFO - SET Characteristic.VolumeSelector : ' + value
@@ -788,7 +728,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
             }
           }
           callback(null);
-          // });
         }.bind(this)
       );
     }

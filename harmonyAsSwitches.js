@@ -22,24 +22,9 @@ function HarmonyPlatformAsSwitches(log, config, api) {
 }
 
 HarmonyPlatformAsSwitches.prototype = {
-  onMessage(message) {
-    this.log.debug(
-      'INFO - onMessage : received message : ' + JSON.stringify(message)
-    );
-    if (
-      message.type === 'connect.stateDigest?get' ||
-      (message.type === 'connect.stateDigest?notify' &&
-        message.data.activityStatus === 2 &&
-        message.data.activityId === message.data.runningActivityList) ||
-      (message.type === 'connect.stateDigest?notify' &&
-        message.data.activityStatus === 0 &&
-        message.data.activityId === '-1' &&
-        message.data.runningActivityList === '')
-    ) {
-      //need to refresh, activity is started.
-      this.log.debug('INFO - onMessage :Refreshing activity');
-      this.refreshAccessory();
-    }
+  onMessage(newActivity) {
+    this.refreshCurrentActivity(newActivity);
+    this.refreshAccessory();
   },
 
   readAccessories: function(data, callback) {
@@ -109,49 +94,16 @@ HarmonyPlatformAsSwitches.prototype = {
     this.harmonyBase.configureAccessories(this, callback);
   },
 
-  refreshCurrentActivity: function(callback) {
-    if (
-      this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE &&
-      this._currentActivityLastUpdate &&
-      Date.now() - this._currentActivityLastUpdate <
-        HarmonyConst.TIMEOUT_REFRESH_CURRENT_ACTIVITY
-    ) {
-      // we don't refresh since status was retrieved not so far away
-      this.log.debug(
-        'INFO - refreshCurrentActivity : NO refresh needed since last update was on :' +
-          this._currentActivity +
-          ' and current Activity is set'
-      );
-      callback();
-    } else {
-      this.log.debug(
-        'INFO - refreshCurrentActivity : Refresh needed since last update is too old or current Activity is not set : ' +
-          this._currentActivity
-      );
-
-      this.harmonyBase.harmony
-        .getCurrentActivity()
-        .then(response => {
-          this._currentActivity = response;
-          this._currentActivityLastUpdate = Date.now();
-          callback();
-        })
-        .catch(e => {
-          this.log(
-            'ERROR - refreshCurrentActivity : RefreshCurrentActivity : ' + e
-          );
-          this._currentActivity = CURRENT_ACTIVITY_NOT_SET_VALUE;
-          this._currentActivityLastUpdate = Date.now();
-          callback();
-        });
-    }
+  refreshCurrentActivity: function(response) {
+    this._currentActivity = response;
+    this._currentActivityLastUpdate = Date.now();
   },
 
   refreshService: function(service, homebridgeAccessory, callback) {
     var serviceControl = service.controlService;
     var characteristic = serviceControl.getCharacteristic(Characteristic.On);
 
-    this.refreshCurrentActivity(() => {
+    this.harmonyBase.refreshCurrentActivity(this, () => {
       if (this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
         let characteristicIsOn = this._currentActivity == serviceControl.id;
 

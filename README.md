@@ -67,6 +67,8 @@ Fields:
 
 ## Changelog
 
+- 0.3.1
+  - [FIX] tiny fixes / refactoring
 - 0.3.0
   - [NEW] moving to @lopelex harmony-websocket lib
   - [NEW] no more timer for refresh (using statedigest only)

@@ -116,8 +116,25 @@ HarmonyBase.prototype = {
       harmonyPlatform.log.debug('socket closed');
     });
 
-    this.harmony.on('stateDigest', data => {
-      harmonyPlatform.onMessage(data);
+    this.harmony.on('stateDigest', message => {
+      harmonyPlatform.log.debug(
+        'INFO - onMessage : received message : ' + JSON.stringify(message)
+      );
+      if (
+        message.type === 'connect.stateDigest?get' ||
+        (message.type === 'connect.stateDigest?notify' &&
+          message.data.activityStatus === 2 &&
+          message.data.activityId === message.data.runningActivityList) ||
+        (message.type === 'connect.stateDigest?notify' &&
+          message.data.activityStatus === 0 &&
+          message.data.activityId === '-1' &&
+          message.data.runningActivityList === '')
+      ) {
+        harmonyPlatform.log(
+          'INFO - onMessage : Refreshing activity to ' + message.data.activityId
+        );
+        harmonyPlatform.onMessage(message.data.activityId);
+      }
     });
 
     this.harmony
@@ -136,14 +153,53 @@ HarmonyBase.prototype = {
           .then(() => {
             var that = this;
             setTimeout(function() {
-              this.configureAccessories(harmonyPlatform, callback);
+              that.configureAccessories(harmonyPlatform, callback);
             }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
           })
           .catch(e2 => {
             harmonyPlatform.log(
-              'Fatal Error retrieving info from hub : ' + e.message
+              'Fatal Error retrieving info from hub : ' + e2.message
             );
           });
       });
+  },
+
+  refreshCurrentActivity: function(harmonyPlatform, callback) {
+    if (
+      harmonyPlatform._currentActivity >
+        HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE &&
+      harmonyPlatform._currentActivityLastUpdate &&
+      Date.now() - harmonyPlatform._currentActivityLastUpdate <
+        HarmonyConst.TIMEOUT_REFRESH_CURRENT_ACTIVITY
+    ) {
+      // we don't refresh since status was retrieved not so far away
+      harmonyPlatform.log.debug(
+        'INFO - refreshCurrentActivity : NO refresh needed since last update was on :' +
+          harmonyPlatform._currentActivity +
+          ' and current Activity is set'
+      );
+      callback();
+    } else {
+      harmonyPlatform.log.debug(
+        'INFO - refreshCurrentActivity : Refresh needed since last update is too old or current Activity is not set : ' +
+          harmonyPlatform._currentActivity
+      );
+
+      this.harmony
+        .getCurrentActivity()
+        .then(response => {
+          harmonyPlatform.refreshCurrentActivity(response);
+          callback();
+        })
+        .catch(e => {
+          harmonyPlatform.log(
+            'ERROR - refreshCurrentActivity : RefreshCurrentActivity : ' + e
+          );
+          harmonyPlatform.refreshCurrentActivity(
+            CURRENT_ACTIVITY_NOT_SET_VALUE
+          );
+          callback();
+        });
+    }
   },
 };
