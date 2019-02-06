@@ -6,9 +6,8 @@
 >
 > List of known issues:
 >
-> - If you change activities too quickly, some unexpected behavior might occur
 > - No dynamic discovery of the hub(s)
-> - IOS 12.2 TV MODE is still beta. This mode will focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so).
+> - IOS 12.2 TV MODE is still beta. This mode will focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN
 
 In order to activate TV Platform Mode,you need to :
 
@@ -60,8 +59,6 @@ Fields:
 - `hubIP` is the static IP address of the hub (required). A static IP address is required.
 - `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
   - The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
-- `refreshTimer` enable refresh of activities state every X seconds, for automation purpose if you need to activate something else based on a state chnage of an activity. Be aware it might make you hub smoke since the plugin will ask its status very often :) (defaults : disable, accepted range : 5-600s).
-- `refreshByHub` refresh trhough webSocket stateDigest of the hub - defaults to true
 - `skipedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app
 - `addAllActivitiesToSkipedIfSameStateActivitiesList` option to add all activities automatically to skipedIfSameStateActivities behavior. (defaults : false)
 - `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
@@ -70,6 +67,9 @@ Fields:
 
 ## Changelog
 
+- 0.3.0
+  - [NEW] moving to @lopelex harmony-websocket lib
+  - [NEW] no more timer for refresh (using statedigest only)
 - 0.2.7
   - [FIX] bugs due to refresh through stateDigest - #50
 - 0.2.6
