@@ -1,3 +1,4 @@
+var Service, Characteristic;
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
 
@@ -10,40 +11,20 @@ function HarmonyPlatformAsSwitches(log, config, api) {
   Characteristic = api.hap.Characteristic;
 
   this.harmonyBase = new HarmonyBase(api);
-  this.harmonyBase.configCommonProperties(log, config, this);
-  this.mainActivity = config['mainActivity'];
+  this.harmonyBase.configCommonProperties(log, config, api, this);
+
   this.showTurnOffActivity = config['showTurnOffActivity'];
   this.publishActivitiesAsIndividualAccessories =
     config['publishActivitiesAsIndividualAccessories'];
 
   if (this.publishActivitiesAsIndividualAccessories == undefined)
     this.publishActivitiesAsIndividualAccessories = true;
-
-  if (api) {
-    // Save the API object as plugin needs to register new accessory via this object
-    this.api = api;
-    var that = this;
-    this.api.on(
-      'shutdown',
-      function() {
-        that.log('shutdown');
-        if (that.timerID) {
-          clearInterval(that.timerID);
-          that.timerID = undefined;
-        }
-      }.bind(this)
-    );
-  }
 }
 
 HarmonyPlatformAsSwitches.prototype = {
-  setTimer: function(on) {
-    this.harmonyBase.setTimer(on, this);
-  },
-
-  _onMessage(message) {
+  onMessage(message) {
     this.log.debug(
-      'INFO - _onMessage : received message : ' + JSON.stringify(message)
+      'INFO - onMessage : received message : ' + JSON.stringify(message)
     );
     if (
       message.type === 'connect.stateDigest?get' ||
@@ -56,7 +37,7 @@ HarmonyPlatformAsSwitches.prototype = {
         message.data.runningActivityList === '')
     ) {
       //need to refresh, activity is started.
-      this.log.debug('INFO - _onMessage :Refreshing activity');
+      this.log.debug('INFO - onMessage :Refreshing activity');
       this.refreshAccessory();
     }
   },
@@ -116,10 +97,9 @@ HarmonyPlatformAsSwitches.prototype = {
       that._foundAccessories.push(myHarmonyAccessory);
     }
 
-    //timer for background refresh
+    //first refresh
     setTimeout(function() {
       that.refreshAccessory();
-      that.setTimer(true);
     }, HarmonyConst.DELAY_LAUNCH_REFRESH);
 
     callback(that._foundAccessories);
@@ -149,52 +129,19 @@ HarmonyPlatformAsSwitches.prototype = {
           this._currentActivity
       );
 
-      payload = {
-        hubId: this.remote_id,
-        timeout: 30,
-        hbus: {
-          cmd:
-            'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity',
-          id: 0,
-          params: {
-            verb: 'get',
-            format: 'json',
-          },
-        },
-      };
-
-      this.wsp
-        .open()
-        .then(() =>
-          this.wsp.onUnpackedMessage.addListener(data => {
-            this.wsp.removeAllListeners();
-
-            if (
-              data &&
-              data.type !== 'connect.stateDigest?notify' &&
-              data.data &&
-              data.code &&
-              (data.code == 200 || data.code == 100)
-            ) {
-              this._currentActivity = data.data.result;
-              this._currentActivityLastUpdate = Date.now();
-            } else {
-              this.log.debug(
-                'WARNING - refreshCurrentActivity : could not refresh current Activity :' +
-                  (data ? JSON.stringify(data) : 'no data')
-              );
-              this._currentActivity =
-                HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE;
-            }
-            callback();
-          })
-        )
-        .then(() => this.wsp.sendPacked(payload))
+      this.harmonyBase.harmony
+        .getCurrentActivity()
+        .then(response => {
+          this._currentActivity = response;
+          this._currentActivityLastUpdate = Date.now();
+          callback();
+        })
         .catch(e => {
           this.log(
             'ERROR - refreshCurrentActivity : RefreshCurrentActivity : ' + e
           );
-          this._currentActivity = HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE;
+          this._currentActivity = CURRENT_ACTIVITY_NOT_SET_VALUE;
+          this._currentActivityLastUpdate = Date.now();
           callback();
         });
     }
@@ -243,161 +190,113 @@ HarmonyPlatformAsSwitches.prototype = {
   },
 
   activityCommand: function(homebridgeAccessory, commandToSend) {
-    //timer for background refresh
-    this.setTimer(false);
-    var params = {
-      async: 'false',
-      timestamp: 0,
-      args: {
-        rule: 'start',
-      },
-      activityId: commandToSend,
-    };
+    this.harmonyBase.harmony
+      .startActivity(commandToSend)
+      .then(data => {
+        this.log.debug(
+          'INFO - activityCommand : Returned from hub ' + JSON.stringify(data)
+        );
 
-    var payload = {
-      hubId: this.remote_id,
-      timeout: 30,
-      hbus: {
-        cmd: 'harmony.activityengine?runactivity',
-        id: 0,
-        params: params,
-      },
-    };
+        var serviceControl;
 
-    this.log.debug(
-      'INFO - activityCommand : sending command ' + JSON.stringify(params)
-    );
+        for (let a = 0; a < homebridgeAccessory.services.length; a++) {
+          if (
+            homebridgeAccessory.services[a].controlService.id == commandToSend
+          ) {
+            serviceControl = homebridgeAccessory.services[a].controlService;
+            this.log(serviceControl.displayName + ' activated');
+            break;
+          }
+        }
 
-    this.wsp
-      .open()
-      .then(() =>
-        this.wsp.onUnpackedMessage.addListener(data => {
-          this.wsp.removeAllListeners();
+        if (
+          data &&
+          data.code &&
+          data.code == 200 &&
+          data.msg &&
+          data.msg == 'OK'
+        ) {
+          this._currentSetAttemps = 0;
 
+          for (let a = 0; a < this._foundAccessories.length; a++) {
+            let foundHarmonyAccessory = this._foundAccessories[a];
+            for (let s = 0; s < foundHarmonyAccessory.services.length; s++) {
+              let otherServiceControl =
+                foundHarmonyAccessory.services[s].controlService;
+
+              let characteristic = otherServiceControl.getCharacteristic(
+                Characteristic.On
+              );
+
+              //we disable previous activities that were on
+              if (
+                otherServiceControl.id != -1 &&
+                otherServiceControl.id != commandToSend &&
+                characteristic.value
+              ) {
+                this.log.debug(
+                  'Switching off ' + otherServiceControl.displayName
+                );
+                characteristic.updateValue(false);
+              }
+
+              //we turn off Off Activity if another activity was launched
+              if (otherServiceControl.id == -1 && commandToSend != -1) {
+                this.log.debug(
+                  'New activity on , turning off off Activity ' +
+                    otherServiceControl.displayName
+                );
+                characteristic.updateValue(false);
+              }
+
+              //we turn on Off Activity if we turned off an activity (or turn on the general switch)
+              if (otherServiceControl.id == -1 && commandToSend == -1) {
+                this.log.debug(
+                  'Turning on off Activity ' + otherServiceControl.displayName
+                );
+                characteristic.updateValue(true);
+              }
+            }
+          }
+
+          this._currentActivity = commandToSend;
+        } else if (data && (data.code == 202 || data.code == 100)) {
+          this._currentSetAttemps = this._currentSetAttemps + 1;
+          //get characteristic
           this.log.debug(
-            'INFO - activityCommand : Returned from hub ' + JSON.stringify(data)
+            'WARNING - activityCommand : could not SET status : ' +
+              JSON.stringify(data)
           );
 
-          var serviceControl;
+          var charactToSet = serviceControl.getCharacteristic(
+            Characteristic.On
+          );
 
-          for (let a = 0; a < homebridgeAccessory.services.length; a++) {
+          //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
+          var that = this;
+          setTimeout(function() {
             if (
-              homebridgeAccessory.services[a].controlService.id ==
-              params.activityId
+              that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
             ) {
-              serviceControl = homebridgeAccessory.services[a].controlService;
-              this.log(serviceControl.displayName + ' activated');
-              break;
+              that.log.debug(
+                'INFO - activityCommand : RETRY to send command ' +
+                  serviceControl.displayName
+              );
+              that.activityCommand(homebridgeAccessory, commandToSend);
+            } else {
+              that.log(
+                'ERROR - activityCommand : could not SET status, no more RETRY : ' +
+                  serviceControl.displayName
+              );
+              charactToSet.updateValue(false);
             }
-          }
-
-          if (
-            data &&
-            data.code &&
-            data.code == 200 &&
-            data.msg &&
-            data.msg == 'OK'
-          ) {
-            this._currentSetAttemps = 0;
-
-            for (let a = 0; a < this._foundAccessories.length; a++) {
-              let foundHarmonyAccessory = this._foundAccessories[a];
-              for (let s = 0; s < foundHarmonyAccessory.services.length; s++) {
-                let otherServiceControl =
-                  foundHarmonyAccessory.services[s].controlService;
-
-                let characteristic = otherServiceControl.getCharacteristic(
-                  Characteristic.On
-                );
-
-                //we disable previous activities that were on
-                if (
-                  otherServiceControl.id != -1 &&
-                  otherServiceControl.id != params.activityId &&
-                  characteristic.value
-                ) {
-                  this.log.debug(
-                    'Switching off ' + otherServiceControl.displayName
-                  );
-                  characteristic.updateValue(false);
-                }
-
-                //we turn off Off Activity if another activity was launched
-                if (otherServiceControl.id == -1 && params.activityId != -1) {
-                  this.log.debug(
-                    'New activity on , turning off off Activity ' +
-                      otherServiceControl.displayName
-                  );
-                  characteristic.updateValue(false);
-                }
-
-                //we turn on Off Activity if we turned off an activity (or turn on the general switch)
-                if (otherServiceControl.id == -1 && params.activityId == -1) {
-                  this.log.debug(
-                    'Turning on off Activity ' + otherServiceControl.displayName
-                  );
-                  characteristic.updateValue(true);
-                }
-              }
-            }
-
-            this._currentActivity = params.activityId;
-            //timer for background refresh - we delay it since activity can take some time to get up
-            var that = this;
-            setTimeout(function() {
-              that.setTimer(true);
-            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_ACTIVITY);
-          } else if (data && (data.code == 202 || data.code == 100)) {
-            this._currentSetAttemps = this._currentSetAttemps + 1;
-            //get characteristic
-            this.log.debug(
-              'WARNING - activityCommand : could not SET status : ' +
-                JSON.stringify(data)
-            );
-
-            var charactToSet = serviceControl.getCharacteristic(
-              Characteristic.On
-            );
-
-            //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
-            var that = this;
-            setTimeout(function() {
-              if (
-                that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
-              ) {
-                that.log.debug(
-                  'INFO - activityCommand : RETRY to send command ' +
-                    serviceControl.displayName
-                );
-                that.activityCommand(homebridgeAccessory, commandToSend);
-              } else {
-                that.log(
-                  'ERROR - activityCommand : could not SET status, no more RETRY : ' +
-                    serviceControl.displayName
-                );
-                charactToSet.updateValue(false);
-                //timer for background refresh
-                that.setTimer(true);
-              }
-            }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
-          } else {
-            this.log('ERROR - activityCommand : could not SET status, no data');
-            //timer for background refresh
-            var that = this;
-            setTimeout(function() {
-              that.setTimer(true);
-            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);
-          }
-        })
-      )
-      .then(() => this.wsp.sendPacked(payload))
+          }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
+        } else {
+          this.log('ERROR - activityCommand : could not SET status, no data');
+        }
+      })
       .catch(e => {
         this.log('ERROR - activityCommand : ' + e);
-        //timer for background refresh
-        var that = this;
-        setTimeout(function() {
-          that.setTimer(true);
-        }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);
       });
   },
 

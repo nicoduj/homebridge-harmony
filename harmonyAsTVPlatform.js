@@ -1,3 +1,5 @@
+var Service, Characteristic;
+
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
 
@@ -10,34 +12,14 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   Characteristic = api.hap.Characteristic;
 
   this.harmonyBase = new HarmonyBase(api);
-  this.harmonyBase.configCommonProperties(log, config, this);
+  this.harmonyBase.configCommonProperties(log, config, api, this);
   this.mainActivity = config['mainActivity'];
-
-  if (api) {
-    // Save the API object as plugin needs to register new accessory via this object
-    this.api = api;
-    var that = this;
-    this.api.on(
-      'shutdown',
-      function() {
-        that.log('shutdown');
-        if (that.timerID) {
-          clearInterval(that.timerID);
-          that.timerID = undefined;
-        }
-      }.bind(this)
-    );
-  }
 }
 
 HarmonyPlatformAsTVPlatform.prototype = {
-  setTimer: function(on) {
-    this.harmonyBase.setTimer(on, this);
-  },
-
-  _onMessage(message) {
+  onMessage(message) {
     this.log.debug(
-      'INFO - _onMessage : received message : ' + JSON.stringify(message)
+      'INFO - onMessage : received message : ' + JSON.stringify(message)
     );
     if (
       message.type === 'connect.stateDigest?get' ||
@@ -50,7 +32,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
         message.data.runningActivityList === '')
     ) {
       //need to refresh, activity is started.
-      this.log.debug('INFO - _onMessage : Refreshing activity');
+      this.log(
+        'INFO - onMessage : Refreshing activity to ' + message.data.activityId
+      );
 
       this.updateCurrentInputService(message.data.activityId);
 
@@ -87,7 +71,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     this.log('Creating TV Speaker Service');
     this.tvSpeakerService = {
-      controlService: new Service.TelevisionSpeaker(this.name, 'TVSpeaker'),
+      controlService: new Service.TelevisionSpeaker(
+        this.name,
+        'TVSpeaker' + this.name
+      ),
       characteristics: [
         Characteristic.Mute,
         Characteristic.VolumeSelector,
@@ -95,6 +82,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       ],
     };
     this.tvSpeakerService.controlService
+      .setCharacteristic(Characteristic.Name, this.name)
       .setCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE)
       .setCharacteristic(
         Characteristic.VolumeControlType,
@@ -117,7 +105,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     that.log('Creating Main TV Service');
     that.mainService = {
-      controlService: new Service.Television(that.name, 'tvService'),
+      controlService: new Service.Television(
+        that.name,
+        'tvService' + that.name
+      ),
       characteristics: [
         Characteristic.Active,
         Characteristic.ActiveIdentifier,
@@ -127,6 +118,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     that.mainService.controlService.subtype = that.name + ' TV';
     that.mainService.controlService
       .setCharacteristic(Characteristic.ConfiguredName, that.name)
+      .setCharacteristic(Characteristic.Name, that.name)
       .setCharacteristic(
         Characteristic.SleepDiscoveryMode,
         Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE
@@ -156,7 +148,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
         that.log('Creating InputSourceService ' + inputName);
         let inputSourceService = {
-          controlService: new Service.InputSource(inputName, 'Input'),
+          controlService: new Service.InputSource(
+            inputName,
+            'Input' + that.name + inputName
+          ),
           characteristics: [],
         };
         inputSourceService.controlService.id = activities[i].id;
@@ -257,7 +252,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         inputSourceService.controlService
           .setCharacteristic(Characteristic.Identifier, activities[i].id)
           .setCharacteristic(Characteristic.ConfiguredName, inputName)
-
+          .setCharacteristic(Characteristic.Name, inputName)
           .setCharacteristic(
             Characteristic.IsConfigured,
             Characteristic.IsConfigured.CONFIGURED
@@ -269,6 +264,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
           .setCharacteristic(
             Characteristic.CurrentVisibilityState,
             Characteristic.CurrentVisibilityState.SHOWN
+          )
+          .setCharacteristic(
+            Characteristic.TargetVisibilityState,
+            Characteristic.TargetVisibilityState.SHOWN
           );
 
         that.mainService.controlService.addLinkedService(
@@ -300,13 +299,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
     myHarmonyAccessory.name = that.name;
     myHarmonyAccessory.model = that.name;
     myHarmonyAccessory.manufacturer = 'Harmony';
-    myHarmonyAccessory.serialNumber = that.hubIP;
+    myHarmonyAccessory.serialNumber = that.name + that.hubIP;
     that._foundAccessories.push(myHarmonyAccessory);
 
     //first refresh
     setTimeout(function() {
       that.refreshAccessory();
-      that.setTimer(true);
     }, HarmonyConst.DELAY_LAUNCH_REFRESH);
 
     callback(that._foundAccessories);
@@ -398,47 +396,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
           this._currentActivity
       );
 
-      payload = {
-        hubId: this.remote_id,
-        timeout: 30,
-        hbus: {
-          cmd:
-            'vnd.logitech.harmony/vnd.logitech.harmony.engine?getCurrentActivity',
-          id: 0,
-          params: {
-            verb: 'get',
-            format: 'json',
-          },
-        },
-      };
-
-      this.wsp
-        .open()
-        .then(() =>
-          this.wsp.onUnpackedMessage.addListener(data => {
-            this.wsp.removeAllListeners();
-
-            if (
-              data &&
-              data.type !== 'connect.stateDigest?notify' &&
-              data.data &&
-              data.code &&
-              (data.code == 200 || data.code == 100)
-            ) {
-              this.updateCurrentInputService(data.data.result);
-            } else {
-              this.log.debug(
-                'WARNING - refreshCurrentActivity : could not refresh current Activity :' +
-                  (data ? JSON.stringify(data) : 'no data')
-              );
-              this.updateCurrentInputService(
-                HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
-              );
-            }
-            callback();
-          })
-        )
-        .then(() => this.wsp.sendPacked(payload))
+      this.harmonyBase.harmony
+        .getCurrentActivity()
+        .then(response => {
+          this.updateCurrentInputService(response);
+          callback();
+        })
         .catch(e => {
           this.log(
             'ERROR - refreshCurrentActivity : RefreshCurrentActivity : ' + e
@@ -525,140 +488,87 @@ HarmonyPlatformAsTVPlatform.prototype = {
   },
 
   activityCommand: function(homebridgeAccessory, commandToSend) {
-    //timer for background refresh
-    this.setTimer(false);
-    var params = {
-      async: 'false',
-      timestamp: 0,
-      args: {
-        rule: 'start',
-      },
-      activityId: commandToSend,
-    };
+    this.harmonyBase.harmony
+      .startActivity(commandToSend)
+      .then(data => {
+        if (
+          data &&
+          data.code &&
+          data.code == 200 &&
+          data.msg &&
+          data.msg == 'OK'
+        ) {
+          this._currentSetAttemps = 0;
 
-    var payload = {
-      hubId: this.remote_id,
-      timeout: 30,
-      hbus: {
-        cmd: 'harmony.activityengine?runactivity',
-        id: 0,
-        params: params,
-      },
-    };
+          this.log.debug('INFO - activityCommand : command sent');
 
-    this.log.debug(
-      'INFO - activityCommand : sending command ' + JSON.stringify(params)
-    );
+          this.updateCurrentInputService(commandToSend);
 
-    this.wsp
-      .open()
-      .then(() =>
-        this.wsp.onUnpackedMessage.addListener(data => {
-          this.wsp.removeAllListeners();
-
-          this.log.debug(
-            'INFO - activityCommand : Returned from hub ' + JSON.stringify(data)
-          );
-
-          if (
-            data &&
-            data.code &&
-            data.code == 200 &&
-            data.msg &&
-            data.msg == 'OK'
-          ) {
-            this._currentSetAttemps = 0;
-
-            this.log.debug('INFO - activityCommand : command sent');
-
-            this.updateCurrentInputService(params.activityId);
-
-            if (this._currentActivity != -1) {
-              this.log.debug(
-                'updating characteristics to ' + this._currentActivity
-              );
-
-              this.harmonyBase.updateCharacteristic(
-                this.mainService.controlService.getCharacteristic(
-                  Characteristic.ActiveIdentifier
-                ),
-                this._currentActivity
-              );
-              this.harmonyBase.updateCharacteristic(
-                this.mainService.controlService.getCharacteristic(
-                  Characteristic.Active
-                ),
-                true
-              );
-            } else {
-              this.log.debug('updating characteristics to off');
-
-              this.harmonyBase.updateCharacteristic(
-                this.mainService.controlService.getCharacteristic(
-                  Characteristic.Active
-                ),
-                false
-              );
-
-              this.harmonyBase.updateCharacteristic(
-                this.mainService.controlService.getCharacteristic(
-                  Characteristic.ActiveIdentifier
-                ),
-                -1
-              );
-            }
-            //timer for background refresh - we delay it since activity can take some time to get up
-            var that = this;
-            setTimeout(function() {
-              that.setTimer(true);
-            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_ACTIVITY);
-          } else if (data && (data.code == 202 || data.code == 100)) {
-            this._currentSetAttemps = this._currentSetAttemps + 1;
-            //get characteristic
+          if (this._currentActivity != -1) {
             this.log.debug(
-              'WARNING - activityCommand : could not SET status : ' +
-                JSON.stringify(data)
+              'updating characteristics to ' + this._currentActivity
             );
 
-            //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
-            var that = this;
-            setTimeout(function() {
-              if (
-                that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
-              ) {
-                that.log.debug(
-                  'INFO - activityCommand : RETRY to send command ' +
-                    params.activityId
-                );
-                that.activityCommand(homebridgeAccessory, commandToSend);
-              } else {
-                that.log(
-                  'ERROR - activityCommand : could not SET status, no more RETRY : ' +
-                    params.activityId
-                );
-                that.refreshAccessory();
-                //timer for background refresh
-                that.setTimer(true);
-              }
-            }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
+            this.harmonyBase.updateCharacteristic(
+              this.mainService.controlService.getCharacteristic(
+                Characteristic.ActiveIdentifier
+              ),
+              this._currentActivity
+            );
+            this.harmonyBase.updateCharacteristic(
+              this.mainService.controlService.getCharacteristic(
+                Characteristic.Active
+              ),
+              true
+            );
           } else {
-            this.log('ERROR - activityCommand : could not SET status, no data');
-            //timer for background refresh
-            var that = this;
-            setTimeout(function() {
-              that.setTimer(true);
-            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);
+            this.log.debug('updating characteristics to off');
+
+            this.harmonyBase.updateCharacteristic(
+              this.mainService.controlService.getCharacteristic(
+                Characteristic.Active
+              ),
+              false
+            );
+
+            this.harmonyBase.updateCharacteristic(
+              this.mainService.controlService.getCharacteristic(
+                Characteristic.ActiveIdentifier
+              ),
+              -1
+            );
           }
-        })
-      )
-      .then(() => this.wsp.sendPacked(payload))
+        } else if (data && (data.code == 202 || data.code == 100)) {
+          this._currentSetAttemps = this._currentSetAttemps + 1;
+          //get characteristic
+          this.log.debug(
+            'WARNING - activityCommand : could not SET status : ' +
+              JSON.stringify(data)
+          );
+
+          //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
+          var that = this;
+          setTimeout(function() {
+            if (
+              that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
+            ) {
+              that.log.debug(
+                'INFO - activityCommand : RETRY to send command ' +
+                  commandToSend
+              );
+              that.activityCommand(homebridgeAccessory, commandToSend);
+            } else {
+              that.log(
+                'ERROR - activityCommand : could not SET status, no more RETRY : ' +
+                  commandToSend
+              );
+              that.refreshAccessory();
+            }
+          }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
+        }
+      })
       .catch(e => {
         this.log('ERROR - activityCommand : ' + e);
-        //timer for background refresh
-        var that = this;
-        setTimeout(function() {
-          that.setTimer(true);
-        }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);
       });
   },
 
@@ -668,68 +578,13 @@ HarmonyPlatformAsTVPlatform.prototype = {
       return;
     }
 
-    // this.setTimer(false);
-
-    var payload = {
-      hubId: this.remote_id,
-      timeout: 30,
-      hbus: {
-        cmd: 'vnd.logitech.harmony/vnd.logitech.harmony.engine?holdAction',
-        id: 0,
-        params: {
-          status: 'press',
-          timestamp: '0',
-          verb: 'render',
-          action: commandToSend,
-        },
-      },
-    };
-
-    this.log.debug(
-      'INFO - sendCommand : sending press command  ' + JSON.stringify(payload)
-    );
-    var that = this;
-
-    this.wsp
-      .open()
-      .then(() => this.wsp.sendPacked(payload))
-      .then(() => {
-        this.log.debug('INFO - sendCommand release config ');
-        payload.hbus.params.status = 'release';
-        payload.hbus.params.timestamp = '50';
-      })
-      .then(() => {
-        this.log.debug(
-          'INFO - sendCommand2 : sending release command  ' +
-            JSON.stringify(payload)
-        );
-        this.wsp
-          .open()
-          .then(() => this.wsp.sendPacked(payload))
-          .then(() => {
-            this.log.debug(
-              'INFO - sendCommand2 done'
-            ); /*
-            setTimeout(function() {
-              that.setTimer(true);
-            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);*/
-          })
-          .catch(e => {
-            this.log('ERROR : sendCommand2 release :' + e);
-            //timer for background refresh
-            /*
-            setTimeout(function() {
-              that.setTimer(true);
-            }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);
-            */
-          });
+    this.harmonyBase.harmony
+      .sendCommands(commandToSend)
+      .then(data => {
+        this.log.debug('INFO - sendCommand done' + commandToSend);
       })
       .catch(e => {
-        this.log('ERROR : sendCommand press :' + e);
-        /*
-        setTimeout(function() {
-          that.setTimer(true);
-        }, HarmonyConst.DELAY_TO_RELAUNCH_TIMER_ON_NEW_COMMAND);*/
+        this.log('ERROR - activityCommand : ' + e);
       });
   },
 

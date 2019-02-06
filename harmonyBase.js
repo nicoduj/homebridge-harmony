@@ -1,9 +1,7 @@
 var Service, Characteristic;
-const request = require('request');
-const url = require('url');
-const W3CWebSocket = require('websocket').w3cwebsocket;
-const WebSocketAsPromised = require('websocket-as-promised');
 const HarmonyConst = require('./harmonyConst');
+
+const Harmony = require('harmony-websocket');
 
 module.exports = {
   HarmonyBase: HarmonyBase,
@@ -12,17 +10,17 @@ module.exports = {
 function HarmonyBase(api) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
+  this.harmony = new Harmony();
 }
 
 HarmonyBase.prototype = {
-  configCommonProperties: function(log, config, harmonyPlatform) {
+  configCommonProperties: function(log, config, api, harmonyPlatform) {
     harmonyPlatform.log = log;
     harmonyPlatform.hubIP = config['hubIP'];
 
     harmonyPlatform.name = config['name'];
     harmonyPlatform.devMode = config['DEVMODE'];
-    harmonyPlatform.refreshTimer = config['refreshTimer'];
-    harmonyPlatform.refreshByHub = config['refreshByHub'];
+
     harmonyPlatform.addAllActivitiesToSkipedIfSameStateActivitiesList =
       config['addAllActivitiesToSkipedIfSameStateActivitiesList'];
     harmonyPlatform.skipedIfSameStateActivities =
@@ -33,23 +31,25 @@ HarmonyBase.prototype = {
     harmonyPlatform._currentSetAttemps = 0;
     harmonyPlatform._foundAccessories = [];
 
-    if (harmonyPlatform.refreshByHub == undefined)
-      harmonyPlatform.refreshByHub = true;
-
-    if (
-      !harmonyPlatform.refreshByHub &&
-      harmonyPlatform.refreshTimer &&
-      harmonyPlatform.refreshTimer > 0 &&
-      (harmonyPlatform.refreshTimer < 5 || harmonyPlatform.refreshTimer > 600)
-    )
-      harmonyPlatform.refreshTimer = 300;
-
     harmonyPlatform.log.debug(
       'INFO : following activites controls will be ignored if they are in the same state : ' +
         (harmonyPlatform.addAllActivitiesToSkipedIfSameStateActivitiesList
           ? 'ALL'
           : harmonyPlatform.skipedIfSameStateActivities)
     );
+
+    if (api) {
+      // Save the API object as plugin needs to register new accessory via this object
+      harmonyPlatform.api = api;
+      harmonyPlatform.api.on(
+        'shutdown',
+        function() {
+          harmonyPlatform.log('shutdown');
+          this.harmony.removeAllListeners();
+          this.harmony.end();
+        }.bind(this)
+      );
+    }
   },
 
   getInformationService: function(homebridgeAccessory) {
@@ -105,205 +105,45 @@ HarmonyBase.prototype = {
     }
   },
 
-  setTimer: function(on, harmonyPlatform) {
-    if (!harmonyPlatform.refreshByHub) {
-      if (harmonyPlatform.refreshTimer && harmonyPlatform.refreshTimer > 0) {
-        if (on && harmonyPlatform.timerID == undefined) {
-          harmonyPlatform.log.debug(
-            'INFO - setTimer - Setting Timer for background refresh every  : ' +
-              harmonyPlatform.refreshTimer +
-              's'
-          );
-          harmonyPlatform.timerID = setInterval(
-            () => harmonyPlatform.refreshAccessory(),
-            harmonyPlatform.refreshTimer * 1000
-          );
-        } else if (!on && harmonyPlatform.timerID !== undefined) {
-          harmonyPlatform.log.debug('INFO - setTimer - Clearing Timer');
-          clearInterval(harmonyPlatform.timerID);
-          harmonyPlatform.timerID = undefined;
-        }
-      }
-    } else {
-      if (on) {
-        clearInterval(harmonyPlatform.timerID);
-
-        var payload = {
-          hubId: harmonyPlatform.remote_id,
-          timeout: 30,
-          hbus: {
-            cmd: 'vnd.logitech.connect/vnd.logitech.statedigest?get',
-            id: 0,
-            params: {
-              verb: 'get',
-              format: 'json',
-            },
-          },
-        };
-
-        harmonyPlatform.wspRefresh.onClose.addListener(() => {
-          harmonyPlatform.wspRefresh.removeAllListeners();
-          harmonyPlatform.log.debug('INFO - RefreshSocket - Closed');
-          clearInterval(harmonyPlatform.timerID);
-          this.setTimer(true, harmonyPlatform);
-        });
-
-        harmonyPlatform.wspRefresh
-          .open()
-          .then(() => this._heartbeat(harmonyPlatform))
-          .then(() =>
-            harmonyPlatform.wspRefresh.onUnpackedMessage.addListener(
-              harmonyPlatform._onMessage.bind(harmonyPlatform)
-            )
-          )
-          .then(() => harmonyPlatform.wspRefresh.sendPacked(payload))
-          .then(() =>
-            harmonyPlatform.log.debug('INFO - RefreshSocket - Opened')
-          )
-          .catch(e => {
-            harmonyPlatform.log('ERROR - setTimer wspRefresh :' + e);
-            clearInterval(harmonyPlatform.timerID);
-            this.setTimer(true, harmonyPlatform);
-          });
-      } else {
-        harmonyPlatform.wspRefresh.removeAllListeners();
-        clearInterval(harmonyPlatform.timerID);
-      }
-    }
-  },
-
-  _heartbeat(harmonyPlatform) {
-    clearInterval(harmonyPlatform.timerID);
-
-    harmonyPlatform.timerID = setInterval(() => {
-      harmonyPlatform.log.debug('INFO - _heartbeat');
-      try {
-        harmonyPlatform.wspRefresh.send('');
-      } catch (error) {
-        harmonyPlatform.log('ERROR - _heartbeat :' + error);
-        clearInterval(harmonyPlatform.timerID);
-        harmonyPlatform.log('INFO - relaunching timer');
-        this.setTimer(true, harmonyPlatform);
-      }
-    }, 55000);
-  },
-
   configureAccessories: function(harmonyPlatform, callback) {
     harmonyPlatform.log('Loading activities...');
 
-    let headers = {
-      Origin: 'http://localhost.nebula.myharmony.com',
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'Accept-Charset': 'utf-8',
-    };
+    this.harmony.on('open', () => {
+      harmonyPlatform.log.debug('socket opened');
+    });
 
-    let hubUrl = `http://${harmonyPlatform.hubIP}:${
-      HarmonyConst.DEFAULT_HUB_PORT
-    }/`;
+    this.harmony.on('close', () => {
+      harmonyPlatform.log.debug('socket closed');
+    });
 
-    let jsonBody = {
-      'id ': 1,
-      cmd: 'connect.discoveryinfo?get',
-      params: {},
-    };
-    var that = this;
+    this.harmony.on('stateDigest', data => {
+      harmonyPlatform.onMessage(data);
+    });
 
-    request(
-      {
-        url: hubUrl,
-        method: 'POST',
-        headers: headers,
-        body: jsonBody,
-        json: true,
-      },
-      function(error, response, body) {
-        if (error) {
-          harmonyPlatform.log(
-            'Error retrieving info from hub : ' + error.message
-          );
-        } else if (response && response.statusCode !== 200) {
-          harmonyPlatform.log(
-            'Did not received 200 statuts, but  ' +
-              response.statusCode +
-              ' instead from hub'
-          );
-        } else if (body && body.data) {
-          harmonyPlatform.friendlyName = body.data.friendlyName;
-          harmonyPlatform.remote_id = body.data.remoteId;
-          harmonyPlatform.domain = url.parse(
-            body.data.discoveryServerUri
-          ).hostname;
-          harmonyPlatform.email = body.data.email;
-          harmonyPlatform.account_id = body.data.accountId;
+    this.harmony
+      .connect(harmonyPlatform.hubIP)
+      .then(() => this.harmony.getConfig())
+      .then(response => {
+        harmonyPlatform.log.debug('Hub config : ' + JSON.stringify(response));
 
-          wsUrl = `ws://${harmonyPlatform.hubIP}:${
-            HarmonyConst.DEFAULT_HUB_PORT
-          }/?domain=${harmonyPlatform.domain}&hubId=${
-            harmonyPlatform.remote_id
-          }`;
-
-          harmonyPlatform.wsp = new WebSocketAsPromised(wsUrl, {
-            createWebSocket: url => new W3CWebSocket(url),
-            packMessage: data => JSON.stringify(data),
-            unpackMessage: message => JSON.parse(message),
-            attachRequestId: (data, requestId) => {
-              data.hbus.id = requestId;
-              return data;
-            },
-            extractRequestId: data => data && data.id,
+        harmonyPlatform.readAccessories(response, callback);
+      })
+      .catch(e => {
+        harmonyPlatform.log('Error retrieving info from hub : ' + e.message);
+        //try again
+        this.harmony
+          .end()
+          .then(() => {
+            var that = this;
+            setTimeout(function() {
+              this.configureAccessories(harmonyPlatform, callback);
+            }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
+          })
+          .catch(e2 => {
+            harmonyPlatform.log(
+              'Fatal Error retrieving info from hub : ' + e.message
+            );
           });
-
-          if (harmonyPlatform.refreshByHub) {
-            harmonyPlatform.wspRefresh = new WebSocketAsPromised(wsUrl, {
-              createWebSocket: url => new W3CWebSocket(url),
-              packMessage: data => JSON.stringify(data),
-              unpackMessage: message => JSON.parse(message),
-              attachRequestId: (data, requestId) => {
-                data.hbus.id = requestId;
-                return data;
-              },
-              extractRequestId: data => data && data.id,
-            });
-          }
-
-          payload = {
-            hubId: harmonyPlatform.remote_id,
-            timeout: 30,
-            hbus: {
-              cmd: `vnd.logitech.harmony/vnd.logitech.harmony.engine?config`,
-              id: 0,
-              params: {
-                verb: 'get',
-                format: 'json',
-              },
-            },
-          };
-
-          harmonyPlatform.wsp
-            .open()
-            .then(() =>
-              harmonyPlatform.wsp.onUnpackedMessage.addListener(data => {
-                harmonyPlatform.wsp.removeAllListeners();
-                harmonyPlatform.log.debug(
-                  'Hub config : ' + JSON.stringify(data)
-                );
-
-                harmonyPlatform.readAccessories(data, callback);
-              })
-            )
-            .then(() => harmonyPlatform.wsp.sendPacked(payload))
-            .catch(e => {
-              harmonyPlatform.log('ERROR : GetConfiguration :' + e);
-              callback(harmonyPlatform._foundAccessories);
-            });
-        } else {
-          harmonyPlatform.log(
-            'Error : No config retrieved from hub, check IP and connectivity'
-          );
-          callback(harmonyPlatform._foundAccessories);
-        }
-      }
-    );
+      });
   },
 };
