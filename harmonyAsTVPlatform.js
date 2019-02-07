@@ -524,14 +524,14 @@ HarmonyPlatformAsTVPlatform.prototype = {
     }
     this.log.debug('INFO - sendingCommand' + commandToSend);
 
-    try {
-      this.harmonyBase.harmony.sendCommands(
-        commandToSend,
-        HarmonyConst.COMMAND_DELAY
-      );
-    } catch (e) {
-      this.log('ERROR - sendCommand : ' + e);
-    }
+    this.harmonyBase.harmony
+      .sendCommands(commandToSend)
+      .then(data => {
+        this.log.debug('INFO - sendCommand done' + JSON.stringify(data));
+      })
+      .catch(e => {
+        this.log('ERROR - activityCommand : ' + e);
+      });
   },
 
   //HOMEKIT CHARACTERISTICS EVENTS

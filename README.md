@@ -67,6 +67,8 @@ Fields:
 
 ## Changelog
 
+- 0.3.7
+  - [FIX] TV-Mode : switching to pressrelease command for commands.
 - 0.3.6
   - [FIX] TV-Mode : fixing Error: WebSocket closed with reason: Connection dropped by remote peer. (1006).
 - 0.3.5
