@@ -105,8 +105,21 @@ HarmonyBase.prototype = {
     }
   },
 
+  _reconnect: function(harmonyPlatform) {
+    this.harmony
+      .connect(harmonyPlatform.hubIP)
+      .then(() => harmonyPlatform.log('socket reconnected'))
+      .catch(e => {
+        harmonyPlatform.log.debug(
+          'Error retrieving info from hub : ' + e.message
+        );
+      });
+  },
+
   configureAccessories: function(harmonyPlatform, callback) {
     harmonyPlatform.log('Loading activities...');
+
+    this.harmony.removeAllListeners();
 
     this.harmony.on('open', () => {
       harmonyPlatform.log.debug('socket opened');
@@ -114,6 +127,10 @@ HarmonyBase.prototype = {
 
     this.harmony.on('close', () => {
       harmonyPlatform.log.debug('socket closed');
+      var that = this;
+      setTimeout(function() {
+        that._reconnect(harmonyPlatform);
+      }, HarmonyConst.DELAY_BEFORE_RECONNECT);
     });
 
     this.harmony.on('stateDigest', message => {
@@ -142,25 +159,14 @@ HarmonyBase.prototype = {
       .then(() => this.harmony.getConfig())
       .then(response => {
         harmonyPlatform.log.debug('Hub config : ' + JSON.stringify(response));
-
         harmonyPlatform.readAccessories(response, callback);
       })
       .catch(e => {
         harmonyPlatform.log('Error retrieving info from hub : ' + e.message);
-        //try again
-        this.harmony
-          .end()
-          .then(() => {
-            var that = this;
-            setTimeout(function() {
-              that.configureAccessories(harmonyPlatform, callback);
-            }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
-          })
-          .catch(e2 => {
-            harmonyPlatform.log(
-              'Fatal Error retrieving info from hub : ' + e2.message
-            );
-          });
+        var that = this;
+        setTimeout(function() {
+          that.configureAccessories(harmonyPlatform, callback);
+        }, HarmonyConst.DELAY_BEFORE_RECONNECT);
       });
   },
 

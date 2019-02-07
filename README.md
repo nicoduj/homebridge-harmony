@@ -67,6 +67,8 @@ Fields:
 
 ## Changelog
 
+- 0.3.2
+  - [FIX] disconnect issues #55
 - 0.3.1
   - [FIX] tiny fixes / refactoring
 - 0.3.0
