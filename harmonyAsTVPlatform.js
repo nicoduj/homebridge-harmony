@@ -524,7 +524,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     }
 
     this.harmonyBase.harmony
-      .sendCommands(commandToSend)
+      .sendCommands(commandToSend, HarmonyConst.COMMAND_DELAY)
       .then(data => {
         this.log.debug('INFO - sendCommand done' + commandToSend);
       })

@@ -67,6 +67,8 @@ Fields:
 
 ## Changelog
 
+- 0.3.3
+  - [FIX] TV-Mode : commands might be sent multiple times
 - 0.3.2
   - [FIX] disconnect issues #55
 - 0.3.1
