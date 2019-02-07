@@ -67,6 +67,8 @@ Fields:
 
 ## Changelog
 
+- 0.3.4
+  - [FIX] TV-Mode : commands might be sent multiple times : switching to a forked version of harmony-websocket
 - 0.3.3
   - [FIX] TV-Mode : commands might be sent multiple times
 - 0.3.2
@@ -140,4 +142,7 @@ Fields:
 
 ## Inspiration
 
-Thanks to [iandday/pyharmony/pyharmony/client.py](https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py) for the Harmoney WebSocket protocol implementation.
+Thanks to
+
+- [iandday/pyharmony/pyharmony/client.py](https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py) for the Harmoney WebSocket protocol implementation and understanding of it.
+- @lopelex [harmony-websocket](https://github.com/lopelex/harmony-websocket) for its clean plugin.
