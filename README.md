@@ -67,6 +67,8 @@ Fields:
 
 ## Changelog
 
+- 0.3.6
+  - [FIX] TV-Mode : fixing Error: WebSocket closed with reason: Connection dropped by remote peer. (1006).
 - 0.3.5
   - [FIX] TV-Mode : commands are not sent anymore
 - 0.3.4

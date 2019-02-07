@@ -45,6 +45,8 @@ HarmonyBase.prototype = {
         'shutdown',
         function() {
           harmonyPlatform.log('shutdown');
+          this.harmony.removeAllListeners();
+          this.harmony.end();
         }.bind(this)
       );
     }

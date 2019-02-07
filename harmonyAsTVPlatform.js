@@ -522,15 +522,16 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this.log.debug('INFO - sendCommand : Command not available ');
       return;
     }
-    this.log.debug('INFO - sendingCommand done' + commandToSend);
-    this.harmonyBase.harmony
-      .sendCommands(commandToSend, HarmonyConst.COMMAND_DELAY)
-      .then(data => {
-        this.log.debug('INFO - sendCommand done' + data);
-      })
-      .catch(e => {
-        this.log('ERROR - sendCommand : ' + e);
-      });
+    this.log.debug('INFO - sendingCommand' + commandToSend);
+
+    try {
+      this.harmonyBase.harmony.sendCommands(
+        commandToSend,
+        HarmonyConst.COMMAND_DELAY
+      );
+    } catch (e) {
+      this.log('ERROR - sendCommand : ' + e);
+    }
   },
 
   //HOMEKIT CHARACTERISTICS EVENTS
