@@ -67,6 +67,8 @@ Fields:
 
 ## Changelog
 
+- 0.3.5
+  - [FIX] TV-Mode : commands are not sent anymore
 - 0.3.4
   - [FIX] TV-Mode : commands might be sent multiple times : switching to a forked version of harmony-websocket
 - 0.3.3

@@ -522,14 +522,14 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this.log.debug('INFO - sendCommand : Command not available ');
       return;
     }
-
+    this.log.debug('INFO - sendingCommand done' + commandToSend);
     this.harmonyBase.harmony
       .sendCommands(commandToSend, HarmonyConst.COMMAND_DELAY)
       .then(data => {
-        this.log.debug('INFO - sendCommand done' + commandToSend);
+        this.log.debug('INFO - sendCommand done' + data);
       })
       .catch(e => {
-        this.log('ERROR - activityCommand : ' + e);
+        this.log('ERROR - sendCommand : ' + e);
       });
   },
 
