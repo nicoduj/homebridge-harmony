@@ -1,6 +1,6 @@
 {
   "name": "homebridge-harmony",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "author": "Nicolas Dujardin",
   "description": "Publish your harmony activities as homekit accessories",
   "main": "index.js",
@@ -24,7 +24,7 @@
     "homekit"
   ],
   "dependencies": {
-    "harmony-websocket": "github:nicoduj/harmony-websocket",
+    "harmony-websocket": "^1.0.4",
     "request": "^2.65.0",
     "websocket": "^1.0.28",
     "websocket-as-promised": "^0.9.0"

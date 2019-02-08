@@ -67,6 +67,8 @@ Fields:
 
 ## Changelog
 
+- 0.3.8
+  - [FIX] Moving back to official harmony-websocket plugin from @lopelex since pull request was mergerd and published
 - 0.3.7
   - [FIX] TV-Mode : switching to pressrelease command for commands.
 - 0.3.6
