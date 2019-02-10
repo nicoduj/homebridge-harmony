@@ -105,17 +105,6 @@ HarmonyBase.prototype = {
     }
   },
 
-  _reconnect: function(harmonyPlatform) {
-    this.harmony
-      .connect(harmonyPlatform.hubIP)
-      .then(() => harmonyPlatform.log('socket reconnected'))
-      .catch(e => {
-        harmonyPlatform.log.debug(
-          'Error retrieving info from hub : ' + e.message
-        );
-      });
-  },
-
   configureAccessories: function(harmonyPlatform, callback) {
     harmonyPlatform.log('Loading activities...');
 
@@ -129,7 +118,7 @@ HarmonyBase.prototype = {
       harmonyPlatform.log.debug('socket closed');
       var that = this;
       setTimeout(function() {
-        that._reconnect(harmonyPlatform);
+        that.refreshCurrentActivity(harmonyPlatform, () => {});
       }, HarmonyConst.DELAY_BEFORE_RECONNECT);
     });
 

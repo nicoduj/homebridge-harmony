@@ -67,6 +67,8 @@ Fields:
 
 ## Changelog
 
+- 0.3.9
+  - [FIX] connection lost after a while : #56
 - 0.3.8
   - [FIX] Moving back to official harmony-websocket plugin from @lopelex since pull request was mergerd and published
 - 0.3.7
