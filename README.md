@@ -67,6 +67,8 @@ Fields:
 
 ## Changelog
 
+- 0.3.91
+  - [FIX] switching back to published npm harmony-websocket from @lopelex
 - 0.3.9
   - [FIX] connection lost after a while : #56 and possible problem on different networks (still need confirmation #57)
 - 0.3.8
