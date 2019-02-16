@@ -49,6 +49,7 @@ HarmonyPlatformAsSwitches.prototype = {
         };
         service.controlService.subtype = switchName;
         service.controlService.id = activities[i].id;
+        service.type = HarmonyConst.ACTIVITY_TYPE;
         services.push(service);
 
         if (that.publishActivitiesAsIndividualAccessories) {
@@ -80,6 +81,13 @@ HarmonyPlatformAsSwitches.prototype = {
       myHarmonyAccessory.manufacturer = 'Harmony';
       myHarmonyAccessory.serialNumber = that.hubIP;
       that._foundAccessories.push(myHarmonyAccessory);
+    }
+
+    if (
+      that.devicesToPublishAsAccessoriesSwitch &&
+      that.devicesToPublishAsAccessoriesSwitch.length > 0
+    ) {
+      that.harmonyBase.getDevicesAccessories(that, data);
     }
 
     //first refresh
@@ -257,83 +265,92 @@ HarmonyPlatformAsSwitches.prototype = {
     service,
     homebridgeAccessory
   ) {
-    characteristic.on(
-      'set',
-      function(value, callback, context) {
-        let doCommand = true;
-        let commandToSend = value ? service.controlService.id : '-1';
-        let currentValue = characteristic.value;
-        //Actitiy in skipedIfSameState
-        if (
-          this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
-          (this.skipedIfSameStateActivities &&
-            this.skipedIfSameStateActivities.includes(
-              service.controlService.subtype
-            ))
-        ) {
-          this.log.debug(
-            'INFO : SET on an activty in skipedIfsameState list ' +
-              service.controlService.subtype
-          );
+    if (service.type === HarmonyConst.DEVICE_TYPE) {
+      this.harmonyBase.bindCharacteristicEvents(
+        this,
+        characteristic,
+        service,
+        homebridgeAccessory
+      );
+    } else {
+      characteristic.on(
+        'set',
+        function(value, callback, context) {
+          let doCommand = true;
+          let commandToSend = value ? service.controlService.id : '-1';
+          let currentValue = characteristic.value;
+          //Actitiy in skipedIfSameState
+          if (
+            this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
+            (this.skipedIfSameStateActivities &&
+              this.skipedIfSameStateActivities.includes(
+                service.controlService.subtype
+              ))
+          ) {
+            this.log.debug(
+              'INFO : SET on an activty in skipedIfsameState list ' +
+                service.controlService.subtype
+            );
 
-          this.log.debug(
-            'INFO : Activty ' +
-              service.controlService.subtype +
-              ' is ' +
-              currentValue +
-              ', wants to set to ' +
-              value
-          );
-          //GLOBAL OFF SWITCH : do command only if it is off and we want to set it on since on state can't be reversed
-          if (service.controlService.id == -1) {
-            doCommand = !currentValue && value;
-          }
-          //ELSE, we do the command only if state is different.
-          else {
-            doCommand = currentValue !== value;
-          }
-          if (doCommand) {
             this.log.debug(
               'INFO : Activty ' +
                 service.controlService.subtype +
-                ' will be sent command ' +
-                commandToSend
+                ' is ' +
+                currentValue +
+                ', wants to set to ' +
+                value
             );
+            //GLOBAL OFF SWITCH : do command only if it is off and we want to set it on since on state can't be reversed
+            if (service.controlService.id == -1) {
+              doCommand = !currentValue && value;
+            }
+            //ELSE, we do the command only if state is different.
+            else {
+              doCommand = currentValue !== value;
+            }
+            if (doCommand) {
+              this.log.debug(
+                'INFO : Activty ' +
+                  service.controlService.subtype +
+                  ' will be sent command ' +
+                  commandToSend
+              );
+            } else {
+              this.log.debug(
+                'INFO : Activty ' +
+                  service.controlService.subtype +
+                  ' will not be sent any command '
+              );
+            }
           } else {
             this.log.debug(
-              'INFO : Activty ' +
-                service.controlService.subtype +
-                ' will not be sent any command '
+              'INFO : SET on an activty not in skipedIfsameState list ' +
+                service.controlService.subtype
             );
           }
-        } else {
-          this.log.debug(
-            'INFO : SET on an activty not in skipedIfsameState list ' +
-              service.controlService.subtype
-          );
-        }
 
-        if (doCommand) {
-          this.activityCommand(homebridgeAccessory, commandToSend);
-          callback();
-        } else {
-          callback();
-          setTimeout(function() {
-            characteristic.updateValue(currentValue);
-          }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
-        }
-      }.bind(this)
-    );
-    characteristic.on(
-      'get',
-      function(callback) {
-        homebridgeAccessory.platform.refreshService(
-          service,
-          homebridgeAccessory,
-          callback
-        );
-      }.bind(this)
-    );
+          if (doCommand) {
+            this.activityCommand(homebridgeAccessory, commandToSend);
+            callback();
+          } else {
+            callback();
+            setTimeout(function() {
+              characteristic.updateValue(currentValue);
+            }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
+          }
+        }.bind(this)
+      );
+      characteristic.on(
+        'get',
+        function(callback) {
+          homebridgeAccessory.platform.refreshService(
+            service,
+            homebridgeAccessory,
+            callback
+          );
+        }.bind(this)
+      );
+    }
   },
 
   getServices: function(homebridgeAccessory) {

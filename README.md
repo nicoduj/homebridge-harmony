@@ -64,11 +64,13 @@ Fields:
 - `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
 - `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
 - `mainActivity` set the mainactivity of the TV mode
+- `devicesToPublishAsAccessoriesSwitch` array of Devices to exposes with on/off function
+- `publishDevicesAsIndividualAccessories` option to publish devices as individual accessories. Defaults to true.
 
 ## Changelog
 
-- 0.3.91
-  - [FIX] switching back to published npm harmony-websocket from @lopelex
+- 0.4.0
+  - [NEW] devicesToPublishAsAccessoriesSwitch option (#15)
 - 0.3.9
   - [FIX] connection lost after a while : #56 and possible problem on different networks (still need confirmation #57)
 - 0.3.8

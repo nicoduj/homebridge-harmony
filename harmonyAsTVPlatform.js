@@ -281,6 +281,13 @@ HarmonyPlatformAsTVPlatform.prototype = {
     myHarmonyAccessory.serialNumber = that.name + that.hubIP;
     that._foundAccessories.push(myHarmonyAccessory);
 
+    if (
+      that.devicesToPublishAsAccessoriesSwitch &&
+      that.devicesToPublishAsAccessoriesSwitch.length > 0
+    ) {
+      that.harmonyBase.getDevicesAccessories(that, data);
+    }
+
     //first refresh
     setTimeout(function() {
       that.refreshAccessory();
@@ -517,30 +524,20 @@ HarmonyPlatformAsTVPlatform.prototype = {
       });
   },
 
-  sendCommand: function(commandToSend) {
-    if (!commandToSend) {
-      this.log.debug('INFO - sendCommand : Command not available ');
-      return;
-    }
-    this.log.debug('INFO - sendingCommand' + commandToSend);
-
-    this.harmonyBase.harmony
-      .sendCommands(commandToSend)
-      .then(data => {
-        this.log.debug('INFO - sendCommand done' + JSON.stringify(data));
-      })
-      .catch(e => {
-        this.log('ERROR - activityCommand : ' + e);
-      });
-  },
-
   //HOMEKIT CHARACTERISTICS EVENTS
   bindCharacteristicEvents: function(
     characteristic,
     service,
     homebridgeAccessory
   ) {
-    if (characteristic instanceof Characteristic.Active) {
+    if (service.type === HarmonyConst.DEVICE_TYPE) {
+      this.harmonyBase.bindCharacteristicEvents(
+        this,
+        characteristic,
+        service,
+        homebridgeAccessory
+      );
+    } else if (characteristic instanceof Characteristic.Active) {
       //set to main activity / activeIdentifier or off
       characteristic.on(
         'set',
@@ -622,13 +619,17 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 this.log.debug(
                   'INFO - sending DirectionUpCommand for ARROW_UP'
                 );
-                this.sendCommand(this._currentInputService.DirectionUpCommand);
+                this.harmonyBase.sendCommand(
+                  this,
+                  this._currentInputService.DirectionUpCommand
+                );
                 break;
               case newValue === Characteristic.RemoteKey.ARROW_DOWN:
                 this.log.debug(
                   'INFO - sending DirectionDownCommand for ARROW_DOWN'
                 );
-                this.sendCommand(
+                this.harmonyBase.sendCommand(
+                  this,
                   this._currentInputService.DirectionDownCommand
                 );
                 break;
@@ -636,7 +637,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 this.log.debug(
                   'INFO - sending DirectionLeftCommand for ARROW_LEFT'
                 );
-                this.sendCommand(
+                this.harmonyBase.sendCommand(
+                  this,
                   this._currentInputService.DirectionLeftCommand
                 );
                 break;
@@ -644,51 +646,79 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 this.log.debug(
                   'INFO - sending DirectionRightCommand for ARROW_RIGHT'
                 );
-                this.sendCommand(
+                this.harmonyBase.sendCommand(
+                  this,
                   this._currentInputService.DirectionRightCommand
                 );
                 break;
               case newValue === Characteristic.RemoteKey.SELECT:
                 this.log.debug('INFO - sending SelectCommand for SELECT');
-                this.sendCommand(this._currentInputService.SelectCommand);
+                this.harmonyBase.sendCommand(
+                  this,
+                  this._currentInputService.SelectCommand
+                );
                 break;
               case newValue === Characteristic.RemoteKey.PLAY_PAUSE:
                 this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
-                this.sendCommand(this._currentInputService.PlayCommand);
+                this.harmonyBase.sendCommand(
+                  this,
+                  this._currentInputService.PlayCommand
+                );
                 break;
               case newValue === Characteristic.RemoteKey.INFORMATION:
                 this.log.debug('INFO - sending MenuCommand for INFORMATION');
-                this.sendCommand(this._currentInputService.MenuCommand);
+                this.harmonyBase.sendCommand(
+                  this,
+                  this._currentInputService.MenuCommand
+                );
                 break;
               case newValue === Characteristic.RemoteKey.BACK:
                 this.log.debug('INFO - sending ReturnCommand for BACK');
-                this.sendCommand(this._currentInputService.ReturnCommand);
+                this.harmonyBase.sendCommand(
+                  this,
+                  this._currentInputService.ReturnCommand
+                );
                 break;
               case newValue === Characteristic.RemoteKey.EXIT:
                 this.log.debug('INFO - sending HomeCommand for EXIT');
-                this.sendCommand(this._currentInputService.HomeCommand);
+                this.harmonyBase.sendCommand(
+                  this,
+                  this._currentInputService.HomeCommand
+                );
                 break;
               case newValue === Characteristic.RemoteKey.REWIND:
                 this.log.debug('INFO - sending RewindCommand for REWIND');
-                this.sendCommand(this._currentInputService.RewindCommand);
+                this.harmonyBase.sendCommand(
+                  this,
+                  this._currentInputService.RewindCommand
+                );
                 break;
               case newValue === Characteristic.RemoteKey.FAST_FORWARD:
                 this.log.debug(
                   'INFO - sending FastForwardCommand for FAST_FORWARD'
                 );
-                this.sendCommand(this._currentInputService.FastForwardCommand);
+                this.harmonyBase.sendCommand(
+                  this,
+                  this._currentInputService.FastForwardCommand
+                );
                 break;
               case newValue === Characteristic.RemoteKey.NEXT_TRACK:
                 this.log.debug(
                   'INFO - sending SkipForwardCommand for NEXT_TRACK'
                 );
-                this.sendCommand(this._currentInputService.SkipForwardCommand);
+                this.harmonyBase.sendCommand(
+                  this,
+                  this._currentInputService.SkipForwardCommand
+                );
                 break;
               case newValue === Characteristic.RemoteKey.PREVIOUS_TRACK:
                 this.log.debug(
                   'INFO - sending SkipBackwardCommand for PREVIOUS_TRACK'
                 );
-                this.sendCommand(this._currentInputService.SkipBackwardCommand);
+                this.harmonyBase.sendCommand(
+                  this,
+                  this._currentInputService.SkipBackwardCommand
+                );
                 break;
             }
           }
@@ -701,7 +731,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
         function(value, callback) {
           if (this._currentActivity > 0) {
             this.log.debug('INFO - SET Characteristic.Mute : ' + value);
-            this.sendCommand(this._currentInputService.MuteCommand);
+            this.harmonyBase.sendCommand(
+              this,
+              this._currentInputService.MuteCommand
+            );
           }
           callback(null);
         }.bind(this)
@@ -723,9 +756,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
               'INFO - SET Characteristic.VolumeSelector : ' + value
             );
             if (value === Characteristic.VolumeSelector.DECREMENT) {
-              this.sendCommand(this._currentInputService.VolumeDownCommand);
+              this.harmonyBase.sendCommand(
+                this,
+                this._currentInputService.VolumeDownCommand
+              );
             } else {
-              this.sendCommand(this._currentInputService.VolumeUpCommand);
+              this.harmonyBase.sendCommand(
+                this,
+                this._currentInputService.VolumeUpCommand
+              );
             }
           }
           callback(null);
