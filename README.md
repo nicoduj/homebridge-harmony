@@ -1,5 +1,7 @@
 # homebridge-harmony
 
+***Important notice : if you are using my harmony hub plugin it is broken since last hub firmware update 4.15.250. Do not update until I find a solution !***
+
 [Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/nfarina/homebridge) using WebSockets.
 
 > ## Work In Progress
