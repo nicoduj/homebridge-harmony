@@ -530,7 +530,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     service,
     homebridgeAccessory
   ) {
-    if (service.type !== HarmonyConst.ACTIVITY_TYPE) {
+    if (service.type === HarmonyConst.DEVICE_TYPE || service.type === HarmonyConst.DEVICEMACRO_TYPE ) {
       this.harmonyBase.bindCharacteristicEvents(
         this,
         characteristic,
