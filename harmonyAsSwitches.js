@@ -42,7 +42,7 @@ HarmonyPlatformAsSwitches.prototype = {
           switchName = 'DEV' + switchName;
         }
 
-        that.log('Discovered Activity : ' + switchName);
+        that.log('INFO - Discovered Activity : ' + switchName);
         let service = {
           controlService: new Service.Switch(switchName),
           characteristics: [Characteristic.On],
@@ -53,7 +53,7 @@ HarmonyPlatformAsSwitches.prototype = {
         services.push(service);
 
         if (that.publishActivitiesAsIndividualAccessories) {
-          that.log('Adding Accessory : ' + accessoryName);
+          that.log('INFO - Adding Accessory : ' + accessoryName);
           let myHarmonyAccessory = new HarmonyAccessory(services);
           myHarmonyAccessory.getServices = function() {
             return that.getServices(myHarmonyAccessory);
@@ -70,7 +70,7 @@ HarmonyPlatformAsSwitches.prototype = {
     }
 
     if (!that.publishActivitiesAsIndividualAccessories) {
-      that.log('Adding Accessory : ' + that.name);
+      that.log('INFO - Adding Accessory : ' + that.name);
       let myHarmonyAccessory = new HarmonyAccessory(services);
       myHarmonyAccessory.getServices = function() {
         return that.getServices(myHarmonyAccessory);
@@ -164,7 +164,7 @@ HarmonyPlatformAsSwitches.prototype = {
             homebridgeAccessory.services[a].controlService.id == commandToSend
           ) {
             serviceControl = homebridgeAccessory.services[a].controlService;
-            this.log(serviceControl.displayName + ' activated');
+            this.log('INFO - ' + serviceControl.displayName + ' activated');
             break;
           }
         }
@@ -265,7 +265,7 @@ HarmonyPlatformAsSwitches.prototype = {
     service,
     homebridgeAccessory
   ) {
-    if (service.type === HarmonyConst.DEVICE_TYPE) {
+    if (service.type !== HarmonyConst.ACTIVITY_TYPE) {
       this.harmonyBase.bindCharacteristicEvents(
         this,
         characteristic,

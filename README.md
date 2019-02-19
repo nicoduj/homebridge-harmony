@@ -1,7 +1,5 @@
 # homebridge-harmony
 
-***Important notice : if you are using my harmony hub plugin it is broken since last hub firmware update 4.15.250. Do not update until I find a solution !***
-
 [Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/nfarina/homebridge) using WebSockets.
 
 > ## Work In Progress
@@ -72,19 +70,24 @@ Fields:
 Option `devicesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
 - You should put the name of the device as it is named in harmony app,
-- You can add a specific command **JUST AFTER A ";"** if you want a switch to be added for this specific command,
+- You can add a specific command or multiple ones **JUST AFTER A ";" or a series of ";"** if you want a switch to be added for this specific command or serie of commands (a delay of 250ms will be added between each command),
 - If you do not specify any specific command, the plugin will add either powerToggle if found in Power command group, or PowerOn and/or PowerOff if there is no powerToggle feature,
 - As a sample :
-  - "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4"] will add
+  - "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up;Down"] will add
     - a switch for "Apple TV Gen 4" "Play" command,
     - a switch for "Apple TV Gen 4" "DirectionDown" command,
     - a powerToggle switch for the device named "Caisson",
-    - and a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it)
+    - a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it)
+    - a switch that will send Up then Down to MyDevice
 
 If you want to see all commands available for your config, you can launch in debug mode (-D) and check your hub config output as a json : "Hub config : {"cmd" ...."
 
 ## Changelog
 
+- 0.4.2
+  - [FIX] move to latest version of @lopelex lib for compatibility with latest hub firmware 4.15.250 #64
+  - [NEW] handle macro for devices switch . Use multiple commands separate by a ";" #63
+  - [NEW] printing commands of your devices at startup in log (no debug needed)
 - 0.4.1
   - [NEW] you can specify custom command for devices switches
   - [FIX] error if you set both options publishDevicesAsIndividualAccessories and publishActivitiesAsIndividualAccessories to false

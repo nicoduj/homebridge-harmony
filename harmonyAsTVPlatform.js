@@ -41,14 +41,14 @@ HarmonyPlatformAsTVPlatform.prototype = {
     if (this.devMode) {
       inputName = 'DEV' + inputName;
     }
-    this.log('Configuring Main Activity ' + inputName);
+    this.log('INFO - Configuring Main Activity ' + inputName);
 
     this.mainActivityId = activity.id;
     this.mainService.activityName = inputName;
     this.mainService.activityId = activity.id;
     this.mainService.controlService.id = 'M' + activity.id;
 
-    this.log('Creating TV Speaker Service');
+    this.log('INFO - Creating TV Speaker Service');
     this.tvSpeakerService = {
       controlService: new Service.TelevisionSpeaker(
         this.name,
@@ -82,7 +82,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     let services = [];
 
-    that.log('Creating Main TV Service');
+    that.log('INFO - Creating Main TV Service');
     that.mainService = {
       controlService: new Service.Television(
         that.name,
@@ -125,7 +125,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
           mainActivityConfigured = true;
         }
 
-        that.log('Creating InputSourceService ' + inputName);
+        that.log('INFO - Creating InputSourceService ' + inputName);
         let inputSourceService = {
           controlService: new Service.InputSource(
             inputName,
@@ -145,51 +145,51 @@ HarmonyPlatformAsTVPlatform.prototype = {
           if (controlGroup[j].name == 'Volume') {
             for (let k = 0, len = functions.length; k < len; k++) {
               if (functions[k].name == 'Mute') {
-                that.log('Mapping Mute for ' + inputName);
+                that.log('INFO - Mapping Mute for ' + inputName);
                 inputSourceService.MuteCommand = functions[k].action;
               } else if (functions[k].name == 'VolumeDown') {
-                that.log('Mapping VolumeDown for ' + inputName);
+                that.log('INFO - Mapping VolumeDown for ' + inputName);
                 inputSourceService.VolumeDownCommand = functions[k].action;
               } else if (functions[k].name == 'VolumeUp') {
-                that.log('Mapping VolumeUp for ' + inputName);
+                that.log('INFO - Mapping VolumeUp for ' + inputName);
                 inputSourceService.VolumeUpCommand = functions[k].action;
               }
             }
           } else if (activities[i].controlGroup[j].name == 'NavigationBasic') {
             for (let k = 0, len = functions.length; k < len; k++) {
               if (functions[k].name == 'DirectionDown') {
-                that.log('Mapping DirectionDown for ' + inputName);
+                that.log('INFO - Mapping DirectionDown for ' + inputName);
                 inputSourceService.DirectionDownCommand = functions[k].action;
               } else if (functions[k].name == 'DirectionLeft') {
-                that.log('Mapping DirectionLeft for ' + inputName);
+                that.log('INFO - Mapping DirectionLeft for ' + inputName);
                 inputSourceService.DirectionLeftCommand = functions[k].action;
               } else if (functions[k].name == 'DirectionRight') {
-                that.log('Mapping DirectionRight for ' + inputName);
+                that.log('INFO - Mapping DirectionRight for ' + inputName);
                 inputSourceService.DirectionRightCommand = functions[k].action;
               } else if (functions[k].name == 'DirectionUp') {
-                that.log('Mapping DirectionUp for ' + inputName);
+                that.log('INFO - Mapping DirectionUp for ' + inputName);
                 inputSourceService.DirectionUpCommand = functions[k].action;
               } else if (functions[k].name == 'Select') {
-                that.log('Mapping Select for ' + inputName);
+                that.log('INFO - Mapping Select for ' + inputName);
                 inputSourceService.SelectCommand = functions[k].action;
               }
             }
           } else if (activities[i].controlGroup[j].name == 'TransportBasic') {
             for (let k = 0, len = functions.length; k < len; k++) {
               if (functions[k].name == 'Stop') {
-                that.log('Mapping Stop for ' + inputName);
+                that.log('INFO - Mapping Stop for ' + inputName);
                 inputSourceService.StopCommand = functions[k].action;
               } else if (functions[k].name == 'Play') {
-                that.log('Mapping Play for ' + inputName);
+                that.log('INFO - Mapping Play for ' + inputName);
                 inputSourceService.PlayCommand = functions[k].action;
               } else if (functions[k].name == 'Rewind') {
-                that.log('Mapping Rewind for ' + inputName);
+                that.log('INFO - Mapping Rewind for ' + inputName);
                 inputSourceService.RewindCommand = functions[k].action;
               } else if (functions[k].name == 'Pause') {
-                that.log('Mapping Pause for ' + inputName);
+                that.log('INFO - Mapping Pause for ' + inputName);
                 inputSourceService.PauseCommand = functions[k].action;
               } else if (functions[k].name == 'FastForward') {
-                that.log('Mapping FastForward for ' + inputName);
+                that.log('INFO - Mapping FastForward for ' + inputName);
                 inputSourceService.FastForwardCommand = functions[k].action;
               }
             }
@@ -199,10 +199,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 functions[k].name == 'Return' ||
                 functions[k].name == 'Back'
               ) {
-                that.log('Mapping Return for ' + inputName);
+                that.log('INFO - Mapping Return for ' + inputName);
                 inputSourceService.ReturnCommand = functions[k].action;
               } else if (functions[k].name == 'Menu') {
-                that.log('Mapping Menu for ' + inputName);
+                that.log('INFO - Mapping Menu for ' + inputName);
                 inputSourceService.MenuCommand = functions[k].action;
               }
             }
@@ -211,17 +211,17 @@ HarmonyPlatformAsTVPlatform.prototype = {
           ) {
             for (let k = 0, len = functions.length; k < len; k++) {
               if (functions[k].name == 'SkipBackward') {
-                that.log('Mapping SkipBackward for ' + inputName);
+                that.log('INFO - Mapping SkipBackward for ' + inputName);
                 inputSourceService.SkipBackwardCommand = functions[k].action;
               } else if (functions[k].name == 'SkipForward') {
-                that.log('Mapping SkipForward for ' + inputName);
+                that.log('INFO - Mapping SkipForward for ' + inputName);
                 inputSourceService.SkipForwardCommand = functions[k].action;
               }
             }
           } else if (activities[i].controlGroup[j].name == 'GameType3') {
             for (let k = 0, len = functions.length; k < len; k++) {
               if (functions[k].name == 'Home') {
-                that.log('Mapping Home for ' + inputName);
+                that.log('INFO - Mapping Home for ' + inputName);
                 inputSourceService.HomeCommand = functions[k].action;
               }
             }
@@ -269,7 +269,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     services.push(that.tvSpeakerService);
     services.push(that.mainService);
 
-    that.log('Adding Accessory : ' + that.name);
+    that.log('INFO - Adding Accessory : ' + that.name);
     let myHarmonyAccessory = new HarmonyAccessory(services);
     myHarmonyAccessory.getServices = function() {
       return that.getServices(myHarmonyAccessory);
@@ -458,7 +458,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
           if (this._currentActivity != -1) {
             this.log.debug(
-              'updating characteristics to ' + this._currentActivity
+              'INFO - updating characteristics to ' + this._currentActivity
             );
 
             this.harmonyBase.updateCharacteristic(
@@ -474,7 +474,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
               true
             );
           } else {
-            this.log.debug('updating characteristics to off');
+            this.log.debug('INFO - updating characteristics to off');
 
             this.harmonyBase.updateCharacteristic(
               this.mainService.controlService.getCharacteristic(
@@ -530,7 +530,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     service,
     homebridgeAccessory
   ) {
-    if (service.type === HarmonyConst.DEVICE_TYPE) {
+    if (service.type !== HarmonyConst.ACTIVITY_TYPE) {
       this.harmonyBase.bindCharacteristicEvents(
         this,
         characteristic,
