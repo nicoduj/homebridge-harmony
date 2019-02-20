@@ -70,7 +70,7 @@ Fields:
 Option `devicesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
 - You should put the name of the device as it is named in harmony app,
-- You can add a specific command or multiple ones **JUST AFTER A ";" or a series of ";"** if you want a switch to be added for this specific command or serie of commands (a delay of 250ms will be added between each command),
+- You can add a specific command or multiple ones **JUST AFTER A ";" or a series of ";"** if you want a switch to be added for this specific command or serie of commands (a delay of 350ms will be added between each command),
 - If you do not specify any specific command, the plugin will add either powerToggle if found in Power command group, or PowerOn and/or PowerOff if there is no powerToggle feature,
 - As a sample :
   - "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up;Down"] will add
@@ -84,6 +84,9 @@ If you want to see all commands available for your config, you can launch in deb
 
 ## Changelog
 
+- 0.4.3
+  - [FIX] TV Mode borken #66
+  - [FIX] move timer for activity macro to 350ms
 - 0.4.2
   - [FIX] move to latest version of @lopelex lib for compatibility with latest hub firmware 4.15.250 #64
   - [NEW] handle macro for devices switch . Use multiple commands separate by a ";" #63

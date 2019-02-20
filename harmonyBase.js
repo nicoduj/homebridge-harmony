@@ -480,19 +480,23 @@ function HarmonyAccessory(services) {
 
 async function processCommands(hb, platform, commands) {
   for (const command of commands) {
-    await processCommand(hb, platform, command);
+    let commandTosend = command.split('|');
+    let timeToWait = HarmonyConst.DELAY_FOR_MACRO;
+    if (commandTosend.length === 2) timeToWait = commandTosend[1];
+    else timeToWait = HarmonyConst.DELAY_FOR_MACRO;
+    console.log(commandTosend[0]);
+    console.log(timeToWait);
+    await processCommand(hb, platform, commandTosend[0], timeToWait);
   }
 }
 
-async function processCommand(hb, platform, command) {
+async function processCommand(hb, platform, command, timeToWait) {
   // notice that we can await a function
   // that returns a promise
   await hb.sendCommand(platform, command);
-  await delay();
+  await delay(timeToWait);
 }
 
-function delay() {
-  return new Promise(resolve =>
-    setTimeout(resolve, HarmonyConst.DELAY_FOR_MACRO)
-  );
+function delay(timeToWait) {
+  return new Promise(resolve => setTimeout(resolve, timeToWait));
 }
