@@ -343,16 +343,29 @@ HarmonyBase.prototype = {
           else {
             let functionsForSwitch = [];
             let functionsKey = '';
+
             for (let l = 1, len = commands.length; l < len; l++) {
               for (let j = 0, len = controlGroup.length; j < len; j++) {
                 let functions = controlGroup[j].function;
                 for (let k = 0, len = functions.length; k < len; k++) {
-                  if (functions[k].name === commands[l]) {
+                  let commandTosend = commands[l].split('|');
+
+                  if (functions[k].name === commandTosend[0]) {
                     harmonyPlatform.log(
-                      'INFO - Activating  ' + commands[l] + ' for ' + switchName
+                      'INFO - Activating  ' +
+                        commandTosend[0] +
+                        ' for ' +
+                        switchName
                     );
-                    functionsForSwitch.push(functions[k].action);
-                    functionsKey = functionsKey + commands[l];
+
+                    if (commandTosend.length === 2) {
+                      let fctWithDelay =
+                        functions[k].action + '|' + commandTosend[1];
+                      functionsForSwitch.push(fctWithDelay);
+                    } else {
+                      functionsForSwitch.push(functions[k].action);
+                    }
+                    functionsKey = functionsKey + commandTosend[0];
                   }
                 }
               }

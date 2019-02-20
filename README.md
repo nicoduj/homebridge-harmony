@@ -84,6 +84,9 @@ If you want to see all commands available for your config, you can launch in deb
 
 ## Changelog
 
+- 0.4.4
+  - [NEW] macro mode : you can specify the delay to wait after each command by adding a "|250" string for exemple : "MyDevice;Up|250;Down|500"
+  - [FIX] TVPlatform mode : name of device/inputs lost if modified at homebridge restart #68
 - 0.4.3
   - [FIX] TV Mode borken #66
   - [FIX] move timer for activity macro to 350ms

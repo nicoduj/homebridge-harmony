@@ -2,6 +2,9 @@ var Service, Characteristic;
 
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
+const fs = require('fs');
+const ppath = require('persist-path');
+const mkdirp = require('mkdirp');
 
 module.exports = {
   HarmonyPlatformAsTVPlatform: HarmonyPlatformAsTVPlatform,
@@ -14,6 +17,27 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);
   this.mainActivity = config['mainActivity'];
+  this.prefsDir = config['prefsDir'] || ppath('harmonyTVPlatform/');
+
+  // check if prefs directory ends with a /, if not then add it
+  if (this.prefsDir.endsWith('/') === false) {
+    this.prefsDir = this.prefsDir + '/';
+  }
+
+  // check if the tv preferences directory exists, if not then create it
+  if (fs.existsSync(this.prefsDir) === false) {
+    mkdirp(this.prefsDir);
+  }
+
+  this.savedNamesFile =
+    this.prefsDir + 'harmonyPluginNames_' + this.hubIP.split('.').join('');
+
+  this.savedNames = {};
+  try {
+    this.savedNames = JSON.parse(fs.readFileSync(this.savedNamesFile));
+  } catch (err) {
+    this.log.debug('INFO - input names file does not exist');
+  }
 }
 
 HarmonyPlatformAsTVPlatform.prototype = {
@@ -92,11 +116,19 @@ HarmonyPlatformAsTVPlatform.prototype = {
         Characteristic.Active,
         Characteristic.ActiveIdentifier,
         Characteristic.RemoteKey,
+        Characteristic.ConfiguredName,
       ],
     };
     that.mainService.controlService.subtype = that.name + ' TV';
+
+    if (that.savedNames && that.savedNames[0]) {
+      mainServiceName = that.savedNames[0];
+    } else {
+      mainServiceName = that.name;
+    }
+
     that.mainService.controlService
-      .setCharacteristic(Characteristic.ConfiguredName, that.name)
+      .setCharacteristic(Characteristic.ConfiguredName, mainServiceName)
       .setCharacteristic(Characteristic.Name, that.name)
       .setCharacteristic(
         Characteristic.SleepDiscoveryMode,
@@ -114,6 +146,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     for (let i = 0, len = activities.length; i < len; i++) {
       if (activities[i].id != -1) {
         let inputName = activities[i].label;
+        let inputId = activities[i].id;
         if (that.devMode) {
           inputName = 'DEV' + inputName;
         }
@@ -131,11 +164,11 @@ HarmonyPlatformAsTVPlatform.prototype = {
             inputName,
             'Input' + that.name + inputName
           ),
-          characteristics: [],
+          characteristics: [Characteristic.ConfiguredName],
         };
-        inputSourceService.controlService.id = activities[i].id;
+        inputSourceService.controlService.id = inputId;
         inputSourceService.activityName = inputName;
-        inputSourceService.activityId = activities[i].id;
+        inputSourceService.activityId = inputId;
         inputSourceService.controlService.subtype = inputName + ' Activity';
 
         //keys
@@ -228,10 +261,16 @@ HarmonyPlatformAsTVPlatform.prototype = {
           }
         }
 
+        if (that.savedNames && that.savedNames[inputId]) {
+          inputServiceName = that.savedNames[inputId];
+        } else {
+          inputServiceName = inputName;
+        }
+
         inputSourceService.controlService
-          .setCharacteristic(Characteristic.Identifier, activities[i].id)
-          .setCharacteristic(Characteristic.ConfiguredName, inputName)
+          .setCharacteristic(Characteristic.Identifier, inputId)
           .setCharacteristic(Characteristic.Name, inputName)
+          .setCharacteristic(Characteristic.ConfiguredName, inputServiceName)
           .setCharacteristic(
             Characteristic.IsConfigured,
             Characteristic.IsConfigured.CONFIGURED
@@ -530,7 +569,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
     service,
     homebridgeAccessory
   ) {
-    if (service.type === HarmonyConst.DEVICE_TYPE || service.type === HarmonyConst.DEVICEMACRO_TYPE ) {
+    if (
+      service.type === HarmonyConst.DEVICE_TYPE ||
+      service.type === HarmonyConst.DEVICEMACRO_TYPE
+    ) {
       this.harmonyBase.bindCharacteristicEvents(
         this,
         characteristic,
@@ -767,6 +809,38 @@ HarmonyPlatformAsTVPlatform.prototype = {
               );
             }
           }
+          callback(null);
+        }.bind(this)
+      );
+    } else if (characteristic instanceof Characteristic.ConfiguredName) {
+      characteristic.on(
+        'set',
+        function(value, callback) {
+          this.log.debug('INFO - SET Characteristic.ConfiguredName : ' + value);
+          let idConf = 0;
+          if (service.controlService instanceof Service.InputSource)
+            idConf = service.controlService.id;
+
+          this.savedNames[idConf] = value;
+          fs.writeFile(
+            this.savedNamesFile,
+            JSON.stringify(this.savedNames),
+            err => {
+              if (err) {
+                this.log.debug(
+                  'ERROR - error occured could not write configured name %s',
+                  err
+                );
+              } else {
+                this.log.debug(
+                  'ERROR - configured name successfully saved! New name: %s ID: %s',
+                  value,
+                  idConf
+                );
+              }
+            }
+          );
+
           callback(null);
         }.bind(this)
       );
