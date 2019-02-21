@@ -3,8 +3,6 @@ var Service, Characteristic;
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
 const fs = require('fs');
-const ppath = require('persist-path');
-const mkdirp = require('mkdirp');
 
 module.exports = {
   HarmonyPlatformAsTVPlatform: HarmonyPlatformAsTVPlatform,
@@ -17,16 +15,11 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);
   this.mainActivity = config['mainActivity'];
-  this.prefsDir = config['prefsDir'] || ppath('harmonyTVPlatform/');
+  this.prefsDir = api.user.storagePath();
 
   // check if prefs directory ends with a /, if not then add it
   if (this.prefsDir.endsWith('/') === false) {
     this.prefsDir = this.prefsDir + '/';
-  }
-
-  // check if the tv preferences directory exists, if not then create it
-  if (fs.existsSync(this.prefsDir) === false) {
-    mkdirp(this.prefsDir);
   }
 
   this.savedNamesFile =
@@ -827,13 +820,13 @@ HarmonyPlatformAsTVPlatform.prototype = {
             JSON.stringify(this.savedNames),
             err => {
               if (err) {
-                this.log.debug(
+                this.log(
                   'ERROR - error occured could not write configured name %s',
                   err
                 );
               } else {
                 this.log.debug(
-                  'ERROR - configured name successfully saved! New name: %s ID: %s',
+                  'INFO - configured name successfully saved! New name: %s ID: %s',
                   value,
                   idConf
                 );

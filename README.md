@@ -70,20 +70,23 @@ Fields:
 Option `devicesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
 - You should put the name of the device as it is named in harmony app,
-- You can add a specific command or multiple ones **JUST AFTER A ";" or a series of ";"** if you want a switch to be added for this specific command or serie of commands (a delay of 350ms will be added between each command),
+- You can add a specific command or multiple ones **JUST AFTER A ";" or a series of ";"** if you want a switch to be added for this specific command or serie of commands (a default delay of 350ms will be added between each command if no sepecif delay is specified),
 - If you do not specify any specific command, the plugin will add either powerToggle if found in Power command group, or PowerOn and/or PowerOff if there is no powerToggle feature,
 - As a sample :
-  - "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up;Down"] will add
+  - "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up|Up|2500;Down"] will add
     - a switch for "Apple TV Gen 4" "Play" command,
     - a switch for "Apple TV Gen 4" "DirectionDown" command,
     - a powerToggle switch for the device named "Caisson",
     - a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it)
-    - a switch that will send Up then Down to MyDevice
+    - a switch that will send Up , then Up, then wait 2.5S, then send Down to MyDevice
 
 If you want to see all commands available for your config, you can launch in debug mode (-D) and check your hub config output as a json : "Hub config : {"cmd" ...."
 
 ## Changelog
 
+- 0.4.5
+  - [FIX] TVPlatform mode : name of device/inputs lost if modified at homebridge restart #68 (in docker env - using persist folder now)
+  - [NEW] node.js minimum requirement updated to 7.6.0 (use of async / await)
 - 0.4.4
   - [NEW] macro mode : you can specify the delay to wait after each command by adding a "|250" string for exemple : "MyDevice;Up|250;Down|500"
   - [FIX] TVPlatform mode : name of device/inputs lost if modified at homebridge restart #68
