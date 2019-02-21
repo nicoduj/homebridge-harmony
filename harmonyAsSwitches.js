@@ -90,6 +90,13 @@ HarmonyPlatformAsSwitches.prototype = {
       that.harmonyBase.getDevicesAccessories(that, data);
     }
 
+    if (
+      that.sequencesToPublishAsAccessoriesSwitch &&
+      that.sequencesToPublishAsAccessoriesSwitch.length > 0
+    ) {
+      that.harmonyBase.getSequencesAccessories(that, data);
+    }
+
     //first refresh
     setTimeout(function() {
       that.refreshAccessory();

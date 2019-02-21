@@ -320,6 +320,13 @@ HarmonyPlatformAsTVPlatform.prototype = {
       that.harmonyBase.getDevicesAccessories(that, data);
     }
 
+    if (
+      that.sequencesToPublishAsAccessoriesSwitch &&
+      that.sequencesToPublishAsAccessoriesSwitch.length > 0
+    ) {
+      that.harmonyBase.getSequencesAccessories(that, data);
+    }
+
     //first refresh
     setTimeout(function() {
       that.refreshAccessory();
@@ -564,7 +571,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
   ) {
     if (
       service.type === HarmonyConst.DEVICE_TYPE ||
-      service.type === HarmonyConst.DEVICEMACRO_TYPE
+      service.type === HarmonyConst.DEVICEMACRO_TYPE ||
+      service.type === HarmonyConst.SEQUENCE_TYPE
     ) {
       this.harmonyBase.bindCharacteristicEvents(
         this,

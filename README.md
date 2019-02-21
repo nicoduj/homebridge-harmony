@@ -64,8 +64,10 @@ Fields:
 - `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
 - `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
 - `mainActivity` set the mainactivity of the TV mode
-- `devicesToPublishAsAccessoriesSwitch` array of Devices to exposes with on/off function
+- `devicesToPublishAsAccessoriesSwitch` array of Devices to exposes with on/off function or custom functions
 - `publishDevicesAsIndividualAccessories` option to publish devices as individual accessories. Defaults to true.
+- `sequencesToPublishAsAccessoriesSwitch` array of Sequences to exposes through a switch.
+- `publishSequencesAsIndividualAccessories` option to publish sequences as individual accessories. Defaults to true.
 
 Option `devicesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
@@ -80,10 +82,20 @@ Option `devicesToPublishAsAccessoriesSwitch` is an array that behaves this way :
     - a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it)
     - a switch that will send Up , then Up, then wait 2.5S, then send Down to MyDevice
 
-If you want to see all commands available for your config, you can launch in debug mode (-D) and check your hub config output as a json : "Hub config : {"cmd" ...."
+All commands available are displayed at startup
+
+Option `sequencesToPublishAsAccessoriesSwitch` is an array that behaves this way :
+
+- You should put the name of the sequence as it is named in harmony app,
+- As a sample :
+  - "sequencesToPublishAsAccessoriesSwitch" : ["Test"] will expose the sequence Test as a button.
+
+Please note that the sequence can only be triggered if its activity is in use. (Sequences are linked to an activity by design in harmony app).
 
 ## Changelog
 
+- 0.4.6
+  - [NEW] Supports Sequences. #69
 - 0.4.5
   - [FIX] TVPlatform mode : name of device/inputs lost if modified at homebridge restart #68 (in docker env - using persist folder now)
   - [NEW] node.js minimum requirement updated to 7.6.0 (use of async / await)
