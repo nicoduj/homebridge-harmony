@@ -28,7 +28,7 @@ For Legacy Mode prior to ios 12.2 :
 "platforms": [
   {
     "platform": "HarmonyHubWebSocket",
-    "name": "NicoHarmonyHub2",
+    "name": "HubName",
     "hubIP": "192.168.1.XX",
     "showTurnOffActivity" : true,
     "skipedIfSameStateActivities" : ["PowerOff","La musique"],
@@ -43,7 +43,7 @@ For TV platform mode with ios 12.2 and homebridge 0.0.46 :
 "platforms": [
   {
     "platform": "HarmonyHubWebSocket",
-    "name": "NicoHarmonyHub2",
+    "name": "HubName",
     "hubIP": "192.168.1.XX",
     "TVPlatformMode" : true,
     "mainActivity" : "LA TV"
@@ -62,12 +62,13 @@ Fields:
 - `skipedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app
 - `addAllActivitiesToSkipedIfSameStateActivitiesList` option to add all activities automatically to skipedIfSameStateActivities behavior. (defaults : false)
 - `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
-- `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
-- `mainActivity` set the mainactivity of the TV mode
 - `devicesToPublishAsAccessoriesSwitch` array of Devices to exposes with on/off function or custom functions
 - `publishDevicesAsIndividualAccessories` option to publish devices as individual accessories. Defaults to true.
 - `sequencesToPublishAsAccessoriesSwitch` array of Sequences to exposes through a switch.
 - `publishSequencesAsIndividualAccessories` option to publish sequences as individual accessories. Defaults to true.
+- `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
+- `mainActivity` set the mainactivity of the TV mode
+-
 
 Option `devicesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
@@ -90,7 +91,9 @@ Option `sequencesToPublishAsAccessoriesSwitch` is an array that behaves this way
 - As a sample :
   - "sequencesToPublishAsAccessoriesSwitch" : ["Test"] will expose the sequence Test as a button.
 
-Please note that the sequence can only be triggered if its activity is in use. (Sequences are linked to an activity by design in harmony app).
+See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-us/creating-button-sequences) for sequences configuration.
+
+**Please note that the sequence can only be triggered if its activity is in use. (Sequences are linked to an activity by design in harmony app).**
 
 ## Changelog
 
