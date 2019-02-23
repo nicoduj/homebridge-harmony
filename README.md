@@ -210,6 +210,7 @@ Thanks to
 
 [lopelex]: https://github.com/lopelex/harmony-websocket
 [iandday]: https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py
+
 ## Donating
 Support this project and [others by nicoduj][nicoduj-projects] via [PayPal][paypal-nicoduj].
 
