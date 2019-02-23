@@ -205,7 +205,7 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 Thanks to
 
 - [iandday/pyharmony/pyharmony/client.py](https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py) for the Harmoney WebSocket protocol implementation and understanding of it.
-- @lopelex [harmony-websocket](https://github.com/lopelex/harmony-websocket) for its clean plugin.
+- @lopelex [harmony-websocket](https://github.com/lopelex/harmony-websocket) for his clean plugin.
 
 ## Donating
 Support this project and [others by nicoduj][nicoduj-projects] via [PayPal][paypal-nicoduj].
