@@ -206,3 +206,19 @@ Thanks to
 
 - [iandday/pyharmony/pyharmony/client.py](https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py) for the Harmoney WebSocket protocol implementation and understanding of it.
 - @lopelex [harmony-websocket](https://github.com/lopelex/harmony-websocket) for its clean plugin.
+
+## Donating
+Support this project and [others by nicoduj][nicoduj-projects] via [PayPal][paypal-nicoduj].
+
+[![Support via PayPal][paypal-button]][paypal-nicoduj]
+
+[nicoduj-projects]: https://github.com/nicoduj/
+[paypal-button]: https://img.shields.io/badge/Donate-PayPal-green.svg
+[paypal-nicoduj]: https://www.paypal.me/nicoduj/5
+
+## License
+As of Dec 01 2018, Nicolas Dujardin has released this repository and its contents to the public domain.
+
+It has been released under the [UNLICENSE][].
+
+[UNLICENSE]: LICENSE
