@@ -22,7 +22,7 @@ In order to activate TV Platform Mode,you need to :
 
 ## Configuration
 
-For Legacy Mode prior to ios 12.2 :
+For Switch Mode :
 
 ```json
 "platforms": [
@@ -212,6 +212,7 @@ Thanks to
 [iandday]: https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py
 
 ## Donating
+
 Support this project and [others by nicoduj][nicoduj-projects] via [PayPal][paypal-nicoduj].
 
 [![Support via PayPal][paypal-button]][paypal-nicoduj]
@@ -221,8 +222,9 @@ Support this project and [others by nicoduj][nicoduj-projects] via [PayPal][payp
 [paypal-nicoduj]: https://www.paypal.me/nicoduj/2.50
 
 ## License
+
 As of Dec 01 2018, Nicolas Dujardin has released this repository and its contents to the public domain.
 
 It has been released under the [UNLICENSE][].
 
-[UNLICENSE]: LICENSE
+[unlicense]: LICENSE
