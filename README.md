@@ -68,7 +68,7 @@ Fields:
 - `publishSequencesAsIndividualAccessories` option to publish sequences as individual accessories. Defaults to true.
 - `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
 - `mainActivity` set the mainactivity of the TV mode
--
+- `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
 
 Option `devicesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
@@ -97,6 +97,8 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 
 ## Changelog
 
+- 0.4.7
+  - [NEW] supports new option playPauseBehavior
 - 0.4.6
   - [NEW] Supports Sequences. #69
 - 0.4.5

@@ -15,6 +15,12 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);
   this.mainActivity = config['mainActivity'];
+  this.playPauseBehavior = config['playPauseBehavior'];
+
+  if (this.playPauseBehavior === undefined) this.playPauseBehavior = false;
+
+  this.playStatus = {};
+
   this.prefsDir = api.user.storagePath();
 
   // check if prefs directory ends with a /, if not then add it
@@ -702,11 +708,32 @@ HarmonyPlatformAsTVPlatform.prototype = {
                 );
                 break;
               case newValue === Characteristic.RemoteKey.PLAY_PAUSE:
-                this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.PlayCommand
+                this.log.debug(
+                  'INFO - current play status is : ' +
+                    this.playStatus[this._currentInputService.id]
                 );
+
+                if (
+                  !this.playPauseBehavior ||
+                  this._currentInputService.PauseCommand === undefined ||
+                  this.playStatus[this._currentInputService.id] === 'PAUSED' ||
+                  this.playStatus[this._currentInputService.id] === undefined
+                ) {
+                  this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
+                  this.harmonyBase.sendCommand(
+                    this,
+                    this._currentInputService.PlayCommand
+                  );
+                  this.playStatus[this._currentInputService.id] = '';
+                } else {
+                  this.log.debug('INFO - sending PauseCommand for PLAY_PAUSE');
+                  this.harmonyBase.sendCommand(
+                    this,
+                    this._currentInputService.PauseCommand
+                  );
+                  this.playStatus[this._currentInputService.id] = 'PAUSED';
+                }
+
                 break;
               case newValue === Characteristic.RemoteKey.INFORMATION:
                 this.log.debug('INFO - sending MenuCommand for INFORMATION');
