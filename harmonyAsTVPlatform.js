@@ -20,6 +20,7 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   if (this.playPauseBehavior === undefined) this.playPauseBehavior = false;
 
   this.playStatus = {};
+  this.volumesLevel = {};
 
   this.prefsDir = api.user.storagePath();
 
@@ -88,7 +89,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       .setCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE)
       .setCharacteristic(
         Characteristic.VolumeControlType,
-        Characteristic.VolumeControlType.RELATIVE
+        Characteristic.VolumeControlType.ABSOLUTE
       );
 
     this.tvSpeakerService.controlService.id = 'V' + activity.id;
@@ -838,6 +839,28 @@ HarmonyPlatformAsTVPlatform.prototype = {
             }
           }
           callback(null);
+        }.bind(this)
+      );
+    } else if (characteristic instanceof Characteristic.Volume) {
+      characteristic.on(
+        'set',
+        function(value, callback) {
+          if (this._currentActivity > 0) {
+            this.log.debug('INFO - SET Characteristic.Volume : ' + value);
+            this.volumesLevel[this._currentActivity] = value;
+          }
+          callback(null);
+        }.bind(this)
+      );
+
+      characteristic.on(
+        'get',
+        function(callback) {
+          this.log.debug('INFO - GET Characteristic.Volume');
+
+          if (this.volumesLevel[this._currentActivity])
+            callback(null, this.volumesLevel[this._currentActivity]);
+          else callback(null, HarmonyConst.DEFAULT_VOLUME);
         }.bind(this)
       );
     } else if (characteristic instanceof Characteristic.ConfiguredName) {
