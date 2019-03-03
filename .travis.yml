@@ -17,6 +17,7 @@ jobs:
         on:
           tags: true
     - stage: GitHub Release
+      if: tag IS present
       script: echo "Deploying to GitHub releases ..."
       deploy:
         provider: releases
