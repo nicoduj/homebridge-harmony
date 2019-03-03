@@ -282,7 +282,7 @@ HarmonyPlatformAsSwitches.prototype = {
     } else {
       characteristic.on(
         'set',
-        function(value, callback, context) {
+        function(value, callback) {
           let doCommand = true;
           let commandToSend = value ? service.controlService.id : '-1';
           let currentValue = characteristic.value;

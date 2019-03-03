@@ -60,7 +60,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   ///CREATION / STARTUP
 
-  configureMainActivity: function(activity, services) {
+  configureMainActivity: function(activity) {
     let inputName = activity.label;
     if (this.devMode) {
       inputName = 'DEV' + inputName;
@@ -154,7 +154,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
           'INFO - accessories : activity to configure : ' + inputName
         );
         if (that.mainActivity == inputName) {
-          that.configureMainActivity(activities[i], services);
+          that.configureMainActivity(activities[i]);
           mainActivityConfigured = true;
         }
 
@@ -300,7 +300,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       that.log(
         'WARNING - No main Activity that match config file found, default to first one'
       );
-      that.configureMainActivity(activities[0], services);
+      that.configureMainActivity(activities[0]);
     }
     for (let s = 0, len = that.inputServices.length; s < len; s++) {
       services.push(that.inputServices[s]);
