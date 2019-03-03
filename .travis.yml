@@ -3,3 +3,25 @@ node_js:
   - '7'
   - '8'
   - '10'
+
+jobs:
+  include:
+    - stage: npm release
+      if: tag IS present
+      node_js: '6'
+      script: echo "Deploying to npm ..."
+      deploy:
+        provider: npm
+        email: '$NPM_EMAIL'
+        api_key: '$NPM_TOKEN'
+        on:
+          tags: true
+    - stage: GitHub Release
+      script: echo "Deploying to GitHub releases ..."
+      deploy:
+        provider: releases
+        api_key: $GITHUB_OAUTH_TOKEN
+        skip_cleanup: true
+        prerelease: true
+        on:
+          tags: true
