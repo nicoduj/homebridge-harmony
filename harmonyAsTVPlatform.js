@@ -583,12 +583,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       service.type === HarmonyConst.DEVICEMACRO_TYPE ||
       service.type === HarmonyConst.SEQUENCE_TYPE
     ) {
-      this.harmonyBase.bindCharacteristicEvents(
-        this,
-        characteristic,
-        service,
-        homebridgeAccessory
-      );
+      this.harmonyBase.bindCharacteristicEvents(this, characteristic, service);
     } else if (characteristic instanceof Characteristic.Active) {
       //set to main activity / activeIdentifier or off
       characteristic.on(

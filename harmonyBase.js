@@ -99,7 +99,8 @@ HarmonyBase.prototype = {
           );
         homebridgeAccessory.platform.bindCharacteristicEvents(
           characteristic,
-          service
+          service,
+          homebridgeAccessory
         );
       }
       services.push(service.controlService);
@@ -165,20 +166,17 @@ HarmonyBase.prototype = {
           'INFO - Hub config : ' + JSON.stringify(response)
         );
         harmonyPlatform.readAccessories(response, callback);
-      });
-    /*
+      })
       .catch(e => {
         harmonyPlatform.log(
           'Error - Error retrieving info from hub : ' + e.message
         );
         var that = this;
-        
+
         setTimeout(function() {
           that.configureAccessories(harmonyPlatform, callback);
         }, HarmonyConst.DELAY_BEFORE_RECONNECT);
-        
       });
-      */
   },
 
   refreshCurrentActivity: function(harmonyPlatform, callback) {
@@ -290,12 +288,7 @@ HarmonyBase.prototype = {
     }
   },
 
-  getDevicesAccessories: function(harmonyPlatform, data) {
-    harmonyPlatform.log('INFO - Loading devices...');
-    let devices = data.data.device;
-    let services = [];
-
-    //printing commands for helping users
+  printCommands: function(harmonyPlatform, devices) {
     for (let i = 0, len = devices.length; i < len; i++) {
       let controlGroup = devices[i].controlGroup;
       for (let j = 0, len = controlGroup.length; j < len; j++) {
@@ -310,6 +303,180 @@ HarmonyBase.prototype = {
         }
       }
     }
+  },
+
+  handleDefaultCommandMode: function(
+    harmonyPlatform,
+    controlGroup,
+    device,
+    services
+  ) {
+    let accessoryName = harmonyPlatform.name + '-' + device.label;
+    let switchName = harmonyPlatform.devMode
+      ? 'DEV' + device.label
+      : device.label;
+
+    harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
+
+    let foundToggle = false;
+    let commandFunctions = [];
+
+    for (let j = 0, len = controlGroup.length; j < len; j++) {
+      if (controlGroup[j].name === 'Power') {
+        let functions = controlGroup[j].function;
+        for (let k = 0, len = functions.length; k < len; k++) {
+          if (functions[k].name === 'PowerOff') {
+            harmonyPlatform.log('INFO - Activating PowerOff for ' + switchName);
+            commandFunctions.push({
+              key: 'PowerOff',
+              value: functions[k].action,
+            });
+          } else if (functions[k].name === 'PowerOn') {
+            harmonyPlatform.log('INFO - Activating  PowerOn for ' + switchName);
+            commandFunctions.push({
+              key: 'PowerOn',
+              value: functions[k].action,
+            });
+          } else if (functions[k].name === 'PowerToggle') {
+            harmonyPlatform.log(
+              'INFO - Activating  PowerToggle for ' + switchName
+            );
+            commandFunctions.push({
+              key: 'PowerToggle',
+              value: functions[k].action,
+            });
+            foundToggle = true;
+          }
+        }
+      }
+    }
+
+    if (commandFunctions.length == 0) {
+      harmonyPlatform.log('Error - No function found for ' + switchName);
+    } else {
+      for (let j = 0, len = commandFunctions.length; j < len; j++) {
+        if (
+          (foundToggle && commandFunctions[j].key === 'PowerToggle') ||
+          !foundToggle
+        ) {
+          let service = {
+            controlService: new Service.Switch(
+              switchName + '-' + commandFunctions[j].key
+            ),
+            characteristics: [Characteristic.On],
+          };
+          service.controlService.subtype =
+            switchName + '-' + commandFunctions[j].key;
+          service.controlService.id = device.id;
+          service.type = HarmonyConst.DEVICE_TYPE;
+          service.command = commandFunctions[j].value;
+          services.push(service);
+
+          if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
+            harmonyPlatform.log(
+              'INFO - Adding Accessory : ' +
+                accessoryName +
+                '-' +
+                commandFunctions[j].key
+            );
+            let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(
+              services
+            );
+            myHarmonyAccessory.getServices = function() {
+              return harmonyPlatform.getServices(myHarmonyAccessory);
+            };
+            myHarmonyAccessory.platform = harmonyPlatform;
+            myHarmonyAccessory.name =
+              accessoryName + '-' + commandFunctions[j].key;
+            myHarmonyAccessory.model = device.model;
+            myHarmonyAccessory.manufacturer = device.manufacturer;
+            myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
+            harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
+            services = [];
+          }
+        }
+      }
+    }
+  },
+
+  handleSpecificCommandMode: function(
+    harmonyPlatform,
+    commands,
+    controlGroup,
+    device,
+    services
+  ) {
+    let accessoryName = harmonyPlatform.name + '-' + device.label;
+    let switchName = harmonyPlatform.devMode
+      ? 'DEV' + device.label
+      : device.label;
+
+    harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
+    let functionsForSwitch = [];
+    let functionsKey = '';
+
+    for (let l = 1, len = commands.length; l < len; l++) {
+      for (let j = 0, len = controlGroup.length; j < len; j++) {
+        let functions = controlGroup[j].function;
+        for (let k = 0, len = functions.length; k < len; k++) {
+          let commandTosend = commands[l].split('|');
+
+          if (functions[k].name === commandTosend[0]) {
+            harmonyPlatform.log(
+              'INFO - Activating  ' + commandTosend[0] + ' for ' + switchName
+            );
+
+            if (commandTosend.length === 2) {
+              let fctWithDelay = functions[k].action + '|' + commandTosend[1];
+              functionsForSwitch.push(fctWithDelay);
+            } else {
+              functionsForSwitch.push(functions[k].action);
+            }
+            functionsKey = functionsKey + commandTosend[0];
+          }
+        }
+      }
+    }
+
+    if (functionsForSwitch.length === 0) {
+      harmonyPlatform.log('Error - No function list found for ' + switchName);
+    } else {
+      let service = {
+        controlService: new Service.Switch(switchName + '-' + functionsKey),
+        characteristics: [Characteristic.On],
+      };
+      service.controlService.subtype = switchName + '-' + functionsKey;
+      service.controlService.id = device.id;
+      service.type = HarmonyConst.DEVICEMACRO_TYPE;
+      service.command = JSON.stringify(functionsForSwitch);
+      services.push(service);
+
+      if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
+        harmonyPlatform.log(
+          'INFO - Adding Accessory : ' + accessoryName + '-' + functionsKey
+        );
+        let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
+        myHarmonyAccessory.getServices = function() {
+          return harmonyPlatform.getServices(myHarmonyAccessory);
+        };
+        myHarmonyAccessory.platform = harmonyPlatform;
+        myHarmonyAccessory.name = accessoryName + '-' + functionsKey;
+        myHarmonyAccessory.model = device.model;
+        myHarmonyAccessory.manufacturer = device.manufacturer;
+        myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
+        harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
+        services = [];
+      }
+    }
+  },
+
+  getDevicesAccessories: function(harmonyPlatform, data) {
+    harmonyPlatform.log('INFO - Loading devices...');
+    let devices = data.data.device;
+    let services = [];
+
+    //printing commands for helping users
+    this.printCommands(harmonyPlatform, devices);
 
     for (
       let c = 0,
@@ -323,176 +490,28 @@ HarmonyBase.prototype = {
 
       for (let i = 0, len = devices.length; i < len; i++) {
         if (devices[i].label === commands[0]) {
-          let accessoryName = harmonyPlatform.name + '-' + devices[i].label;
-          let switchName = devices[i].label;
-
-          if (harmonyPlatform.devMode) {
-            switchName = 'DEV' + switchName;
-          }
-
-          harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
-
           //check  functions
-          let commandFunctions = [];
+
           let controlGroup = devices[i].controlGroup;
 
           //default mode
           if (commands.length === 1) {
-            let foundToggle = false;
-            for (let j = 0, len = controlGroup.length; j < len; j++) {
-              if (controlGroup[j].name === 'Power') {
-                let functions = controlGroup[j].function;
-                for (let k = 0, len = functions.length; k < len; k++) {
-                  if (functions[k].name === 'PowerOff') {
-                    harmonyPlatform.log(
-                      'INFO - Activating PowerOff for ' + switchName
-                    );
-                    commandFunctions.push({
-                      key: 'PowerOff',
-                      value: functions[k].action,
-                    });
-                  } else if (functions[k].name === 'PowerOn') {
-                    harmonyPlatform.log(
-                      'INFO - Activating  PowerOn for ' + switchName
-                    );
-                    commandFunctions.push({
-                      key: 'PowerOn',
-                      value: functions[k].action,
-                    });
-                  } else if (functions[k].name === 'PowerToggle') {
-                    harmonyPlatform.log(
-                      'INFO - Activating  PowerToggle for ' + switchName
-                    );
-                    commandFunctions.push({
-                      key: 'PowerToggle',
-                      value: functions[k].action,
-                    });
-                    foundToggle = true;
-                  }
-                }
-              }
-            }
-
-            if (commandFunctions.length == 0) {
-              harmonyPlatform.log(
-                'Error - No function found for ' + switchName
-              );
-            } else {
-              for (let j = 0, len = commandFunctions.length; j < len; j++) {
-                if (
-                  (foundToggle && commandFunctions[j].key === 'PowerToggle') ||
-                  !foundToggle
-                ) {
-                  let service = {
-                    controlService: new Service.Switch(
-                      switchName + '-' + commandFunctions[j].key
-                    ),
-                    characteristics: [Characteristic.On],
-                  };
-                  service.controlService.subtype =
-                    switchName + '-' + commandFunctions[j].key;
-                  service.controlService.id = devices[i].id;
-                  service.type = HarmonyConst.DEVICE_TYPE;
-                  service.command = commandFunctions[j].value;
-                  services.push(service);
-
-                  if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
-                    harmonyPlatform.log(
-                      'INFO - Adding Accessory : ' +
-                        accessoryName +
-                        '-' +
-                        commandFunctions[j].key
-                    );
-                    let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(
-                      services
-                    );
-                    myHarmonyAccessory.getServices = function() {
-                      return harmonyPlatform.getServices(myHarmonyAccessory);
-                    };
-                    myHarmonyAccessory.platform = harmonyPlatform;
-                    myHarmonyAccessory.name =
-                      accessoryName + '-' + commandFunctions[j].key;
-                    myHarmonyAccessory.model = devices[i].model;
-                    myHarmonyAccessory.manufacturer = devices[i].manufacturer;
-                    myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
-                    harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
-                    services = [];
-                  }
-                }
-              }
-            }
+            this.handleDefaultCommandMode(
+              harmonyPlatform,
+              controlGroup,
+              devices[i],
+              services
+            );
           }
           //specifc command or list mode
           else {
-            let functionsForSwitch = [];
-            let functionsKey = '';
-
-            for (let l = 1, len = commands.length; l < len; l++) {
-              for (let j = 0, len = controlGroup.length; j < len; j++) {
-                let functions = controlGroup[j].function;
-                for (let k = 0, len = functions.length; k < len; k++) {
-                  let commandTosend = commands[l].split('|');
-
-                  if (functions[k].name === commandTosend[0]) {
-                    harmonyPlatform.log(
-                      'INFO - Activating  ' +
-                        commandTosend[0] +
-                        ' for ' +
-                        switchName
-                    );
-
-                    if (commandTosend.length === 2) {
-                      let fctWithDelay =
-                        functions[k].action + '|' + commandTosend[1];
-                      functionsForSwitch.push(fctWithDelay);
-                    } else {
-                      functionsForSwitch.push(functions[k].action);
-                    }
-                    functionsKey = functionsKey + commandTosend[0];
-                  }
-                }
-              }
-            }
-
-            if (functionsForSwitch.length === 0) {
-              harmonyPlatform.log(
-                'Error - No function list found for ' + switchName
-              );
-            } else {
-              let service = {
-                controlService: new Service.Switch(
-                  switchName + '-' + functionsKey
-                ),
-                characteristics: [Characteristic.On],
-              };
-              service.controlService.subtype = switchName + '-' + functionsKey;
-              service.controlService.id = devices[i].id;
-              service.type = HarmonyConst.DEVICEMACRO_TYPE;
-              service.command = JSON.stringify(functionsForSwitch);
-              services.push(service);
-
-              if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
-                harmonyPlatform.log(
-                  'INFO - Adding Accessory : ' +
-                    accessoryName +
-                    '-' +
-                    functionsKey
-                );
-                let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(
-                  services
-                );
-                myHarmonyAccessory.getServices = function() {
-                  return harmonyPlatform.getServices(myHarmonyAccessory);
-                };
-                myHarmonyAccessory.platform = harmonyPlatform;
-                myHarmonyAccessory.name = accessoryName + '-' + functionsKey;
-                myHarmonyAccessory.model = devices[i].model;
-                myHarmonyAccessory.manufacturer = devices[i].manufacturer;
-                myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
-                harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
-                services = [];
-              }
-            }
+            this.handleSpecificCommandMode(
+              harmonyPlatform,
+              commands,
+              controlGroup,
+              devices[i],
+              services
+            );
           }
         }
       }

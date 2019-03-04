@@ -340,12 +340,7 @@ HarmonyPlatformAsSwitches.prototype = {
     homebridgeAccessory
   ) {
     if (service.type !== HarmonyConst.ACTIVITY_TYPE) {
-      this.harmonyBase.bindCharacteristicEvents(
-        this,
-        characteristic,
-        service,
-        homebridgeAccessory
-      );
+      this.harmonyBase.bindCharacteristicEvents(this, characteristic, service);
     } else {
       characteristic.on(
         'set',
