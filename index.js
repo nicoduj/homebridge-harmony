@@ -17,7 +17,7 @@ function HarmonyPlatform(log, config, api) {
 
   if (this.TVPlatformMode == undefined) this.TVPlatformMode = false;
 
-  this.log('PlatformMode : ' + this.TVPlatformMode);
+  this.log('INFO - TVPlatformMode : ' + this.TVPlatformMode);
 
   if (this.TVPlatformMode) {
     return new HarmonyPlatformAsTVPlatform(log, config, api);

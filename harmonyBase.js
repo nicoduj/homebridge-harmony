@@ -2,6 +2,7 @@ var Service, Characteristic;
 const HarmonyConst = require('./harmonyConst');
 
 const Harmony = require('harmony-websocket');
+const HarmonyTools = require('./harmonyTools.js');
 
 module.exports = {
   HarmonyBase: HarmonyBase,
@@ -28,17 +29,17 @@ HarmonyBase.prototype = {
 
     harmonyPlatform.devicesToPublishAsAccessoriesSwitch =
       config['devicesToPublishAsAccessoriesSwitch'];
-    harmonyPlatform.publishDevicesAsIndividualAccessories =
-      config['publishDevicesAsIndividualAccessories'];
-    if (harmonyPlatform.publishDevicesAsIndividualAccessories == undefined)
-      harmonyPlatform.publishDevicesAsIndividualAccessories = true;
+    harmonyPlatform.publishDevicesAsIndividualAccessories = HarmonyTools.checkParemeter(
+      config['publishDevicesAsIndividualAccessories'],
+      true
+    );
 
     harmonyPlatform.sequencesToPublishAsAccessoriesSwitch =
       config['sequencesToPublishAsAccessoriesSwitch'];
-    harmonyPlatform.publishSequencesAsIndividualAccessories =
-      config['publishSequencesAsIndividualAccessories'];
-    if (harmonyPlatform.publishSequencesAsIndividualAccessories == undefined)
-      harmonyPlatform.publishSequencesAsIndividualAccessories = true;
+    harmonyPlatform.publishSequencesAsIndividualAccessories = HarmonyTools.checkParemeter(
+      config['publishSequencesAsIndividualAccessories'],
+      true
+    );
 
     harmonyPlatform._currentActivity = -9999;
     harmonyPlatform._currentActivityLastUpdate = undefined;
@@ -165,16 +166,20 @@ HarmonyBase.prototype = {
           'INFO - Hub config : ' + JSON.stringify(response)
         );
         harmonyPlatform.readAccessories(response, callback);
-      })
+      });
+    /*
       .catch(e => {
         harmonyPlatform.log(
           'Error - Error retrieving info from hub : ' + e.message
         );
         var that = this;
+        
         setTimeout(function() {
           that.configureAccessories(harmonyPlatform, callback);
         }, HarmonyConst.DELAY_BEFORE_RECONNECT);
+        
       });
+      */
   },
 
   refreshCurrentActivity: function(harmonyPlatform, callback) {
@@ -250,7 +255,9 @@ HarmonyBase.prototype = {
 
           if (harmonyPlatform.publishSequencesAsIndividualAccessories) {
             harmonyPlatform.log('INFO - Adding Accessory : ' + accessoryName);
-            let myHarmonyAccessory = new HarmonyAccessory(services);
+            let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(
+              services
+            );
             myHarmonyAccessory.getServices = function() {
               return harmonyPlatform.getServices(myHarmonyAccessory);
             };
@@ -271,7 +278,7 @@ HarmonyBase.prototype = {
       services.length > 0
     ) {
       harmonyPlatform.log('INFO - Adding Accessory : ' + harmonyPlatform.name);
-      let myHarmonyAccessory = new HarmonyAccessory(services);
+      let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
       myHarmonyAccessory.getServices = function() {
         return harmonyPlatform.getServices(myHarmonyAccessory);
       };
@@ -397,7 +404,9 @@ HarmonyBase.prototype = {
                         '-' +
                         commandFunctions[j].key
                     );
-                    let myHarmonyAccessory = new HarmonyAccessory(services);
+                    let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(
+                      services
+                    );
                     myHarmonyAccessory.getServices = function() {
                       return harmonyPlatform.getServices(myHarmonyAccessory);
                     };
@@ -470,7 +479,9 @@ HarmonyBase.prototype = {
                     '-' +
                     functionsKey
                 );
-                let myHarmonyAccessory = new HarmonyAccessory(services);
+                let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(
+                  services
+                );
                 myHarmonyAccessory.getServices = function() {
                   return harmonyPlatform.getServices(myHarmonyAccessory);
                 };
@@ -493,7 +504,7 @@ HarmonyBase.prototype = {
       services.length > 0
     ) {
       harmonyPlatform.log('INFO - Adding Accessory : ' + harmonyPlatform.name);
-      let myHarmonyAccessory = new HarmonyAccessory(services);
+      let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
       myHarmonyAccessory.getServices = function() {
         return harmonyPlatform.getServices(myHarmonyAccessory);
       };
@@ -522,7 +533,7 @@ HarmonyBase.prototype = {
             this.sendCommand(harmonyPlatform, command);
           } else if (service.type === HarmonyConst.DEVICEMACRO_TYPE) {
             let commands = JSON.parse(service.command);
-            processCommands(this, harmonyPlatform, commands);
+            HarmonyTools.processCommands(this, harmonyPlatform, commands);
           } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
             let command = '{"sequenceId":"' + service.controlService.id + '"}';
             this.sendCommand(harmonyPlatform, command);
@@ -564,30 +575,3 @@ HarmonyBase.prototype = {
       });
   },
 };
-
-function HarmonyAccessory(services) {
-  this.services = services;
-}
-
-async function processCommands(hb, platform, commands) {
-  for (const command of commands) {
-    let commandTosend = command.split('|');
-    let timeToWait = HarmonyConst.DELAY_FOR_MACRO;
-    if (commandTosend.length === 2) timeToWait = commandTosend[1];
-    else timeToWait = HarmonyConst.DELAY_FOR_MACRO;
-    console.log(commandTosend[0]);
-    console.log(timeToWait);
-    await processCommand(hb, platform, commandTosend[0], timeToWait);
-  }
-}
-
-async function processCommand(hb, platform, command, timeToWait) {
-  // notice that we can await a function
-  // that returns a promise
-  await hb.sendCommand(platform, command);
-  await delay(timeToWait);
-}
-
-function delay(timeToWait) {
-  return new Promise(resolve => setTimeout(resolve, timeToWait));
-}

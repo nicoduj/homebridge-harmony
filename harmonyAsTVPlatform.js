@@ -2,6 +2,8 @@ var Service, Characteristic;
 
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
+const HarmonyTools = require('./harmonyTools.js');
+
 const fs = require('fs');
 
 module.exports = {
@@ -15,15 +17,15 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);
   this.mainActivity = config['mainActivity'];
-  this.playPauseBehavior = config['playPauseBehavior'];
-
-  if (this.playPauseBehavior === undefined) this.playPauseBehavior = false;
+  this.playPauseBehavior = HarmonyTools.checkParemeter(
+    config['playPauseBehavior'],
+    false
+  );
 
   this.playStatus = {};
   this.volumesLevel = {};
 
   this.prefsDir = api.user.storagePath();
-
   // check if prefs directory ends with a /, if not then add it
   if (this.prefsDir.endsWith('/') === false) {
     this.prefsDir = this.prefsDir + '/';
@@ -309,7 +311,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     services.push(that.mainService);
 
     that.log('INFO - Adding Accessory : ' + that.name);
-    let myHarmonyAccessory = new HarmonyAccessory(services);
+    let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
     myHarmonyAccessory.getServices = function() {
       return that.getServices(myHarmonyAccessory);
     };
@@ -902,7 +904,3 @@ HarmonyPlatformAsTVPlatform.prototype = {
     return this.harmonyBase.getServices(homebridgeAccessory);
   },
 };
-
-function HarmonyAccessory(services) {
-  this.services = services;
-}
