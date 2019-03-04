@@ -99,8 +99,7 @@ HarmonyBase.prototype = {
           );
         homebridgeAccessory.platform.bindCharacteristicEvents(
           characteristic,
-          service,
-          homebridgeAccessory
+          service
         );
       }
       services.push(service.controlService);
@@ -517,15 +516,10 @@ HarmonyBase.prototype = {
     }
   },
 
-  bindCharacteristicEvents: function(
-    harmonyPlatform,
-    characteristic,
-    service,
-    homebridgeAccessory
-  ) {
+  bindCharacteristicEvents: function(harmonyPlatform, characteristic, service) {
     characteristic.on(
       'set',
-      function(value, callback, context) {
+      function(value, callback) {
         //send command
         if (value) {
           if (service.type === HarmonyConst.DEVICE_TYPE) {
