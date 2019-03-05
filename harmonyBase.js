@@ -219,72 +219,79 @@ HarmonyBase.prototype = {
   },
 
   getSequencesAccessories: function(harmonyPlatform, data) {
-    harmonyPlatform.log('INFO - Loading sequences...');
-    let sequences = data.data.sequence;
-    let services = [];
-    for (
-      let c = 0,
-        len = harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.length;
-      c < len;
-      c++
+    if (
+      this.sequencesToPublishAsAccessoriesSwitch &&
+      this.sequencesToPublishAsAccessoriesSwitch.length > 0
     ) {
-      var sequence = harmonyPlatform.sequencesToPublishAsAccessoriesSwitch[c];
+      harmonyPlatform.log('INFO - Loading sequences...');
+      let sequences = data.data.sequence;
+      let services = [];
+      for (
+        let c = 0,
+          len = harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.length;
+        c < len;
+        c++
+      ) {
+        var sequence = harmonyPlatform.sequencesToPublishAsAccessoriesSwitch[c];
 
-      for (let i = 0, len = sequences.length; i < len; i++) {
-        if (sequences[i].name === sequence) {
-          let accessoryName = harmonyPlatform.name + '-' + sequence;
-          let switchName = sequence;
+        for (let i = 0, len = sequences.length; i < len; i++) {
+          if (sequences[i].name === sequence) {
+            let accessoryName = harmonyPlatform.name + '-' + sequence;
+            let switchName = sequence;
 
-          if (harmonyPlatform.devMode) {
-            switchName = 'DEV' + switchName;
-          }
+            if (harmonyPlatform.devMode) {
+              switchName = 'DEV' + switchName;
+            }
 
-          harmonyPlatform.log('INFO - Discovered sequence : ' + switchName);
+            harmonyPlatform.log('INFO - Discovered sequence : ' + switchName);
 
-          let service = {
-            controlService: new Service.Switch(switchName),
-            characteristics: [Characteristic.On],
-          };
-          service.controlService.subtype = switchName + '-' + sequence;
-          service.controlService.id = sequences[i].id;
-          service.type = HarmonyConst.SEQUENCE_TYPE;
-          services.push(service);
-
-          if (harmonyPlatform.publishSequencesAsIndividualAccessories) {
-            harmonyPlatform.log('INFO - Adding Accessory : ' + accessoryName);
-            let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(
-              services
-            );
-            myHarmonyAccessory.getServices = function() {
-              return harmonyPlatform.getServices(myHarmonyAccessory);
+            let service = {
+              controlService: new Service.Switch(switchName),
+              characteristics: [Characteristic.On],
             };
-            myHarmonyAccessory.platform = harmonyPlatform;
-            myHarmonyAccessory.name = accessoryName;
-            myHarmonyAccessory.model = harmonyPlatform.name;
-            myHarmonyAccessory.manufacturer = 'Harmony';
-            myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
-            harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
-            services = [];
+            service.controlService.subtype = switchName + '-' + sequence;
+            service.controlService.id = sequences[i].id;
+            service.type = HarmonyConst.SEQUENCE_TYPE;
+            services.push(service);
+
+            if (harmonyPlatform.publishSequencesAsIndividualAccessories) {
+              harmonyPlatform.log('INFO - Adding Accessory : ' + accessoryName);
+              let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(
+                services
+              );
+              myHarmonyAccessory.getServices = function() {
+                return harmonyPlatform.getServices(myHarmonyAccessory);
+              };
+              myHarmonyAccessory.platform = harmonyPlatform;
+              myHarmonyAccessory.name = accessoryName;
+              myHarmonyAccessory.model = harmonyPlatform.name;
+              myHarmonyAccessory.manufacturer = 'Harmony';
+              myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
+              harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
+              services = [];
+            }
           }
         }
       }
-    }
 
-    if (
-      !harmonyPlatform.publishSequencesAsIndividualAccessories &&
-      services.length > 0
-    ) {
-      harmonyPlatform.log('INFO - Adding Accessory : ' + harmonyPlatform.name);
-      let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
-      myHarmonyAccessory.getServices = function() {
-        return harmonyPlatform.getServices(myHarmonyAccessory);
-      };
-      myHarmonyAccessory.platform = harmonyPlatform;
-      myHarmonyAccessory.name = harmonyPlatform.name + '-Sequences';
-      myHarmonyAccessory.model = harmonyPlatform.name;
-      myHarmonyAccessory.manufacturer = 'Harmony';
-      myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
-      harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
+      if (
+        !harmonyPlatform.publishSequencesAsIndividualAccessories &&
+        services.length > 0
+      ) {
+        harmonyPlatform.log(
+          'INFO - Adding Accessory : ' + harmonyPlatform.name
+        );
+        let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
+        myHarmonyAccessory.getServices = function() {
+          return harmonyPlatform.getServices(myHarmonyAccessory);
+        };
+        myHarmonyAccessory.platform = harmonyPlatform;
+        myHarmonyAccessory.name = harmonyPlatform.name + '-Sequences';
+        myHarmonyAccessory.model = harmonyPlatform.name;
+        myHarmonyAccessory.manufacturer = 'Harmony';
+        myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
+        harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
+      }
     }
   },
 
@@ -305,20 +312,7 @@ HarmonyBase.prototype = {
     }
   },
 
-  handleDefaultCommandMode: function(
-    harmonyPlatform,
-    controlGroup,
-    device,
-    services
-  ) {
-    let accessoryName = harmonyPlatform.name + '-' + device.label;
-    let switchName = harmonyPlatform.devMode
-      ? 'DEV' + device.label
-      : device.label;
-
-    harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
-
-    let foundToggle = false;
+  populateCommands: function(harmonyPlatform, controlGroup, switchName) {
     let commandFunctions = [];
 
     for (let j = 0, len = controlGroup.length; j < len; j++) {
@@ -345,10 +339,36 @@ HarmonyBase.prototype = {
               key: 'PowerToggle',
               value: functions[k].action,
             });
-            foundToggle = true;
           }
         }
       }
+    }
+
+    return commandFunctions;
+  },
+
+  handleDefaultCommandMode: function(
+    harmonyPlatform,
+    controlGroup,
+    device,
+    services
+  ) {
+    let accessoryName = harmonyPlatform.name + '-' + device.label;
+    let switchName = harmonyPlatform.devMode
+      ? 'DEV' + device.label
+      : device.label;
+
+    harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
+
+    let foundToggle = false;
+    let commandFunctions = this.populateCommands(
+      harmonyPlatform,
+      controlGroup,
+      switchName
+    );
+
+    if (commandFunctions.some(e => e.key == 'PowerToggle')) {
+      foundToggle = true;
     }
 
     if (commandFunctions.length == 0) {
@@ -471,67 +491,74 @@ HarmonyBase.prototype = {
   },
 
   getDevicesAccessories: function(harmonyPlatform, data) {
-    harmonyPlatform.log('INFO - Loading devices...');
-    let devices = data.data.device;
-    let services = [];
-
-    //printing commands for helping users
-    this.printCommands(harmonyPlatform, devices);
-
-    for (
-      let c = 0,
-        len = harmonyPlatform.devicesToPublishAsAccessoriesSwitch.length;
-      c < len;
-      c++
+    if (
+      harmonyPlatform.devicesToPublishAsAccessoriesSwitch &&
+      harmonyPlatform.devicesToPublishAsAccessoriesSwitch.length > 0
     ) {
-      var commands = harmonyPlatform.devicesToPublishAsAccessoriesSwitch[
-        c
-      ].split(';');
+      harmonyPlatform.log('INFO - Loading devices...');
+      let devices = data.data.device;
+      let services = [];
 
-      for (let i = 0, len = devices.length; i < len; i++) {
-        if (devices[i].label === commands[0]) {
-          //check  functions
+      //printing commands for helping users
+      this.printCommands(harmonyPlatform, devices);
 
-          let controlGroup = devices[i].controlGroup;
+      for (
+        let c = 0,
+          len = harmonyPlatform.devicesToPublishAsAccessoriesSwitch.length;
+        c < len;
+        c++
+      ) {
+        var commands = harmonyPlatform.devicesToPublishAsAccessoriesSwitch[
+          c
+        ].split(';');
 
-          //default mode
-          if (commands.length === 1) {
-            this.handleDefaultCommandMode(
-              harmonyPlatform,
-              controlGroup,
-              devices[i],
-              services
-            );
-          }
-          //specifc command or list mode
-          else {
-            this.handleSpecificCommandMode(
-              harmonyPlatform,
-              commands,
-              controlGroup,
-              devices[i],
-              services
-            );
+        for (let i = 0, len = devices.length; i < len; i++) {
+          if (devices[i].label === commands[0]) {
+            //check  functions
+
+            let controlGroup = devices[i].controlGroup;
+
+            //default mode
+            if (commands.length === 1) {
+              this.handleDefaultCommandMode(
+                harmonyPlatform,
+                controlGroup,
+                devices[i],
+                services
+              );
+            }
+            //specifc command or list mode
+            else {
+              this.handleSpecificCommandMode(
+                harmonyPlatform,
+                commands,
+                controlGroup,
+                devices[i],
+                services
+              );
+            }
           }
         }
       }
-    }
 
-    if (
-      !harmonyPlatform.publishDevicesAsIndividualAccessories &&
-      services.length > 0
-    ) {
-      harmonyPlatform.log('INFO - Adding Accessory : ' + harmonyPlatform.name);
-      let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
-      myHarmonyAccessory.getServices = function() {
-        return harmonyPlatform.getServices(myHarmonyAccessory);
-      };
-      myHarmonyAccessory.platform = harmonyPlatform;
-      myHarmonyAccessory.name = harmonyPlatform.name + '-Devices';
-      myHarmonyAccessory.model = harmonyPlatform.name;
-      myHarmonyAccessory.manufacturer = 'Harmony';
-      myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
-      harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
+      if (
+        !harmonyPlatform.publishDevicesAsIndividualAccessories &&
+        services.length > 0
+      ) {
+        harmonyPlatform.log(
+          'INFO - Adding Accessory : ' + harmonyPlatform.name
+        );
+        let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
+        myHarmonyAccessory.getServices = function() {
+          return harmonyPlatform.getServices(myHarmonyAccessory);
+        };
+        myHarmonyAccessory.platform = harmonyPlatform;
+        myHarmonyAccessory.name = harmonyPlatform.name + '-Devices';
+        myHarmonyAccessory.model = harmonyPlatform.name;
+        myHarmonyAccessory.manufacturer = 'Harmony';
+        myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
+        harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
+      }
     }
   },
 
