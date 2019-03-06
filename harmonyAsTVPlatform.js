@@ -441,6 +441,51 @@ HarmonyPlatformAsTVPlatform.prototype = {
     this.updateCurrentInputService(response);
   },
 
+  mapKeysForActivity: function() {
+    this.KeysMap = new Object();
+    if (this._currentInputService > 0) {
+      this.KeysMap[
+        Characteristic.RemoteKey.ARROW_UP
+      ] = this._currentInputService.DirectionUpCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.ARROW_DOWN
+      ] = this._currentInputService.DirectionDownCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.ARROW_LEFT
+      ] = this._currentInputService.DirectionLeftCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.ARROW_RIGHT
+      ] = this._currentInputService.DirectionRightCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.SELECT
+      ] = this._currentInputService.SelectCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.PLAY_PAUSE
+      ] = this._currentInputService.PlayCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.INFORMATION
+      ] = this._currentInputService.MenuCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.BACK
+      ] = this._currentInputService.ReturnCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.EXIT
+      ] = this._currentInputService.HomeCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.REWIND
+      ] = this._currentInputService.RewindCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.FAST_FORWARD
+      ] = this._currentInputService.FastForwardCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.NEXT_TRACK
+      ] = this._currentInputService.SkipForwardCommand;
+      this.KeysMap[
+        Characteristic.RemoteKey.PREVIOUS_TRACK
+      ] = this._currentInputService.SkipBackwardCommand;
+    }
+  },
+
   updateCurrentInputService: function(newActivity) {
     if (!newActivity) return;
 
@@ -457,6 +502,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
     } else {
       this._currentInputService = -1;
     }
+
+    this.mapKeysForActivity();
   },
 
   ///COMANDS
@@ -599,6 +646,31 @@ HarmonyPlatformAsTVPlatform.prototype = {
       });
   },
 
+  handlePlayPause: function() {
+    this.log.debug(
+      'INFO - current play status is : ' +
+        this.playStatus[this._currentInputService.id]
+    );
+
+    if (
+      !this.playPauseBehavior ||
+      this._currentInputService.PauseCommand === undefined ||
+      this.playStatus[this._currentInputService.id] === 'PAUSED' ||
+      this.playStatus[this._currentInputService.id] === undefined
+    ) {
+      this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
+      this.harmonyBase.sendCommand(this, this._currentInputService.PlayCommand);
+      this.playStatus[this._currentInputService.id] = '';
+    } else {
+      this.log.debug('INFO - sending PauseCommand for PLAY_PAUSE');
+      this.harmonyBase.sendCommand(
+        this,
+        this._currentInputService.PauseCommand
+      );
+      this.playStatus[this._currentInputService.id] = 'PAUSED';
+    }
+  },
+
   //HOMEKIT CHARACTERISTICS EVENTS
   bindCharacteristicEvents: function(
     characteristic,
@@ -688,133 +760,17 @@ HarmonyPlatformAsTVPlatform.prototype = {
           );
 
           if (this._currentActivity > 0) {
-            switch (true) {
-              case newValue === Characteristic.RemoteKey.ARROW_UP:
-                this.log.debug(
-                  'INFO - sending DirectionUpCommand for ARROW_UP'
-                );
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.DirectionUpCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.ARROW_DOWN:
-                this.log.debug(
-                  'INFO - sending DirectionDownCommand for ARROW_DOWN'
-                );
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.DirectionDownCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.ARROW_LEFT:
-                this.log.debug(
-                  'INFO - sending DirectionLeftCommand for ARROW_LEFT'
-                );
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.DirectionLeftCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.ARROW_RIGHT:
-                this.log.debug(
-                  'INFO - sending DirectionRightCommand for ARROW_RIGHT'
-                );
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.DirectionRightCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.SELECT:
-                this.log.debug('INFO - sending SelectCommand for SELECT');
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.SelectCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.PLAY_PAUSE:
-                this.log.debug(
-                  'INFO - current play status is : ' +
-                    this.playStatus[this._currentInputService.id]
-                );
-
-                if (
-                  !this.playPauseBehavior ||
-                  this._currentInputService.PauseCommand === undefined ||
-                  this.playStatus[this._currentInputService.id] === 'PAUSED' ||
-                  this.playStatus[this._currentInputService.id] === undefined
-                ) {
-                  this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
-                  this.harmonyBase.sendCommand(
-                    this,
-                    this._currentInputService.PlayCommand
-                  );
-                  this.playStatus[this._currentInputService.id] = '';
-                } else {
-                  this.log.debug('INFO - sending PauseCommand for PLAY_PAUSE');
-                  this.harmonyBase.sendCommand(
-                    this,
-                    this._currentInputService.PauseCommand
-                  );
-                  this.playStatus[this._currentInputService.id] = 'PAUSED';
-                }
-
-                break;
-              case newValue === Characteristic.RemoteKey.INFORMATION:
-                this.log.debug('INFO - sending MenuCommand for INFORMATION');
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.MenuCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.BACK:
-                this.log.debug('INFO - sending ReturnCommand for BACK');
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.ReturnCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.EXIT:
-                this.log.debug('INFO - sending HomeCommand for EXIT');
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.HomeCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.REWIND:
-                this.log.debug('INFO - sending RewindCommand for REWIND');
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.RewindCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.FAST_FORWARD:
-                this.log.debug(
-                  'INFO - sending FastForwardCommand for FAST_FORWARD'
-                );
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.FastForwardCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.NEXT_TRACK:
-                this.log.debug(
-                  'INFO - sending SkipForwardCommand for NEXT_TRACK'
-                );
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.SkipForwardCommand
-                );
-                break;
-              case newValue === Characteristic.RemoteKey.PREVIOUS_TRACK:
-                this.log.debug(
-                  'INFO - sending SkipBackwardCommand for PREVIOUS_TRACK'
-                );
-                this.harmonyBase.sendCommand(
-                  this,
-                  this._currentInputService.SkipBackwardCommand
-                );
-                break;
+            if (newValue === Characteristic.RemoteKey.PLAY_PAUSE) {
+              this.handlePlayPause();
+            } else if (this.KeysMap[newValue]) {
+              this.log.debug('INFO - sending command for ' + newValue);
+              this.harmonyBase.sendCommand(
+                this,
+                this.KeysMap[newValue],
+                this._currentInputService.DirectionUpCommand
+              );
+            } else {
+              this.log.debug('INFO - no command to send for ' + newValue);
             }
           }
           callback(null);
