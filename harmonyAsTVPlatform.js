@@ -23,6 +23,7 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
     false
   );
 
+  this.log.debug('INFO - playPause option set to ' + this.playPauseBehavior);
   this.playStatus = {};
   this.volumesLevel = {};
 
@@ -34,12 +35,23 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
 
   this.savedNamesFile =
     this.prefsDir + 'harmonyPluginNames_' + this.hubIP.split('.').join('');
+  this.savedVisibilityFile =
+    this.prefsDir + 'harmonyPluginVisibility_' + this.hubIP.split('.').join('');
 
   this.savedNames = {};
   try {
     this.savedNames = JSON.parse(fs.readFileSync(this.savedNamesFile));
   } catch (err) {
     this.log.debug('INFO - input names file does not exist');
+  }
+
+  this.savedVisibility = {};
+  try {
+    this.savedVisibility = JSON.parse(
+      fs.readFileSync(this.savedVisibilityFile)
+    );
+  } catch (err) {
+    this.log.debug('INFO - input visibility file does not exist');
   }
 }
 
@@ -145,7 +157,11 @@ HarmonyPlatformAsTVPlatform.prototype = {
         inputName,
         'Input' + this.name + inputName
       ),
-      characteristics: [Characteristic.ConfiguredName],
+      characteristics: [
+        Characteristic.ConfiguredName,
+        Characteristic.CurrentVisibilityState,
+        Characteristic.TargetVisibilityState,
+      ],
     };
     inputSourceService.controlService.id = inputId;
     inputSourceService.activityName = inputName;
@@ -154,7 +170,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     let controlGroup = activity.controlGroup;
 
-    HarmonyAsTVKeysTools.mapKeys(controlGroup, inputName, inputSourceService);
+    HarmonyAsTVKeysTools.mapKeys(
+      this,
+      controlGroup,
+      inputName,
+      inputSourceService
+    );
 
     if (this.savedNames && this.savedNames[inputId]) {
       inputServiceName = this.savedNames[inputId];
@@ -173,7 +194,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       .setCharacteristic(
         Characteristic.InputSourceType,
         Characteristic.InputSourceType.APPLICATION
-      )
+      ); /*
       .setCharacteristic(
         Characteristic.CurrentVisibilityState,
         Characteristic.CurrentVisibilityState.SHOWN
@@ -181,7 +202,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       .setCharacteristic(
         Characteristic.TargetVisibilityState,
         Characteristic.TargetVisibilityState.SHOWN
-      );
+      );*/
     return inputSourceService;
   },
 
@@ -215,7 +236,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
         let inputSourceService = this.configureInputSourceService(
           inputName,
-          inputId
+          inputId,
+          activities[i]
         );
 
         this.mainService.controlService.addLinkedService(
@@ -349,7 +371,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this._currentInputService = -1;
     }
 
-    HarmonyAsTVKeysTools.mapKeysForActivity();
+    this.keysMap = HarmonyAsTVKeysTools.mapKeysForActivity(this);
   },
 
   ///COMANDS
@@ -408,319 +430,434 @@ HarmonyPlatformAsTVPlatform.prototype = {
   },
 
   activityCommand: function(homebridgeAccessory, commandToSend) {
-    this.harmonyBase.harmony
-      .startActivity(commandToSend)
-      .then(data => {
-        if (
-          data &&
-          data.code &&
-          data.code == 200 &&
-          data.msg &&
-          data.msg == 'OK'
-        ) {
-          this._currentSetAttemps = 0;
+    this.harmonyBase.harmony.startActivity(commandToSend).then(data => {
+      if (
+        data &&
+        data.code &&
+        data.code == 200 &&
+        data.msg &&
+        data.msg == 'OK'
+      ) {
+        this._currentSetAttemps = 0;
 
-          this.log.debug('INFO - activityCommand : command sent');
+        this.log.debug('INFO - activityCommand : command sent');
 
-          this.updateCurrentInputService(commandToSend);
+        this.updateCurrentInputService(commandToSend);
 
-          if (this._currentActivity != -1) {
-            this.log.debug(
-              'INFO - updating characteristics to ' + this._currentActivity
-            );
-
-            this.harmonyBase.updateCharacteristic(
-              this.mainService.controlService.getCharacteristic(
-                Characteristic.ActiveIdentifier
-              ),
-              this._currentActivity
-            );
-            this.harmonyBase.updateCharacteristic(
-              this.mainService.controlService.getCharacteristic(
-                Characteristic.Active
-              ),
-              true
-            );
-          } else {
-            this.log.debug('INFO - updating characteristics to off');
-
-            this.harmonyBase.updateCharacteristic(
-              this.mainService.controlService.getCharacteristic(
-                Characteristic.Active
-              ),
-              false
-            );
-
-            this.harmonyBase.updateCharacteristic(
-              this.mainService.controlService.getCharacteristic(
-                Characteristic.ActiveIdentifier
-              ),
-              -1
-            );
-          }
-        } else if (data && (data.code == 202 || data.code == 100)) {
-          this._currentSetAttemps = this._currentSetAttemps + 1;
-          //get characteristic
+        if (this._currentActivity != -1) {
           this.log.debug(
-            'WARNING - activityCommand : could not SET status : ' +
-              JSON.stringify(data)
+            'INFO - updating characteristics to ' + this._currentActivity
           );
 
-          //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
-          var that = this;
-          setTimeout(function() {
-            if (
-              that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
-            ) {
-              that.log.debug(
-                'INFO - activityCommand : RETRY to send command ' +
-                  commandToSend
-              );
-              that.activityCommand(homebridgeAccessory, commandToSend);
-            } else {
-              that.log(
-                'ERROR - activityCommand : could not SET status, no more RETRY : ' +
-                  commandToSend
-              );
-              that.refreshAccessory();
-            }
-          }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
+          this.harmonyBase.updateCharacteristic(
+            this.mainService.controlService.getCharacteristic(
+              Characteristic.ActiveIdentifier
+            ),
+            this._currentActivity
+          );
+          this.harmonyBase.updateCharacteristic(
+            this.mainService.controlService.getCharacteristic(
+              Characteristic.Active
+            ),
+            true
+          );
+        } else {
+          this.log.debug('INFO - updating characteristics to off');
+
+          this.harmonyBase.updateCharacteristic(
+            this.mainService.controlService.getCharacteristic(
+              Characteristic.Active
+            ),
+            false
+          );
+
+          this.harmonyBase.updateCharacteristic(
+            this.mainService.controlService.getCharacteristic(
+              Characteristic.ActiveIdentifier
+            ),
+            -1
+          );
         }
-      })
+      } else if (data && (data.code == 202 || data.code == 100)) {
+        this._currentSetAttemps = this._currentSetAttemps + 1;
+        //get characteristic
+        this.log.debug(
+          'WARNING - activityCommand : could not SET status : ' +
+            JSON.stringify(data)
+        );
+
+        //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
+        var that = this;
+        setTimeout(function() {
+          if (
+            that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
+          ) {
+            that.log.debug(
+              'INFO - activityCommand : RETRY to send command ' + commandToSend
+            );
+            that.activityCommand(homebridgeAccessory, commandToSend);
+          } else {
+            that.log(
+              'ERROR - activityCommand : could not SET status, no more RETRY : ' +
+                commandToSend
+            );
+            that.refreshAccessory();
+          }
+        }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
+      }
+    });
+    /*
       .catch(e => {
         this.log('ERROR - activityCommand : ' + e);
-      });
+      });*/
   },
 
   handlePlayPause: function() {
     this.log.debug(
       'INFO - current play status is : ' +
-        this.playStatus[this._currentInputService.id]
+        this.playStatus[this._currentActivity] +
+        ' with playPause option set to :' +
+        this.playPauseBehavior
+    );
+    this.log.debug(
+      'INFO - pauseCommand defined for  : ' +
+        this._currentActivity +
+        ' is ' +
+        this._currentInputService.PauseCommand
     );
 
     if (
       !this.playPauseBehavior ||
       this._currentInputService.PauseCommand === undefined ||
-      this.playStatus[this._currentInputService.id] === 'PAUSED' ||
-      this.playStatus[this._currentInputService.id] === undefined
+      this.playStatus[this._currentActivity] === undefined ||
+      this.playStatus[this._currentActivity] === 'PAUSED'
     ) {
       this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
       this.harmonyBase.sendCommand(this, this._currentInputService.PlayCommand);
-      this.playStatus[this._currentInputService.id] = '';
+      this.playStatus[this._currentActivity] = '';
     } else {
       this.log.debug('INFO - sending PauseCommand for PLAY_PAUSE');
       this.harmonyBase.sendCommand(
         this,
         this._currentInputService.PauseCommand
       );
-      this.playStatus[this._currentInputService.id] = 'PAUSED';
+      this.playStatus[this._currentActivity] = 'PAUSED';
     }
   },
 
   //HOMEKIT CHARACTERISTICS EVENTS
+
+  bindActiveCharacteristic(characteristic, service, homebridgeAccessory) {
+    //set to main activity / activeIdentifier or off
+    characteristic.on(
+      'set',
+      function(value, callback) {
+        this.log.debug('INFO - SET Characteristic.Active ' + value);
+
+        if (value == 0) {
+          this.log.debug('INFO - switching off');
+          this.sendInputCommand(homebridgeAccessory, '-1');
+
+          callback(null);
+        } else {
+          this.harmonyBase.refreshCurrentActivity(this, () => {
+            if (this._currentActivity < 0) {
+              let activityToLaunch = service.controlService.getCharacteristic(
+                Characteristic.ActiveIdentifier
+              ).value;
+              this.log.debug(
+                'INFO - current Activity to launch - ' + activityToLaunch
+              );
+              if (!activityToLaunch) {
+                activityToLaunch = this.mainActivityId;
+              }
+              this.sendInputCommand(homebridgeAccessory, '' + activityToLaunch);
+            }
+            callback(null);
+          });
+        }
+      }.bind(this)
+    );
+
+    characteristic.on(
+      'get',
+      function(callback) {
+        this.log.debug('INFO - GET Characteristic.Active');
+        homebridgeAccessory.platform.refreshCharacteristic(
+          characteristic,
+          callback
+        );
+      }.bind(this)
+    );
+  },
+
+  bindActiveIdentifierCharacteristic: function(
+    characteristic,
+    homebridgeAccessory
+  ) {
+    //set the current Activity
+    characteristic.on(
+      'set',
+      function(value, callback) {
+        this.log.debug('INFO - SET Characteristic.ActiveIdentifier ' + value);
+        this.sendInputCommand(homebridgeAccessory, '' + value);
+        callback(null);
+      }.bind(this)
+    );
+    characteristic.on(
+      'get',
+      function(callback) {
+        this.log.debug('INFO - GET Characteristic.ActiveIdentifier');
+        homebridgeAccessory.platform.refreshCharacteristic(
+          characteristic,
+          callback
+        );
+      }.bind(this)
+    );
+  },
+  bindRemoteKeyCharacteristic: function(characteristic) {
+    characteristic.on(
+      'set',
+      function(newValue, callback) {
+        this.log.debug(
+          'INFO - SET Characteristic.RemoteKey : ' +
+            newValue +
+            ' with currentActivity ' +
+            this._currentActivity
+        );
+
+        if (this._currentActivity > 0) {
+          if (newValue === Characteristic.RemoteKey.PLAY_PAUSE) {
+            this.handlePlayPause();
+          } else if (this.keysMap[newValue]) {
+            this.log.debug('INFO - sending command for ' + newValue);
+            this.harmonyBase.sendCommand(
+              this,
+              this.keysMap[newValue],
+              this._currentInputService.DirectionUpCommand
+            );
+          } else {
+            this.log.debug('INFO - no command to send for ' + newValue);
+          }
+        }
+        callback(null);
+      }.bind(this)
+    );
+  },
+  bindMuteCharacteristic(characteristic) {
+    characteristic.on(
+      'set',
+      function(value, callback) {
+        if (this._currentActivity > 0) {
+          this.log.debug('INFO - SET Characteristic.Mute : ' + value);
+          this.harmonyBase.sendCommand(
+            this,
+            this._currentInputService.MuteCommand
+          );
+        }
+        callback(null);
+      }.bind(this)
+    );
+
+    characteristic.on(
+      'get',
+      function(callback) {
+        this.log.debug('INFO - GET Characteristic.Mute');
+        callback(null, false);
+      }.bind(this)
+    );
+  },
+  bindVolumeSelectorCharacteristic(characteristic) {
+    characteristic.on(
+      'set',
+      function(value, callback) {
+        if (this._currentActivity > 0) {
+          this.log.debug('INFO - SET Characteristic.VolumeSelector : ' + value);
+          if (value === Characteristic.VolumeSelector.DECREMENT) {
+            this.harmonyBase.sendCommand(
+              this,
+              this._currentInputService.VolumeDownCommand
+            );
+          } else {
+            this.harmonyBase.sendCommand(
+              this,
+              this._currentInputService.VolumeUpCommand
+            );
+          }
+        }
+        callback(null);
+      }.bind(this)
+    );
+  },
+
+  bindVolumeCharacteristic(characteristic) {
+    characteristic.on(
+      'set',
+      function(value, callback) {
+        if (this._currentActivity > 0) {
+          this.log.debug('INFO - SET Characteristic.Volume : ' + value);
+          this.volumesLevel[this._currentActivity] = value;
+        }
+        callback(null);
+      }.bind(this)
+    );
+
+    characteristic.on(
+      'get',
+      function(callback) {
+        this.log.debug('INFO - GET Characteristic.Volume');
+
+        if (this.volumesLevel[this._currentActivity])
+          callback(null, this.volumesLevel[this._currentActivity]);
+        else callback(null, HarmonyConst.DEFAULT_VOLUME);
+      }.bind(this)
+    );
+  },
+  bindConfiguredNameCharacteristic: function(characteristic, service) {
+    characteristic.on(
+      'set',
+      function(value, callback) {
+        this.log.debug('INFO - SET Characteristic.ConfiguredName : ' + value);
+        let idConf = 0;
+        if (service.controlService instanceof Service.InputSource)
+          idConf = service.controlService.id;
+
+        this.savedNames[idConf] = value;
+        fs.writeFile(
+          this.savedNamesFile,
+          JSON.stringify(this.savedNames),
+          err => {
+            if (err) {
+              this.log(
+                'ERROR - error occured could not write configured name %s',
+                err
+              );
+            } else {
+              this.log.debug(
+                'INFO - configured name successfully saved! New name: %s ID: %s',
+                value,
+                idConf
+              );
+            }
+          }
+        );
+
+        callback(null);
+      }.bind(this)
+    );
+  },
+
+  bindCurrentVisibilityStateCharacteristic: function(characteristic, service) {
+    characteristic.on(
+      'get',
+      function(callback) {
+        let idConf = service.controlService.id;
+        this.log.debug(
+          'INFO - GET Characteristic.CurrentVisibilityState : ' +
+            this.savedVisibility[idConf]
+            ? this.savedVisibility[idConf]
+            : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN
+        );
+        if (this.savedVisibility[idConf])
+          callback(null, this.savedVisibility[idConf]);
+        else callback(null, Characteristic.CurrentVisibilityState.SHOWN);
+      }.bind(this)
+    );
+  },
+
+  bindTargetVisibilityStateCharacteristic(characteristic, service) {
+    characteristic.on(
+      'get',
+      function(callback) {
+        let idConf = service.controlService.id;
+        this.log.debug(
+          'INFO - GET Characteristic.TargetVisibilityState : ' +
+            this.savedVisibility[idConf]
+            ? this.savedVisibility[idConf]
+            : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN
+        );
+        if (this.savedVisibility[idConf])
+          callback(null, this.savedVisibility[idConf]);
+        else callback(null, Characteristic.TargetVisibilityState.SHOWN);
+      }.bind(this)
+    );
+
+    characteristic.on(
+      'set',
+      function(value, callback) {
+        this.log.debug(
+          'INFO - SET Characteristic.TargetVisibilityState : ' + value
+        );
+
+        let idConf = service.controlService.id;
+
+        let oldValue = this.savedVisibility[idConf]
+          ? this.savedVisibility[idConf]
+          : Characteristic.CurrentVisibilityState.SHOWN;
+        this.savedVisibility[idConf] = value;
+        fs.writeFile(
+          this.savedVisibilityFile,
+          JSON.stringify(this.savedVisibility),
+          err => {
+            if (err) {
+              this.savedVisibility[idConf] = oldValue;
+              this.log(
+                'ERROR - error occured could not write visibility state %s',
+                err
+              );
+            } else {
+              this.log.debug(
+                'INFO - configured visibility successfully saved! New visibility: %s ID: %s',
+                value,
+                idConf
+              );
+            }
+
+            service.controlService
+              .getCharacteristic(Characteristic.CurrentVisibilityState)
+              .updateValue(this.savedVisibility[idConf]);
+
+            callback(null);
+          }
+        );
+      }.bind(this)
+    );
+  },
+
   bindCharacteristicEvents: function(
     characteristic,
     service,
     homebridgeAccessory
   ) {
-    if (
-      service.type === HarmonyConst.DEVICE_TYPE ||
-      service.type === HarmonyConst.DEVICEMACRO_TYPE ||
-      service.type === HarmonyConst.SEQUENCE_TYPE
-    ) {
+    if (HarmonyTools.serviceIsNotTv(service)) {
       this.harmonyBase.bindCharacteristicEvents(this, characteristic, service);
     } else if (characteristic instanceof Characteristic.Active) {
-      //set to main activity / activeIdentifier or off
-      characteristic.on(
-        'set',
-        function(value, callback) {
-          this.log.debug('INFO - SET Characteristic.Active ' + value);
-
-          if (value == 0) {
-            this.log.debug('INFO - switching off');
-            this.sendInputCommand(homebridgeAccessory, '-1');
-
-            callback(null);
-          } else {
-            this.harmonyBase.refreshCurrentActivity(this, () => {
-              if (this._currentActivity < 0) {
-                let activityToLaunch = service.controlService.getCharacteristic(
-                  Characteristic.ActiveIdentifier
-                ).value;
-                this.log.debug(
-                  'INFO - current Activity to launch - ' + activityToLaunch
-                );
-                if (!activityToLaunch) {
-                  activityToLaunch = this.mainActivityId;
-                }
-                this.sendInputCommand(
-                  homebridgeAccessory,
-                  '' + activityToLaunch
-                );
-              }
-              callback(null);
-            });
-          }
-        }.bind(this)
-      );
-
-      characteristic.on(
-        'get',
-        function(callback) {
-          this.log.debug('INFO - GET Characteristic.Active');
-          homebridgeAccessory.platform.refreshCharacteristic(
-            characteristic,
-            callback
-          );
-        }.bind(this)
+      this.bindActiveCharacteristic(
+        characteristic,
+        service,
+        homebridgeAccessory
       );
     } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
-      //set the current Activity
-      characteristic.on(
-        'set',
-        function(value, callback) {
-          this.log.debug('INFO - SET Characteristic.ActiveIdentifier ' + value);
-          this.sendInputCommand(homebridgeAccessory, '' + value);
-          callback(null);
-        }.bind(this)
-      );
-      characteristic.on(
-        'get',
-        function(callback) {
-          this.log.debug('INFO - GET Characteristic.ActiveIdentifier');
-          homebridgeAccessory.platform.refreshCharacteristic(
-            characteristic,
-            callback
-          );
-        }.bind(this)
+      this.bindActiveIdentifierCharacteristic(
+        characteristic,
+        homebridgeAccessory
       );
     } else if (characteristic instanceof Characteristic.RemoteKey) {
-      characteristic.on(
-        'set',
-        function(newValue, callback) {
-          this.log.debug(
-            'INFO - SET Characteristic.RemoteKey : ' +
-              newValue +
-              ' with currentActivity ' +
-              this._currentActivity
-          );
-
-          if (this._currentActivity > 0) {
-            if (newValue === Characteristic.RemoteKey.PLAY_PAUSE) {
-              this.handlePlayPause();
-            } else if (this.KeysMap[newValue]) {
-              this.log.debug('INFO - sending command for ' + newValue);
-              this.harmonyBase.sendCommand(
-                this,
-                this.KeysMap[newValue],
-                this._currentInputService.DirectionUpCommand
-              );
-            } else {
-              this.log.debug('INFO - no command to send for ' + newValue);
-            }
-          }
-          callback(null);
-        }.bind(this)
-      );
+      this.bindRemoteKeyCharacteristic(characteristic);
     } else if (characteristic instanceof Characteristic.Mute) {
-      characteristic.on(
-        'set',
-        function(value, callback) {
-          if (this._currentActivity > 0) {
-            this.log.debug('INFO - SET Characteristic.Mute : ' + value);
-            this.harmonyBase.sendCommand(
-              this,
-              this._currentInputService.MuteCommand
-            );
-          }
-          callback(null);
-        }.bind(this)
-      );
-
-      characteristic.on(
-        'get',
-        function(callback) {
-          this.log.debug('INFO - GET Characteristic.Mute');
-          callback(null, false);
-        }.bind(this)
-      );
+      this.bindMuteCharacteristic(characteristic);
     } else if (characteristic instanceof Characteristic.VolumeSelector) {
-      characteristic.on(
-        'set',
-        function(value, callback) {
-          if (this._currentActivity > 0) {
-            this.log.debug(
-              'INFO - SET Characteristic.VolumeSelector : ' + value
-            );
-            if (value === Characteristic.VolumeSelector.DECREMENT) {
-              this.harmonyBase.sendCommand(
-                this,
-                this._currentInputService.VolumeDownCommand
-              );
-            } else {
-              this.harmonyBase.sendCommand(
-                this,
-                this._currentInputService.VolumeUpCommand
-              );
-            }
-          }
-          callback(null);
-        }.bind(this)
-      );
+      this.bindVolumeSelectorCharacteristic(characteristic);
     } else if (characteristic instanceof Characteristic.Volume) {
-      characteristic.on(
-        'set',
-        function(value, callback) {
-          if (this._currentActivity > 0) {
-            this.log.debug('INFO - SET Characteristic.Volume : ' + value);
-            this.volumesLevel[this._currentActivity] = value;
-          }
-          callback(null);
-        }.bind(this)
-      );
-
-      characteristic.on(
-        'get',
-        function(callback) {
-          this.log.debug('INFO - GET Characteristic.Volume');
-
-          if (this.volumesLevel[this._currentActivity])
-            callback(null, this.volumesLevel[this._currentActivity]);
-          else callback(null, HarmonyConst.DEFAULT_VOLUME);
-        }.bind(this)
-      );
+      this.bindVolumeCharacteristic(characteristic);
     } else if (characteristic instanceof Characteristic.ConfiguredName) {
-      characteristic.on(
-        'set',
-        function(value, callback) {
-          this.log.debug('INFO - SET Characteristic.ConfiguredName : ' + value);
-          let idConf = 0;
-          if (service.controlService instanceof Service.InputSource)
-            idConf = service.controlService.id;
-
-          this.savedNames[idConf] = value;
-          fs.writeFile(
-            this.savedNamesFile,
-            JSON.stringify(this.savedNames),
-            err => {
-              if (err) {
-                this.log(
-                  'ERROR - error occured could not write configured name %s',
-                  err
-                );
-              } else {
-                this.log.debug(
-                  'INFO - configured name successfully saved! New name: %s ID: %s',
-                  value,
-                  idConf
-                );
-              }
-            }
-          );
-
-          callback(null);
-        }.bind(this)
-      );
+      this.bindConfiguredNameCharacteristic(characteristic, service);
+    } else if (
+      characteristic instanceof Characteristic.CurrentVisibilityState
+    ) {
+      this.bindCurrentVisibilityStateCharacteristic(characteristic, service);
+    } else if (characteristic instanceof Characteristic.TargetVisibilityState) {
+      this.bindTargetVisibilityStateCharacteristic(characteristic, service);
     }
   },
 

@@ -1,7 +1,17 @@
+const HarmonyConst = require('./harmonyConst');
+
 module.exports = {
   checkParemeter: function(parameter, def) {
     if (parameter == undefined) return def;
     else return parameter;
+  },
+
+  serviceIsNotTv(service) {
+    return (
+      service.type === HarmonyConst.DEVICE_TYPE ||
+      service.type === HarmonyConst.DEVICEMACRO_TYPE ||
+      service.type === HarmonyConst.SEQUENCE_TYPE
+    );
   },
 
   processCommands: async function(hb, platform, commands) {
@@ -14,17 +24,6 @@ module.exports = {
       console.log(timeToWait);
       await processCommand(hb, platform, commandTosend[0], timeToWait);
     }
-  },
-
-  processCommand: async function(hb, platform, command, timeToWait) {
-    // notice that we can await a function
-    // that returns a promise
-    await hb.sendCommand(platform, command);
-    await delay(timeToWait);
-  },
-
-  delay: function(timeToWait) {
-    return new Promise(resolve => setTimeout(resolve, timeToWait));
   },
 
   HarmonyAccessory: function(services) {
@@ -60,3 +59,14 @@ module.exports = {
     }
   },
 };
+
+async function processCommand(hb, platform, command, timeToWait) {
+  // notice that we can await a function
+  // that returns a promise
+  await hb.sendCommand(platform, command);
+  await delay(timeToWait);
+}
+
+function delay(timeToWait) {
+  return new Promise(resolve => setTimeout(resolve, timeToWait));
+}

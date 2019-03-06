@@ -166,7 +166,7 @@ HarmonyBase.prototype = {
           'INFO - Hub config : ' + JSON.stringify(response)
         );
         harmonyPlatform.readAccessories(response, callback);
-      })
+      }); /*
       .catch(e => {
         harmonyPlatform.log(
           'Error - Error retrieving info from hub : ' + e.message
@@ -176,7 +176,7 @@ HarmonyBase.prototype = {
         setTimeout(function() {
           that.configureAccessories(harmonyPlatform, callback);
         }, HarmonyConst.DELAY_BEFORE_RECONNECT);
-      });
+      });*/
   },
 
   refreshCurrentActivity: function(harmonyPlatform, callback) {

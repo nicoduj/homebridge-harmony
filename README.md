@@ -4,6 +4,7 @@
 [![npm](https://img.shields.io/npm/dw/homebridge-harmony.svg)](https://www.npmjs.com/package/homebridge-harmony)
 [![npm](https://img.shields.io/npm/dt/homebridge-harmony.svg)](https://www.npmjs.com/package/homebridge-harmony)
 
+[![CodeFactor](https://www.codefactor.io/repository/github/nicoduj/homebridge-harmony/badge)](https://www.codefactor.io/repository/github/nicoduj/homebridge-harmony)
 [![Build Status](https://travis-ci.com/nicoduj/homebridge-harmony.svg?branch=master)](https://travis-ci.com/nicoduj/homebridge-harmony)
 [![Known Vulnerabilities](https://snyk.io/test/github/nicoduj/homebridge-harmony/badge.svg?targetFile=package.json)](https://snyk.io/test/github/nicoduj/homebridge-harmony?targetFile=package.json)
 [![Greenkeeper badge](https://badges.greenkeeper.io/nicoduj/homebridge-harmony.svg)](https://greenkeeper.io/)
@@ -105,6 +106,10 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 
 ## Changelog
 
+- 0.4.8
+  - [NEW] Input hiding handling #85
+  - [NEW] huge refactoring to enhance code quality (I hope there won't be too much bugs ! )
+  - [FIX] Play / pause beahvior #76
 - 0.4.7
   - [NEW] supports new option playPauseBehavior
 - 0.4.6
