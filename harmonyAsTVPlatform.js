@@ -3,6 +3,7 @@ var Service, Characteristic;
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
 const HarmonyTools = require('./harmonyTools.js');
+const HarmonyAsTVKeysTools = require('./harmonyAsTVKeysTools.js');
 
 const fs = require('fs');
 
@@ -153,7 +154,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     let controlGroup = activity.controlGroup;
 
-    this.mapKeys(controlGroup, inputName, inputSourceService);
+    HarmonyAsTVKeysTools.mapKeys(controlGroup, inputName, inputSourceService);
 
     if (this.savedNames && this.savedNames[inputId]) {
       inputServiceName = this.savedNames[inputId];
@@ -182,116 +183,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
         Characteristic.TargetVisibilityState.SHOWN
       );
     return inputSourceService;
-  },
-
-  mapVolumeKeys: function(functions, inputName, inputSourceService) {
-    for (let k = 0, len = functions.length; k < len; k++) {
-      if (functions[k].name == 'Mute') {
-        this.log('INFO - Mapping Mute for ' + inputName);
-        inputSourceService.MuteCommand = functions[k].action;
-      } else if (functions[k].name == 'VolumeDown') {
-        this.log('INFO - Mapping VolumeDown for ' + inputName);
-        inputSourceService.VolumeDownCommand = functions[k].action;
-      } else if (functions[k].name == 'VolumeUp') {
-        this.log('INFO - Mapping VolumeUp for ' + inputName);
-        inputSourceService.VolumeUpCommand = functions[k].action;
-      }
-    }
-  },
-
-  mapNavigationBasicKeys: function(functions, inputName, inputSourceService) {
-    for (let k = 0, len = functions.length; k < len; k++) {
-      if (functions[k].name == 'DirectionDown') {
-        this.log('INFO - Mapping DirectionDown for ' + inputName);
-        inputSourceService.DirectionDownCommand = functions[k].action;
-      } else if (functions[k].name == 'DirectionLeft') {
-        this.log('INFO - Mapping DirectionLeft for ' + inputName);
-        inputSourceService.DirectionLeftCommand = functions[k].action;
-      } else if (functions[k].name == 'DirectionRight') {
-        this.log('INFO - Mapping DirectionRight for ' + inputName);
-        inputSourceService.DirectionRightCommand = functions[k].action;
-      } else if (functions[k].name == 'DirectionUp') {
-        this.log('INFO - Mapping DirectionUp for ' + inputName);
-        inputSourceService.DirectionUpCommand = functions[k].action;
-      } else if (functions[k].name == 'Select') {
-        this.log('INFO - Mapping Select for ' + inputName);
-        inputSourceService.SelectCommand = functions[k].action;
-      }
-    }
-  },
-
-  mapTransportBasicKeys: function(functions, inputName, inputSourceService) {
-    for (let k = 0, len = functions.length; k < len; k++) {
-      if (functions[k].name == 'Stop') {
-        this.log('INFO - Mapping Stop for ' + inputName);
-        inputSourceService.StopCommand = functions[k].action;
-      } else if (functions[k].name == 'Play') {
-        this.log('INFO - Mapping Play for ' + inputName);
-        inputSourceService.PlayCommand = functions[k].action;
-      } else if (functions[k].name == 'Rewind') {
-        this.log('INFO - Mapping Rewind for ' + inputName);
-        inputSourceService.RewindCommand = functions[k].action;
-      } else if (functions[k].name == 'Pause') {
-        this.log('INFO - Mapping Pause for ' + inputName);
-        inputSourceService.PauseCommand = functions[k].action;
-      } else if (functions[k].name == 'FastForward') {
-        this.log('INFO - Mapping FastForward for ' + inputName);
-        inputSourceService.FastForwardCommand = functions[k].action;
-      }
-    }
-  },
-
-  mapNavigationDVDKeys: function(functions, inputName, inputSourceService) {
-    for (let k = 0, len = functions.length; k < len; k++) {
-      if (functions[k].name == 'Return' || functions[k].name == 'Back') {
-        this.log('INFO - Mapping Return for ' + inputName);
-        inputSourceService.ReturnCommand = functions[k].action;
-      } else if (functions[k].name == 'Menu') {
-        this.log('INFO - Mapping Menu for ' + inputName);
-        inputSourceService.MenuCommand = functions[k].action;
-      }
-    }
-  },
-
-  mapTransportExtendedKeys: function(functions, inputName, inputSourceService) {
-    for (let k = 0, len = functions.length; k < len; k++) {
-      if (functions[k].name == 'SkipBackward') {
-        this.log('INFO - Mapping SkipBackward for ' + inputName);
-        inputSourceService.SkipBackwardCommand = functions[k].action;
-      } else if (functions[k].name == 'SkipForward') {
-        this.log('INFO - Mapping SkipForward for ' + inputName);
-        inputSourceService.SkipForwardCommand = functions[k].action;
-      }
-    }
-  },
-
-  mapGameType3Keys: function(functions, inputName, inputSourceService) {
-    for (let k = 0, len = functions.length; k < len; k++) {
-      if (functions[k].name == 'Home') {
-        this.log('INFO - Mapping Home for ' + inputName);
-        inputSourceService.HomeCommand = functions[k].action;
-      }
-    }
-  },
-
-  mapKeys: function(controlGroup, inputName, inputSourceService) {
-    //keys
-    for (let j = 0, len = controlGroup.length; j < len; j++) {
-      let functions = controlGroup[j].function;
-      if (controlGroup[j].name == 'Volume') {
-        this.mapVolumeKeys(functions, inputName, inputSourceService);
-      } else if (activities[i].controlGroup[j].name == 'NavigationBasic') {
-        this.mapNavigationBasicKeys(functions, inputName, inputSourceService);
-      } else if (activities[i].controlGroup[j].name == 'TransportBasic') {
-        this.mapTransportBasicKeys(functions, inputName, inputSourceService);
-      } else if (activities[i].controlGroup[j].name == 'NavigationDVD') {
-        this.mapNavigationDVDKeys(functions, inputName, inputSourceService);
-      } else if (activities[i].controlGroup[j].name == 'TransportExtended') {
-        this.mapTransportExtendedKeys(functions, inputName, inputSourceService);
-      } else if (activities[i].controlGroup[j].name == 'GameType3') {
-        this.mapGameType3Keys(functions, inputName, inputSourceService);
-      }
-    }
   },
 
   readAccessories: function(data, callback) {
@@ -441,51 +332,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
     this.updateCurrentInputService(response);
   },
 
-  mapKeysForActivity: function() {
-    this.KeysMap = new Object();
-    if (this._currentInputService > 0) {
-      this.KeysMap[
-        Characteristic.RemoteKey.ARROW_UP
-      ] = this._currentInputService.DirectionUpCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.ARROW_DOWN
-      ] = this._currentInputService.DirectionDownCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.ARROW_LEFT
-      ] = this._currentInputService.DirectionLeftCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.ARROW_RIGHT
-      ] = this._currentInputService.DirectionRightCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.SELECT
-      ] = this._currentInputService.SelectCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.PLAY_PAUSE
-      ] = this._currentInputService.PlayCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.INFORMATION
-      ] = this._currentInputService.MenuCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.BACK
-      ] = this._currentInputService.ReturnCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.EXIT
-      ] = this._currentInputService.HomeCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.REWIND
-      ] = this._currentInputService.RewindCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.FAST_FORWARD
-      ] = this._currentInputService.FastForwardCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.NEXT_TRACK
-      ] = this._currentInputService.SkipForwardCommand;
-      this.KeysMap[
-        Characteristic.RemoteKey.PREVIOUS_TRACK
-      ] = this._currentInputService.SkipBackwardCommand;
-    }
-  },
-
   updateCurrentInputService: function(newActivity) {
     if (!newActivity) return;
 
@@ -503,7 +349,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this._currentInputService = -1;
     }
 
-    this.mapKeysForActivity();
+    HarmonyAsTVKeysTools.mapKeysForActivity();
   },
 
   ///COMANDS
