@@ -27,6 +27,13 @@ module.exports = {
           inputName,
           inputSourceService
         );
+      } else if (controlGroup[j].name == 'NavigationExtended') {
+        mapNavigationExtendedKeys(
+          platform,
+          functions,
+          inputName,
+          inputSourceService
+        );
       } else if (controlGroup[j].name == 'TransportExtended') {
         mapTransportExtendedKeys(
           platform,
@@ -161,6 +168,20 @@ function mapNavigationDVDKeys(
     } else if (functions[k].name == 'Menu') {
       platform.log('INFO - Mapping Menu for ' + inputName);
       inputSourceService.MenuCommand = functions[k].action;
+    }
+  }
+}
+
+function mapNavigationExtendedKeys(
+  platform,
+  functions,
+  inputName,
+  inputSourceService
+) {
+  for (let k = 0, len = functions.length; k < len; k++) {
+    if (functions[k].name == 'Exit') {
+      platform.log('INFO - Mapping Return for ' + inputName);
+      inputSourceService.ReturnCommand = functions[k].action;
     }
   }
 }
