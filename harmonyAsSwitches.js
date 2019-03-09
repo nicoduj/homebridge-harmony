@@ -201,6 +201,7 @@ HarmonyPlatformAsSwitches.prototype = {
           characteristic.value
         );
         HarmonyTools.handleOffActivity(
+          this,
           characteristic,
           otherServiceControl,
           commandToSend

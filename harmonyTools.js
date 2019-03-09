@@ -43,10 +43,15 @@ module.exports = {
     }
   },
 
-  handleOffActivity: function(characteristic, service, commandToSend) {
+  handleOffActivity: function(
+    platform,
+    characteristic,
+    service,
+    commandToSend
+  ) {
     //we turn off Off Activity if another activity was launched
     if (service.id == -1 && commandToSend != -1) {
-      this.log.debug(
+      platform.log.debug(
         'New activity on , turning off off Activity ' + service.displayName
       );
       characteristic.updateValue(false);
@@ -54,7 +59,7 @@ module.exports = {
 
     //we turn on Off Activity if we turned off an activity (or turn on the general switch)
     if (service.id == -1 && commandToSend == -1) {
-      this.log.debug('Turning on off Activity ' + service.displayName);
+      platform.log.debug('Turning on off Activity ' + service.displayName);
       characteristic.updateValue(true);
     }
   },
