@@ -54,13 +54,20 @@ module.exports = {
       platform.log.debug(
         'New activity on , turning off off Activity ' + service.displayName
       );
-      characteristic.updateValue(false);
+      characteristic.updateValue(
+        platform.showTurnOffActivity == 'inverted' ? true : false
+      );
     }
 
     //we turn on Off Activity if we turned off an activity (or turn on the general switch)
     if (service.id == -1 && commandToSend == -1) {
       platform.log.debug('Turning on off Activity ' + service.displayName);
-      characteristic.updateValue(true);
+      characteristic.updateValue(
+        platform.showTurnOffActivity != 'inverted' &&
+          platform.showTurnOffActivity != 'stateless'
+          ? true
+          : false
+      );
     }
   },
 };

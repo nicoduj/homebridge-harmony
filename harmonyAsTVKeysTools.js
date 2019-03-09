@@ -13,8 +13,8 @@ module.exports = {
           inputName,
           inputSourceService
         );
-      } else if (controlGroup[j].name == 'TransportBasic') {
-        mapTransportBasicKeys(
+      } else if (controlGroup[j].name == 'NavigationExtended') {
+        mapNavigationExtendedKeys(
           platform,
           functions,
           inputName,
@@ -22,6 +22,13 @@ module.exports = {
         );
       } else if (controlGroup[j].name == 'NavigationDVD') {
         mapNavigationDVDKeys(
+          platform,
+          functions,
+          inputName,
+          inputSourceService
+        );
+      } else if (controlGroup[j].name == 'TransportBasic') {
+        mapTransportBasicKeys(
           platform,
           functions,
           inputName,
@@ -50,28 +57,44 @@ module.exports = {
     ) {
       keysMap[Characteristic.RemoteKey.ARROW_UP] =
         platform._currentInputService.DirectionUpCommand;
+
       keysMap[Characteristic.RemoteKey.ARROW_DOWN] =
         platform._currentInputService.DirectionDownCommand;
+
       keysMap[Characteristic.RemoteKey.ARROW_LEFT] =
         platform._currentInputService.DirectionLeftCommand;
+
       keysMap[Characteristic.RemoteKey.ARROW_RIGHT] =
         platform._currentInputService.DirectionRightCommand;
-      keysMap[Characteristic.RemoteKey.SELECT] =
-        platform._currentInputService.SelectCommand;
+
+      keysMap[Characteristic.RemoteKey.SELECT] = getSelectKey(
+        platform._currentInputService
+      );
+
       keysMap[Characteristic.RemoteKey.PLAY_PAUSE] =
         platform._currentInputService.PlayCommand;
-      keysMap[Characteristic.RemoteKey.INFORMATION] =
-        platform._currentInputService.MenuCommand;
-      keysMap[Characteristic.RemoteKey.BACK] =
-        platform._currentInputService.ReturnCommand;
-      keysMap[Characteristic.RemoteKey.EXIT] =
-        platform._currentInputService.HomeCommand;
+
+      keysMap[Characteristic.RemoteKey.INFORMATION] = getInfoKey(
+        platform._currentInputService
+      );
+
+      keysMap[Characteristic.RemoteKey.BACK] = getBackKey(
+        platform._currentInputService
+      );
+
+      keysMap[Characteristic.RemoteKey.EXIT] = getExitKey(
+        platform._currentInputService
+      );
+
       keysMap[Characteristic.RemoteKey.REWIND] =
         platform._currentInputService.RewindCommand;
+
       keysMap[Characteristic.RemoteKey.FAST_FORWARD] =
         platform._currentInputService.FastForwardCommand;
+
       keysMap[Characteristic.RemoteKey.NEXT_TRACK] =
         platform._currentInputService.SkipForwardCommand;
+
       keysMap[Characteristic.RemoteKey.PREVIOUS_TRACK] =
         platform._currentInputService.SkipBackwardCommand;
     }
@@ -121,6 +144,23 @@ function mapNavigationBasicKeys(
   }
 }
 
+function mapNavigationExtendedKeys(
+  platform,
+  functions,
+  inputName,
+  inputSourceService
+) {
+  for (let k = 0, len = functions.length; k < len; k++) {
+    if (functions[k].name == 'Exit') {
+      platform.log('INFO - Mapping Exit for ' + inputName);
+      inputSourceService.ExitCommand = functions[k].action;
+    } else if (functions[k].name == 'Info') {
+      platform.log('INFO - Mapping Info for ' + inputName);
+      inputSourceService.InfoCommand = functions[k].action;
+    }
+  }
+}
+
 function mapTransportBasicKeys(
   platform,
   functions,
@@ -160,6 +200,9 @@ function mapNavigationDVDKeys(
     } else if (functions[k].name == 'Menu') {
       platform.log('INFO - Mapping Menu for ' + inputName);
       inputSourceService.MenuCommand = functions[k].action;
+    } else if (functions[k].name == 'Back') {
+      platform.log('INFO - Mapping Back for ' + inputName);
+      inputSourceService.BackCommand = functions[k].action;
     }
   }
 }
@@ -188,4 +231,31 @@ function mapGameType3Keys(platform, functions, inputName, inputSourceService) {
       inputSourceService.HomeCommand = functions[k].action;
     }
   }
+}
+
+function getExitKey(inputService) {
+  if (inputService.ExitCommand) return inputService.ExitCommand;
+  else if (inputService.HomeCommand) return inputService.HomeCommand;
+  else if (inputService.ReturnCommand) return inputService.ReturnCommand;
+  else if (inputService.BackCommand) return inputService.BackCommand;
+  else return undefined;
+}
+
+function getBackKey(inputService) {
+  if (inputService.BackCommand) return inputService.BackCommand;
+  if (inputService.ReturnCommand) return inputService.ReturnCommand;
+  else if (inputService.ExitCommand) return inputService.ExitCommand;
+  else return undefined;
+}
+
+function getInfoKey(inputService) {
+  if (inputService.InfoCommand) return inputService.InfoCommand;
+  else if (inputService.MenuCommand) return inputService.MenuCommand;
+  else return undefined;
+}
+
+function getSelectKey(inputService) {
+  if (inputService.SelectCommand) {
+    return inputService.SelectCommand;
+  } else return undefined;
 }

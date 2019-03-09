@@ -117,13 +117,43 @@ HarmonyPlatformAsSwitches.prototype = {
     this._currentActivityLastUpdate = Date.now();
   },
 
+  checkOn(serviceControl) {
+    this.log.debug(
+      'checkOn : ' +
+        this._currentActivity +
+        '/' +
+        serviceControl.id +
+        '/' +
+        (this.showTurnOffActivity == 'inverted') +
+        '/' +
+        (this.showTurnOffActivity == 'stateless')
+    );
+    if (serviceControl.id == -1) {
+      if (
+        this._currentActivity == -1 &&
+        (this.showTurnOffActivity == 'inverted' ||
+          this.showTurnOffActivity == 'stateless')
+      ) {
+        return false;
+      }
+      if (
+        this._currentActivity != -1 &&
+        this.showTurnOffActivity == 'inverted'
+      ) {
+        return true;
+      }
+    }
+
+    return this._currentActivity == serviceControl.id;
+  },
+
   refreshService: function(service, homebridgeAccessory, callback) {
     var serviceControl = service.controlService;
     var characteristic = serviceControl.getCharacteristic(Characteristic.On);
 
     this.harmonyBase.refreshCurrentActivity(this, () => {
       if (this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
-        let characteristicIsOn = this._currentActivity == serviceControl.id;
+        let characteristicIsOn = this.checkOn(serviceControl);
 
         this.log.debug(
           'Got status for ' +

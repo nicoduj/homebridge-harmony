@@ -68,7 +68,9 @@ Fields:
   - Use a different name for each entry if you have multiple hubs.
 - `hubIP` is the static IP address of the hub (required). A static IP address is required.
 - `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
-  - The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
+  - if you set to true, The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
+  - if you set to "inverted", The "switch" will be "off" if and only if there is no current activity, and toggling it while "off" does nothing.
+  - if you set to "stateless", it will always be off, but can be triggered to switch off current activity.
 - `skipedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app
 - `addAllActivitiesToSkipedIfSameStateActivitiesList` option to add all activities automatically to skipedIfSameStateActivities behavior. (defaults : false)
 - `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
@@ -110,7 +112,9 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 - 0.4.8
   - [NEW] Input hiding handling #85
   - [NEW] huge refactoring to enhance code quality (I hope there won't be too much bugs ! )
+  - [NEW] stateless / inverted option for showTurnOffActivity #86
   - [FIX] Play / pause beahvior #76
+  - [FIX] Back button not always handled depending on harmony configuration #83
 - 0.4.7
   - [NEW] supports new option playPauseBehavior
 - 0.4.6
