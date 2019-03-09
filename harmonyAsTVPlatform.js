@@ -188,21 +188,14 @@ HarmonyPlatformAsTVPlatform.prototype = {
       .setCharacteristic(Characteristic.Name, inputName)
       .setCharacteristic(Characteristic.ConfiguredName, inputServiceName)
       .setCharacteristic(
-        Characteristic.IsConfigured,
-        Characteristic.IsConfigured.CONFIGURED
-      )
-      .setCharacteristic(
         Characteristic.InputSourceType,
         Characteristic.InputSourceType.APPLICATION
-      ); /*
-      .setCharacteristic(
-        Characteristic.CurrentVisibilityState,
-        Characteristic.CurrentVisibilityState.SHOWN
       )
       .setCharacteristic(
-        Characteristic.TargetVisibilityState,
-        Characteristic.TargetVisibilityState.SHOWN
-      );*/
+        Characteristic.IsConfigured,
+        Characteristic.IsConfigured.CONFIGURED
+      );
+
     return inputSourceService;
   },
 
