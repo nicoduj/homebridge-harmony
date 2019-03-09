@@ -360,7 +360,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     this._currentActivity = newActivity;
     this._currentActivityLastUpdate = Date.now();
 
-    if (this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
+    if (this._currentActivity > 0) {
       for (let i = 0, len = this.inputServices.length; i < len; i++) {
         if (this.inputServices[i].activityId == this._currentActivity) {
           this._currentInputService = this.inputServices[i];

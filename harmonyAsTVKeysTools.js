@@ -42,7 +42,6 @@ module.exports = {
 
   mapKeysForActivity: function(platform) {
     var keysMap = new Object();
-    platform.log('CurrentInputService is : ' + platform._currentActivity);
 
     Characteristic = platform.api.hap.Characteristic;
 
@@ -76,7 +75,7 @@ module.exports = {
       keysMap[Characteristic.RemoteKey.PREVIOUS_TRACK] =
         platform._currentInputService.SkipBackwardCommand;
     }
-    platform.log('keysMap is :' + JSON.stringify(keysMap));
+    platform.log.debug('keysMap is :' + JSON.stringify(keysMap));
     return keysMap;
   },
 };
