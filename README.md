@@ -109,6 +109,8 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 
 ## Changelog
 
+- 0.4.91
+  - [FIX] ERROR - activityCommand : TypeError: Cannot read property 'debug' of undefined
 - 0.4.9
   - [FIX] #89 This callback function has already been called by someone else when publishDevicesAsIndividualAccessories is set to true (default value :( sorry ! )
 - 0.4.8

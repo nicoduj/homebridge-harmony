@@ -225,6 +225,7 @@ HarmonyPlatformAsSwitches.prototype = {
         );
 
         HarmonyTools.disablePreviousActivity(
+          this,
           characteristic,
           otherServiceControl,
           commandToSend,

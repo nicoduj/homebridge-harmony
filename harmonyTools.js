@@ -31,6 +31,7 @@ module.exports = {
   },
 
   disablePreviousActivity: function(
+    platform,
     characteristic,
     service,
     commandToSend,
@@ -38,7 +39,7 @@ module.exports = {
   ) {
     //we disable previous activities that were on
     if (service.id != -1 && service.id != commandToSend && on) {
-      this.log.debug('Switching off ' + otherServiceControl.displayName);
+      platform.log.debug('Switching off ' + otherServiceControl.displayName);
       characteristic.updateValue(false);
     }
   },
