@@ -166,7 +166,7 @@ HarmonyBase.prototype = {
           'INFO - Hub config : ' + JSON.stringify(response)
         );
         harmonyPlatform.readAccessories(response, callback);
-      }); /*
+      })
       .catch(e => {
         harmonyPlatform.log(
           'Error - Error retrieving info from hub : ' + e.message
@@ -176,7 +176,7 @@ HarmonyBase.prototype = {
         setTimeout(function() {
           that.configureAccessories(harmonyPlatform, callback);
         }, HarmonyConst.DELAY_BEFORE_RECONNECT);
-      });*/
+      });
   },
 
   refreshCurrentActivity: function(harmonyPlatform, callback) {
@@ -347,12 +347,9 @@ HarmonyBase.prototype = {
     return commandFunctions;
   },
 
-  handleDefaultCommandMode: function(
-    harmonyPlatform,
-    controlGroup,
-    device,
-    services
-  ) {
+  handleDefaultCommandMode: function(harmonyPlatform, controlGroup, device) {
+    let services = [];
+
     let accessoryName = harmonyPlatform.name + '-' + device.label;
     let switchName = harmonyPlatform.devMode
       ? 'DEV' + device.label
@@ -417,15 +414,17 @@ HarmonyBase.prototype = {
         }
       }
     }
+    return services;
   },
 
   handleSpecificCommandMode: function(
     harmonyPlatform,
     commands,
     controlGroup,
-    device,
-    services
+    device
   ) {
+    let services = [];
+
     let accessoryName = harmonyPlatform.name + '-' + device.label;
     let switchName = harmonyPlatform.devMode
       ? 'DEV' + device.label
@@ -488,6 +487,8 @@ HarmonyBase.prototype = {
         services = [];
       }
     }
+
+    return services;
   },
 
   getDevicesAccessories: function(harmonyPlatform, data) {
@@ -520,21 +521,23 @@ HarmonyBase.prototype = {
 
             //default mode
             if (commands.length === 1) {
-              this.handleDefaultCommandMode(
-                harmonyPlatform,
-                controlGroup,
-                devices[i],
-                services
+              services.concat(
+                this.handleDefaultCommandMode(
+                  harmonyPlatform,
+                  controlGroup,
+                  devices[i]
+                )
               );
             }
             //specifc command or list mode
             else {
-              this.handleSpecificCommandMode(
-                harmonyPlatform,
-                commands,
-                controlGroup,
-                devices[i],
-                services
+              services.concat(
+                this.handleSpecificCommandMode(
+                  harmonyPlatform,
+                  commands,
+                  controlGroup,
+                  devices[i]
+                )
               );
             }
           }

@@ -109,6 +109,8 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 
 ## Changelog
 
+- 0.4.9
+  - [FIX] #89 This callback function has already been called by someone else when publishDevicesAsIndividualAccessories is set to true (default value :( sorry ! )
 - 0.4.8
   - [NEW] Input hiding handling #85
   - [NEW] huge refactoring to enhance code quality (I hope there won't be too much bugs ! )
