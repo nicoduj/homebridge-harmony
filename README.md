@@ -111,7 +111,7 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 
 See [CHANGELOG][].
 
-[changelog]: CHANGELOG
+[changelog]: CHANGELOG.md
 
 ## Inspiration
 
