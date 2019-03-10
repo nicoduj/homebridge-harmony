@@ -36,6 +36,7 @@ HarmonyBase.prototype = {
 
     harmonyPlatform.sequencesToPublishAsAccessoriesSwitch =
       config['sequencesToPublishAsAccessoriesSwitch'];
+
     harmonyPlatform.publishSequencesAsIndividualAccessories = HarmonyTools.checkParemeter(
       config['publishSequencesAsIndividualAccessories'],
       true
@@ -220,8 +221,8 @@ HarmonyBase.prototype = {
 
   getSequencesAccessories: function(harmonyPlatform, data) {
     if (
-      this.sequencesToPublishAsAccessoriesSwitch &&
-      this.sequencesToPublishAsAccessoriesSwitch.length > 0
+      harmonyPlatform.sequencesToPublishAsAccessoriesSwitch &&
+      harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.length > 0
     ) {
       harmonyPlatform.log('INFO - Loading sequences...');
       let sequences = data.data.sequence;
