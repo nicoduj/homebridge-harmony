@@ -205,8 +205,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
     let activities = data.data.activity;
     let services = [];
 
-    this.test.prout;
-
     this.log('INFO - Creating Main TV Service');
 
     this.configureMainService();

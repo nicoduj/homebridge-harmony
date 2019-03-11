@@ -4,25 +4,19 @@
 [![npm](https://img.shields.io/npm/dw/homebridge-harmony.svg)](https://www.npmjs.com/package/homebridge-harmony)
 [![npm](https://img.shields.io/npm/dt/homebridge-harmony.svg)](https://www.npmjs.com/package/homebridge-harmony)
 
-[![CodeFactor](https://www.codefactor.io/repository/github/nicoduj/homebridge-harmony/badge)](https://www.codefactor.io/repository/github/nicoduj/homebridge-harmony)
 [![Build Status](https://travis-ci.com/nicoduj/homebridge-harmony.svg?branch=master)](https://travis-ci.com/nicoduj/homebridge-harmony)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+[![CodeFactor](https://www.codefactor.io/repository/github/nicoduj/homebridge-harmony/badge)](https://www.codefactor.io/repository/github/nicoduj/homebridge-harmony)
 [![Known Vulnerabilities](https://snyk.io/test/github/nicoduj/homebridge-harmony/badge.svg?targetFile=package.json)](https://snyk.io/test/github/nicoduj/homebridge-harmony?targetFile=package.json)
 [![Greenkeeper badge](https://badges.greenkeeper.io/nicoduj/homebridge-harmony.svg)](https://greenkeeper.io/)
-[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+
+[![Support via PayPal][paypal-button]][paypal-nicoduj]
 
 [Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/nfarina/homebridge) using WebSockets.
 
-> ## Work In Progress
+> ## Work In Progress For TV MODE
 >
-> List of known issues:
->
-> - No dynamic discovery of the hub(s)
-> - IOS 12.2 TV MODE is still beta. This mode will focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN
-
-In order to activate TV Platform Mode,you need to :
-
-- set `TVPlatformMode` option to `true`,
-- set `mainActivity` with the name of one of your activity that you want to be bind as the "main" switch.
+> - IOS 12.2 TV MODE is still beta. This mode will focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
 
 ## Installation
 
@@ -88,21 +82,34 @@ Fields:
 - You should put the name of the device as it is named in harmony app,
 - You can add a specific command or multiple ones **JUST AFTER A ";" or a series of ";"** if you want a switch to be added for this specific command or serie of commands (a default delay of 350ms will be added between each command if no sepecif delay is specified),
 - If you do not specify any specific command, the plugin will add either powerToggle if found in Power command group, or PowerOn and/or PowerOff if there is no powerToggle feature,
-- As a sample :
-  - `devicesToPublishAsAccessoriesSwitch` : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up|Up|2500;Down"] will add
-    - a switch for "Apple TV Gen 4" "Play" command,
-    - a switch for "Apple TV Gen 4" "DirectionDown" command,
-    - a powerToggle switch for the device named "Caisson",
-    - a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it)
-    - a switch that will send Up , then Up, then wait 2.5S, then send Down to MyDevice
+
+As a sample :
+
+```json
+  "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up|Up|2500;Down"]
+```
+
+will add
+
+- a switch for "Apple TV Gen 4" "Play" command,
+- a switch for "Apple TV Gen 4" "DirectionDown" command,
+- a powerToggle switch for the device named "Caisson",
+- a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it)
+- a switch that will send Up , then Up, then wait 2.5S, then send Down to MyDevice
 
 All commands available are displayed at startup
 
 **Option** `sequencesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
 - You should put the name of the sequence as it is named in harmony app,
-- As a sample :
-  - "sequencesToPublishAsAccessoriesSwitch" : ["Test"] will expose the sequence Test as a button.
+
+As a sample :
+
+```json
+   "sequencesToPublishAsAccessoriesSwitch" : ["Test"]
+```
+
+will expose the sequence Test as a button.
 
 See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-us/creating-button-sequences) for sequences configuration.
 
@@ -158,7 +165,7 @@ Button List is :
 - VOLUME_DOWN
 - MUTE
 
-Commands of your device is shown in the log at startup in lines like : 'INFO - Command : Number0 discovered for device : Ampli'
+Commands of your device is shown in the log at startup in lines like : 'INFO - Command : **COMMAND_NAME** discovered for device : **DEVICENAME**'
 
 ## Changelog
 

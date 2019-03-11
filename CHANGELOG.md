@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.1
+
+- [FIX] The prout bug ... sorry guys !!!
+
 ## 0.5.0
 
 - [NEW] Tvmode : option to set specific commands on remote widget buttons #84 - **SEE README FOR SYNTAX**
