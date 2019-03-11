@@ -81,14 +81,15 @@ Fields:
 - `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
 - `mainActivity` set the mainactivity of the TV mode
 - `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
+- `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
 
-Option `devicesToPublishAsAccessoriesSwitch` is an array that behaves this way :
+**Option** `devicesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
 - You should put the name of the device as it is named in harmony app,
 - You can add a specific command or multiple ones **JUST AFTER A ";" or a series of ";"** if you want a switch to be added for this specific command or serie of commands (a default delay of 350ms will be added between each command if no sepecif delay is specified),
 - If you do not specify any specific command, the plugin will add either powerToggle if found in Power command group, or PowerOn and/or PowerOff if there is no powerToggle feature,
 - As a sample :
-  - "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up|Up|2500;Down"] will add
+  - `devicesToPublishAsAccessoriesSwitch` : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up|Up|2500;Down"] will add
     - a switch for "Apple TV Gen 4" "Play" command,
     - a switch for "Apple TV Gen 4" "DirectionDown" command,
     - a powerToggle switch for the device named "Caisson",
@@ -97,7 +98,7 @@ Option `devicesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
 All commands available are displayed at startup
 
-Option `sequencesToPublishAsAccessoriesSwitch` is an array that behaves this way :
+**Option** `sequencesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
 - You should put the name of the sequence as it is named in harmony app,
 - As a sample :
@@ -105,7 +106,59 @@ Option `sequencesToPublishAsAccessoriesSwitch` is an array that behaves this way
 
 See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-us/creating-button-sequences) for sequences configuration.
 
-**Please note that the sequence can only be triggered if its activity is in use. (Sequences are linked to an activity by design in harmony app).**
+**_Please note that the sequence can only be triggered if its activity is in use. (Sequences are linked to an activity by design in harmony app)._**
+
+**Option** `remoteOverrideCommandsList` is an array that behaves this way :
+
+- You should put the name of the activity as it is named in harmony app,
+- Then you should put the name of the command you want to ovverride
+- Then you should put the name of the targeted device
+- And finnaly the name of the command
+- A '|' between each override for an activity, a ';' for spliting info of ovverride sequence
+
+As a sample :
+
+```json
+    "remoteOverrideCommandsList": {
+        "La TV": {
+            "REWIND": "Ampli;Number0",
+            "BACK": "TV;Back"
+        },
+        "Un Film": {
+            "ARROW_LEFT": "TV;PreviousChannel"
+        }
+    }
+```
+
+will bahaves this way :
+
+- for "La TV" activity :
+  - override REWIND button in the remote with Number0 command for Ampli device
+  - override BACK button in the remote with Back Command of TV device
+- for "Un Film" activity :
+  - override ARROW_LEFT in the remote with PreviousChannel of TV device
+
+Button List is :
+
+- REWIND
+- FAST_FORWARD
+- NEXT_TRACK
+- PREVIOUS_TRACK
+- ARROW_UP
+- ARROW_DOWN
+- ARROW_LEFT
+- ARROW_RIGHT
+- SELECT
+- BACK
+- EXIT
+- INFORMATION
+- PLAY
+- PAUSE
+- VOLUME_UP
+- VOLUME_DOWN
+- MUTE
+
+Commands of your device is shown in the log at startup in lines like : 'INFO - Command : Number0 discovered for device : Ampli'
 
 ## Changelog
 

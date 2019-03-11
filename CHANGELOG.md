@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.0
+
+- [NEW] Tvmode : option to set specific commands on remote widget buttons #84 - **SEE README FOR SYNTAX**
+
 ## 0.4.92
 
 - [FIX] Sequences are gone since 0.4.8 #93
@@ -12,7 +16,7 @@ All notable changes to this project will be documented in this file.
 
 ## 0.4.9
 
-- [FIX] #89 This callback function has already been called by someone else when publishDevicesAsIndividualAccessories is set to true (default value :( sorry ! )
+- [FIX] #89 This callback function has already been called by someone else when `publishDevicesAsIndividualAccessories` is set to true (default value :( sorry ! )
 
 ## 0.4.8
 
@@ -54,11 +58,11 @@ All notable changes to this project will be documented in this file.
 ## 0.4.1
 
 - [NEW] you can specify custom command for devices switches
-- [FIX] error if you set both options publishDevicesAsIndividualAccessories and publishActivitiesAsIndividualAccessories to false
+- [FIX] error if you set both options `publishDevicesAsIndividualAccessories` and `publishActivitiesAsIndividualAccessories` to false
 
 ## 0.4.0
 
-- [NEW] devicesToPublishAsAccessoriesSwitch option (#15)
+- [NEW] `devicesToPublishAsAccessoriesSwitch` option (#15)
 
 ## 0.3.9
 
@@ -120,7 +124,7 @@ All notable changes to this project will be documented in this file.
 
 ## 0.2.3
 
-- [NEW] TV MODE - restoring SkipedIfSameStateActivities options #46
+- [NEW] TV MODE - restoring `SkipedIfSameStateActivities` options #46
 
 ## 0.2.2
 
@@ -142,7 +146,7 @@ All notable changes to this project will be documented in this file.
 
 ## 0.1.7
 
-- [FIX] Homebridge Crash when turning off activity #36 (publishActivitiesAsIndividualAccessories mode)
+- [FIX] Homebridge Crash when turning off activity #36 (`publishActivitiesAsIndividualAccessories` mode)
 
 ## 0.1.6
 
@@ -150,12 +154,12 @@ All notable changes to this project will be documented in this file.
 
 ## 0.1.5
 
-- [FIX] default value for publishActivitiesAsIndividualAccessories (true)
+- [FIX] default value for `publishActivitiesAsIndividualAccessories` (true)
 
 ## 0.1.4
 
 - [NEW] option for using old way with one accessory for all activities #29
-- [FIX] add some delay before launching background refresh after successfull activity command since if refreshTimer is low the current activity get back to the wrong one
+- [FIX] add some delay before launching background refresh after successfull activity command since if `refreshTimer` is low the current activity get back to the wrong one
 
 ## 0.1.3
 
@@ -177,16 +181,16 @@ All notable changes to this project will be documented in this file.
 
 ## 0.0.9
 
-- [NEW] option to add automatically all activities to skipedIfSameStateActivities
-- [FIX] skipedIfSameStateActivities propery no more mandatory
+- [NEW] option to add automatically all activities to `skipedIfSameStateActivities`
+- [FIX] `skipedIfSameStateActivities` propery no more mandatory
 - [FIX] potential conflict with other plugins
 
 ## 0.0.8
 
-- [NEW] add skipedIfSameStateActivities config list (see fields descrption).
+- [NEW] add `skipedIfSameStateActivities` config list (see fields descrption).
 - [UPDATE] less Hub calls for currentActivity (refreshed only if it is not older than 2 secondes)
 - [UPDATE] some code refactoring
-- [UPDATE] turnOffActivityName option removed (switch can be renamed in homekit directly)
+- [UPDATE] `turnOffActivityName` option **REMOVED** (switch can be renamed in homekit directly)
 
 ## 0.0.7
 

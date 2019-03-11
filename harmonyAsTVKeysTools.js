@@ -1,4 +1,5 @@
 const HarmonyConst = require('./harmonyConst');
+
 module.exports = {
   mapKeys: function(platform, controlGroup, inputName, inputSourceService) {
     //keys
@@ -50,56 +51,133 @@ module.exports = {
   mapKeysForActivity: function(platform) {
     var keysMap = new Object();
 
-    Characteristic = platform.api.hap.Characteristic;
-
+    const Characteristic = platform.api.hap.Characteristic;
     if (
       platform._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
     ) {
-      keysMap[Characteristic.RemoteKey.ARROW_UP] =
-        platform._currentInputService.DirectionUpCommand;
-
-      keysMap[Characteristic.RemoteKey.ARROW_DOWN] =
-        platform._currentInputService.DirectionDownCommand;
-
-      keysMap[Characteristic.RemoteKey.ARROW_LEFT] =
-        platform._currentInputService.DirectionLeftCommand;
-
-      keysMap[Characteristic.RemoteKey.ARROW_RIGHT] =
-        platform._currentInputService.DirectionRightCommand;
-
-      keysMap[Characteristic.RemoteKey.SELECT] = getSelectKey(
-        platform._currentInputService
+      keysMap[Characteristic.RemoteKey.ARROW_UP] = this.getOverrideCommand(
+        platform,
+        'ARROW_UP',
+        platform._currentInputService.DirectionUpCommand
       );
 
-      keysMap[Characteristic.RemoteKey.PLAY_PAUSE] =
-        platform._currentInputService.PlayCommand;
-
-      keysMap[Characteristic.RemoteKey.INFORMATION] = getInfoKey(
-        platform._currentInputService
+      keysMap[Characteristic.RemoteKey.ARROW_DOWN] = this.getOverrideCommand(
+        platform,
+        'ARROW_DOWN',
+        platform._currentInputService.DirectionDownCommand
       );
 
-      keysMap[Characteristic.RemoteKey.BACK] = getBackKey(
-        platform._currentInputService
+      keysMap[Characteristic.RemoteKey.ARROW_LEFT] = this.getOverrideCommand(
+        platform,
+        'ARROW_LEFT',
+        platform._currentInputService.DirectionLeftCommand
       );
 
-      keysMap[Characteristic.RemoteKey.EXIT] = getExitKey(
-        platform._currentInputService
+      keysMap[Characteristic.RemoteKey.ARROW_RIGHT] = this.getOverrideCommand(
+        platform,
+        'ARROW_RIGHT',
+        platform._currentInputService.DirectionRightCommand
       );
 
-      keysMap[Characteristic.RemoteKey.REWIND] =
-        platform._currentInputService.RewindCommand;
+      keysMap[Characteristic.RemoteKey.SELECT] = this.getOverrideCommand(
+        platform,
+        'SELECT',
+        getSelectKey(platform._currentInputService)
+      );
 
-      keysMap[Characteristic.RemoteKey.FAST_FORWARD] =
-        platform._currentInputService.FastForwardCommand;
+      keysMap[Characteristic.RemoteKey.PLAY_PAUSE] = this.getOverrideCommand(
+        platform,
+        'PLAY',
+        platform._currentInputService.PlayCommand
+      );
 
-      keysMap[Characteristic.RemoteKey.NEXT_TRACK] =
-        platform._currentInputService.SkipForwardCommand;
+      keysMap[Characteristic.RemoteKey.INFORMATION] = this.getOverrideCommand(
+        platform,
+        'INFORMATION',
+        getInfoKey(platform._currentInputService)
+      );
 
-      keysMap[Characteristic.RemoteKey.PREVIOUS_TRACK] =
-        platform._currentInputService.SkipBackwardCommand;
+      keysMap[Characteristic.RemoteKey.BACK] = this.getOverrideCommand(
+        platform,
+        'BACK',
+        getBackKey(platform._currentInputService)
+      );
+
+      keysMap[Characteristic.RemoteKey.EXIT] = this.getOverrideCommand(
+        platform,
+        'EXIT',
+        getExitKey(platform._currentInputService)
+      );
+
+      keysMap[Characteristic.RemoteKey.REWIND] = this.getOverrideCommand(
+        platform,
+        'REWIND',
+        platform._currentInputService.RewindCommand
+      );
+
+      keysMap[Characteristic.RemoteKey.FAST_FORWARD] = this.getOverrideCommand(
+        platform,
+        'FAST_FORWARD',
+        platform._currentInputService.FastForwardCommand
+      );
+
+      keysMap[Characteristic.RemoteKey.NEXT_TRACK] = this.getOverrideCommand(
+        platform,
+        'NEXT_TRACK',
+        platform._currentInputService.SkipForwardCommand
+      );
+
+      keysMap[
+        Characteristic.RemoteKey.PREVIOUS_TRACK
+      ] = this.getOverrideCommand(
+        platform,
+        'PREVIOUS_TRACK',
+        platform._currentInputService.SkipBackwardCommand
+      );
     }
     platform.log.debug('keysMap is :' + JSON.stringify(keysMap));
     return keysMap;
+  },
+
+  getOverrideCommand: function(platform, command, defaultCommand) {
+    platform.log.debug(command);
+    if (
+      platform.remoteOverrideCommandsList &&
+      platform.remoteOverrideCommandsList[
+        platform._currentInputService.activityName
+      ] &&
+      platform.remoteOverrideCommandsList[
+        platform._currentInputService.activityName
+      ][command]
+    ) {
+      let override =
+        platform.remoteOverrideCommandsList[
+          platform._currentInputService.activityName
+        ][command];
+      let device = override.split(';')[0];
+      let cmd = override.split(';')[1];
+
+      platform.log.debug(override);
+
+      let commandToSend = platform.harmonyBase.deviceCommands[[device, cmd]];
+
+      platform.log.debug(commandToSend);
+      if (commandToSend) {
+        platform.log.debug(
+          'Found Ovverride Command for ' +
+            command +
+            ' : ' +
+            device +
+            '/' +
+            cmd +
+            ' - ' +
+            commandToSend
+        );
+        return commandToSend;
+      }
+    }
+
+    return defaultCommand;
   },
 };
 

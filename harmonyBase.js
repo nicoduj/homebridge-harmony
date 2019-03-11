@@ -280,7 +280,7 @@ HarmonyBase.prototype = {
         services.length > 0
       ) {
         harmonyPlatform.log(
-          'INFO - Adding Accessory : ' + harmonyPlatform.name
+          'INFO - Adding Accessory : ' + harmonyPlatform.name + '-Sequences'
         );
         let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
         myHarmonyAccessory.getServices = function() {
@@ -296,7 +296,8 @@ HarmonyBase.prototype = {
     }
   },
 
-  printCommands: function(harmonyPlatform, devices) {
+  printAndStoreCommands: function(harmonyPlatform, devices) {
+    this.deviceCommands = {};
     for (let i = 0, len = devices.length; i < len; i++) {
       let controlGroup = devices[i].controlGroup;
       for (let j = 0, len = controlGroup.length; j < len; j++) {
@@ -308,6 +309,9 @@ HarmonyBase.prototype = {
               ' discovered for device : ' +
               devices[i].label
           );
+          //Store command
+          this.deviceCommands[[devices[i].label, functions[k].name]] =
+            functions[k].action;
         }
       }
     }
@@ -501,8 +505,8 @@ HarmonyBase.prototype = {
       let devices = data.data.device;
       let services = [];
 
-      //printing commands for helping users
-      this.printCommands(harmonyPlatform, devices);
+      //printing and storing
+      this.printAndStoreCommands(harmonyPlatform, devices);
 
       for (
         let c = 0,

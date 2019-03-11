@@ -23,6 +23,8 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
     false
   );
 
+  this.remoteOverrideCommandsList = config['remoteOverrideCommandsList'];
+
   this.log.debug('INFO - playPause option set to ' + this.playPauseBehavior);
   this.playStatus = {};
   this.volumesLevel = {};
@@ -202,6 +204,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
   readAccessories: function(data, callback) {
     let activities = data.data.activity;
     let services = [];
+
+    this.test.prout;
 
     this.log('INFO - Creating Main TV Service');
 
@@ -526,13 +530,20 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this.playStatus[this._currentActivity] === 'PAUSED'
     ) {
       this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
-      this.harmonyBase.sendCommand(this, this._currentInputService.PlayCommand);
+      this.harmonyBase.sendCommand(
+        this,
+        this.keysMap[Characteristic.RemoteKey.PLAY_PAUSE]
+      );
       this.playStatus[this._currentActivity] = '';
     } else {
       this.log.debug('INFO - sending PauseCommand for PLAY_PAUSE');
       this.harmonyBase.sendCommand(
         this,
-        this._currentInputService.PauseCommand
+        HarmonyAsTVKeysTools.getOverrideCommand(
+          this,
+          'PAUSE',
+          this._currentInputService.PauseCommand
+        )
       );
       this.playStatus[this._currentActivity] = 'PAUSED';
     }
@@ -624,11 +635,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
             this.handlePlayPause();
           } else if (this.keysMap[newValue]) {
             this.log.debug('INFO - sending command for ' + newValue);
-            this.harmonyBase.sendCommand(
-              this,
-              this.keysMap[newValue],
-              this._currentInputService.DirectionUpCommand
-            );
+            this.harmonyBase.sendCommand(this, this.keysMap[newValue]);
           } else {
             this.log.debug('INFO - no command to send for ' + newValue);
           }
@@ -645,7 +652,11 @@ HarmonyPlatformAsTVPlatform.prototype = {
           this.log.debug('INFO - SET Characteristic.Mute : ' + value);
           this.harmonyBase.sendCommand(
             this,
-            this._currentInputService.MuteCommand
+            HarmonyAsTVKeysTools.getOverrideCommand(
+              this,
+              'MUTE',
+              this._currentInputService.MuteCommand
+            )
           );
         }
         callback(null);
@@ -669,12 +680,20 @@ HarmonyPlatformAsTVPlatform.prototype = {
           if (value === Characteristic.VolumeSelector.DECREMENT) {
             this.harmonyBase.sendCommand(
               this,
-              this._currentInputService.VolumeDownCommand
+              HarmonyAsTVKeysTools.getOverrideCommand(
+                this,
+                'VOLUME_DOWN',
+                this._currentInputService.VolumeDownCommand
+              )
             );
           } else {
             this.harmonyBase.sendCommand(
               this,
-              this._currentInputService.VolumeUpCommand
+              HarmonyAsTVKeysTools.getOverrideCommand(
+                this,
+                'VOLUME_UP',
+                this._currentInputService.VolumeUpCommand
+              )
             );
           }
         }
