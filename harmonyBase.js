@@ -12,6 +12,7 @@ function HarmonyBase(api) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
   this.harmony = new Harmony();
+  this.numberAttemps = 0;
 }
 
 HarmonyBase.prototype = {
@@ -109,15 +110,47 @@ HarmonyBase.prototype = {
     return services;
   },
 
-  updateCharacteristic: function(characteristic, characteristicIsOn, callback) {
+  handleCharacteristicUpdate: function(
+    harmonyPlatform,
+    characteristic,
+    value,
+    callback
+  ) {
+    if (
+      harmonyPlatform._currentActivity ==
+      HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
+    ) {
+      this.updateCharacteristicToErr(characteristic, callback);
+    } else {
+      this.updateCharacteristic(characteristic, value, callback);
+    }
+  },
+
+  updateCharacteristicToErr: function(characteristic, callback) {
     try {
       if (callback) {
-        callback(undefined, characteristicIsOn);
+        callback(1);
       } else {
-        characteristic.updateValue(characteristicIsOn);
+        characteristic.updateValue(undefined);
       }
     } catch (error) {
-      characteristic.updateValue(characteristicIsOn);
+      characteristic.updateValue(undefined);
+    }
+  },
+
+  updateCharacteristic: function(
+    characteristic,
+    characteristicValue,
+    callback
+  ) {
+    try {
+      if (callback) {
+        callback(undefined, characteristicValue);
+      } else {
+        characteristic.updateValue(characteristicValue);
+      }
+    } catch (error) {
+      characteristic.updateValue(characteristicValue);
     }
   },
 
@@ -160,23 +193,40 @@ HarmonyBase.prototype = {
     });
 
     this.harmony
-      .connect(harmonyPlatform.hubIP)
+      .connect(
+        harmonyPlatform.hubIP,
+        HarmonyConst.HUB_CONNECT_TIMEOUT,
+        HarmonyConst.HUB_SEND_TIMEOUT
+      )
       .then(() => this.harmony.getConfig())
       .then(response => {
         harmonyPlatform.log.debug(
           'INFO - Hub config : ' + JSON.stringify(response)
         );
         harmonyPlatform.readAccessories(response, callback);
+        this.numberAttemps = 0;
       })
       .catch(e => {
-        harmonyPlatform.log(
-          'Error - Error retrieving info from hub : ' + e.message
-        );
         var that = this;
+        this.numberAttemps = this.numberAttemps + 1;
 
-        setTimeout(function() {
-          that.configureAccessories(harmonyPlatform, callback);
-        }, HarmonyConst.DELAY_BEFORE_RECONNECT);
+        harmonyPlatform.log(
+          'Error - Error retrieving info from hub : ' +
+            e.message +
+            '-(' +
+            this.numberAttemps +
+            '/3)'
+        );
+
+        if (this.numberAttemps > 3) {
+          throw 'Error - Harmony HUB at ' +
+            harmonyPlatform.hubIP +
+            " is not available - can't start plugin";
+        } else {
+          setTimeout(function() {
+            that.configureAccessories(harmonyPlatform, callback);
+          }, HarmonyConst.DELAY_BEFORE_RECONNECT);
+        }
       });
   },
 
@@ -201,20 +251,25 @@ HarmonyBase.prototype = {
           harmonyPlatform._currentActivity
       );
 
+      //if we dont have an activity set, we callback immediately
+      var callbackDone = false;
+      if (harmonyPlatform._currentActivity == CURRENT_ACTIVITY_NOT_SET_VALUE) {
+        callback();
+        callbackDone = true;
+      }
+
       this.harmony
         .getCurrentActivity()
         .then(response => {
           harmonyPlatform.refreshCurrentActivity(response);
-          callback();
+          if (!callbackDone) callback();
         })
         .catch(e => {
-          harmonyPlatform.log(
-            'ERROR - refreshCurrentActivity : RefreshCurrentActivity : ' + e
-          );
+          harmonyPlatform.log('ERROR - refreshCurrentActivity ' + e);
           harmonyPlatform.refreshCurrentActivity(
-            CURRENT_ACTIVITY_NOT_SET_VALUE
+            HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
           );
-          callback();
+          if (!callbackDone) callback();
         });
     }
   },
@@ -497,16 +552,16 @@ HarmonyBase.prototype = {
   },
 
   getDevicesAccessories: function(harmonyPlatform, data) {
+    let devices = data.data.device;
+    //printing and storing
+    this.printAndStoreCommands(harmonyPlatform, devices);
+
     if (
       harmonyPlatform.devicesToPublishAsAccessoriesSwitch &&
       harmonyPlatform.devicesToPublishAsAccessoriesSwitch.length > 0
     ) {
       harmonyPlatform.log('INFO - Loading devices...');
-      let devices = data.data.device;
       let services = [];
-
-      //printing and storing
-      this.printAndStoreCommands(harmonyPlatform, devices);
 
       for (
         let c = 0,
@@ -596,10 +651,16 @@ HarmonyBase.prototype = {
         callback();
       }.bind(this)
     );
+
     characteristic.on(
       'get',
       function(callback) {
-        callback(undefined, false);
+        this.handleCharacteristicUpdate(
+          harmonyPlatform,
+          characteristic,
+          false,
+          callback
+        );
       }.bind(this)
     );
   },

@@ -19,6 +19,8 @@ function HarmonyPlatformAsSwitches(log, config, api) {
     config['publishActivitiesAsIndividualAccessories'],
     true
   );
+
+  this._currentActivity = -1;
 }
 
 HarmonyPlatformAsSwitches.prototype = {
@@ -163,14 +165,16 @@ HarmonyPlatformAsSwitches.prototype = {
             ' set to ' +
             characteristicIsOn
         );
-        homebridgeAccessory.platform.harmonyBase.updateCharacteristic(
+        homebridgeAccessory.platform.harmonyBase.handleCharacteristicUpdate(
+          this,
           characteristic,
           characteristicIsOn,
           callback
         );
       } else {
         this.log.debug('WARNING : no current Activity');
-        homebridgeAccessory.platform.harmonyBase.updateCharacteristic(
+        homebridgeAccessory.platform.harmonyBase.handleCharacteristicUpdate(
+          this,
           characteristic,
           characteristic.value,
           callback

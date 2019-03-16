@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.2
+
+- [FIX] ERROR - TVMODE - Override of a command throw an error if there is no device published in devicesToPublishAsAccessoriesSwitch #99
+- [FIX] Complete homebridge is unresponsive if 1 hub is not reachable #101 . I pushed a pull request to harmony api in order to have slower timeout, but still should allready be better.
+- [NEW] add “Menu” button to iOS remote widget #102
+
 ## 0.5.1
 
 - [FIX] The prout bug ... sorry guys !!!

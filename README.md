@@ -17,6 +17,7 @@
 > ## Work In Progress For TV MODE
 >
 > - IOS 12.2 TV MODE is still beta. This mode will focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
+> - This plugin is not a dynamic platform : hub configured MUST be available at homebridge startup, however it will crash homebridge start process. Work in Progress on this, but be warned and thus thnik of having a separate homebridge instance for it
 
 ## Installation
 
@@ -164,6 +165,7 @@ Button List is :
 - VOLUME_UP
 - VOLUME_DOWN
 - MUTE
+- MENU
 
 Commands of your device is shown in the log at startup in lines like : 'INFO - Command : **COMMAND_NAME** discovered for device : **DEVICENAME**'
 

@@ -55,18 +55,22 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   } catch (err) {
     this.log.debug('INFO - input visibility file does not exist');
   }
+
+  this._currentActivity = -1;
 }
 
 HarmonyPlatformAsTVPlatform.prototype = {
   onMessage(newActivity) {
     this.updateCurrentInputService(newActivity);
 
-    this.harmonyBase.updateCharacteristic(
+    this.harmonyBase.handleCharacteristicUpdate(
+      this,
       this.mainService.controlService.getCharacteristic(Characteristic.Active),
       this._currentActivity > 0,
       null
     );
-    this.harmonyBase.updateCharacteristic(
+    this.harmonyBase.handleCharacteristicUpdate(
+      this,
       this.mainService.controlService.getCharacteristic(
         Characteristic.ActiveIdentifier
       ),
@@ -88,6 +92,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         Characteristic.ActiveIdentifier,
         Characteristic.RemoteKey,
         Characteristic.ConfiguredName,
+        Characteristic.PowerModeSelection,
       ],
     };
     this.mainService.controlService.subtype = this.name + ' TV';
@@ -289,14 +294,16 @@ HarmonyPlatformAsTVPlatform.prototype = {
     this.harmonyBase.refreshCurrentActivity(this, () => {
       this.updateCurrentInputService(this._currentActivity);
 
-      this.harmonyBase.updateCharacteristic(
+      this.harmonyBase.handleCharacteristicUpdate(
+        this,
         this.mainService.controlService.getCharacteristic(
           Characteristic.Active
         ),
         this._currentActivity > 0,
         null
       );
-      this.harmonyBase.updateCharacteristic(
+      this.harmonyBase.handleCharacteristicUpdate(
+        this,
         this.mainService.controlService.getCharacteristic(
           Characteristic.ActiveIdentifier
         ),
@@ -314,7 +321,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
             'INFO - refreshCharacteristic : updating Characteristic.Active to ' +
               (this._currentActivity != -1)
           );
-          this.harmonyBase.updateCharacteristic(
+          this.harmonyBase.handleCharacteristicUpdate(
+            this,
             characteristic,
             this._currentActivity > 0,
             callback
@@ -324,7 +332,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
             'INFO - refreshCharacteristic : updating Characteristic.ActiveIdentifier to ' +
               this._currentActivity
           );
-          this.harmonyBase.updateCharacteristic(
+          this.harmonyBase.handleCharacteristicUpdate(
+            this,
             characteristic,
             this._currentActivity,
             callback
@@ -333,13 +342,19 @@ HarmonyPlatformAsTVPlatform.prototype = {
       } else {
         this.log.debug('WARNING - refreshCharacteristic : no current Activity');
         if (characteristic instanceof Characteristic.Active) {
-          this.harmonyBase.updateCharacteristic(
+          this.harmonyBase.handleCharacteristicUpdate(
+            this,
             characteristic,
             false,
             callback
           );
         } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
-          this.harmonyBase.updateCharacteristic(characteristic, -1, callback);
+          this.harmonyBase.handleCharacteristicUpdate(
+            this,
+            characteristic,
+            -1,
+            callback
+          );
         }
       }
     });
@@ -444,13 +459,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
             'INFO - updating characteristics to ' + this._currentActivity
           );
 
-          this.harmonyBase.updateCharacteristic(
+          this.harmonyBase.handleCharacteristicUpdate(
+            this,
             this.mainService.controlService.getCharacteristic(
               Characteristic.ActiveIdentifier
             ),
             this._currentActivity
           );
-          this.harmonyBase.updateCharacteristic(
+          this.harmonyBase.handleCharacteristicUpdate(
+            this,
             this.mainService.controlService.getCharacteristic(
               Characteristic.Active
             ),
@@ -459,14 +476,16 @@ HarmonyPlatformAsTVPlatform.prototype = {
         } else {
           this.log.debug('INFO - updating characteristics to off');
 
-          this.harmonyBase.updateCharacteristic(
+          this.harmonyBase.handleCharacteristicUpdate(
+            this,
             this.mainService.controlService.getCharacteristic(
               Characteristic.Active
             ),
             false
           );
 
-          this.harmonyBase.updateCharacteristic(
+          this.harmonyBase.handleCharacteristicUpdate(
+            this,
             this.mainService.controlService.getCharacteristic(
               Characteristic.ActiveIdentifier
             ),
@@ -617,6 +636,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       }.bind(this)
     );
   },
+
   bindRemoteKeyCharacteristic: function(characteristic) {
     characteristic.on(
       'set',
@@ -642,6 +662,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       }.bind(this)
     );
   },
+
   bindMuteCharacteristic(characteristic) {
     characteristic.on(
       'set',
@@ -669,6 +690,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       }.bind(this)
     );
   },
+
   bindVolumeSelectorCharacteristic(characteristic) {
     characteristic.on(
       'set',
@@ -723,6 +745,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       }.bind(this)
     );
   },
+
   bindConfiguredNameCharacteristic: function(characteristic, service) {
     characteristic.on(
       'set',
@@ -834,6 +857,26 @@ HarmonyPlatformAsTVPlatform.prototype = {
     );
   },
 
+  bindPowerModeSelectionCharacteristic(characteristic, service) {
+    characteristic.on(
+      'set',
+      function(value, callback) {
+        this.log.debug(
+          'INFO - SET Characteristic.PowerModeSelection : ' + value
+        );
+        this.harmonyBase.sendCommand(
+          this,
+          HarmonyAsTVKeysTools.getOverrideCommand(
+            this,
+            'MENU',
+            this._currentInputService.MenuCommand
+          )
+        );
+        callback(null);
+      }.bind(this)
+    );
+  },
+
   bindCharacteristicEvents: function(
     characteristic,
     service,
@@ -868,6 +911,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this.bindCurrentVisibilityStateCharacteristic(characteristic, service);
     } else if (characteristic instanceof Characteristic.TargetVisibilityState) {
       this.bindTargetVisibilityStateCharacteristic(characteristic, service);
+    } else if (characteristic instanceof Characteristic.PowerModeSelection) {
+      this.bindPowerModeSelectionCharacteristic(characteristic, service);
     }
   },
 

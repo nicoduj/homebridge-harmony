@@ -140,7 +140,6 @@ module.exports = {
   },
 
   getOverrideCommand: function(platform, command, defaultCommand) {
-    platform.log.debug(command);
     if (
       platform.remoteOverrideCommandsList &&
       platform.remoteOverrideCommandsList[
@@ -157,14 +156,11 @@ module.exports = {
       let device = override.split(';')[0];
       let cmd = override.split(';')[1];
 
-      platform.log.debug(override);
-
       let commandToSend = platform.harmonyBase.deviceCommands[[device, cmd]];
 
-      platform.log.debug(commandToSend);
       if (commandToSend) {
         platform.log.debug(
-          'Found Ovverride Command for ' +
+          'INFO - Found Override Command for ' +
             command +
             ' : ' +
             device +
@@ -174,6 +170,15 @@ module.exports = {
             commandToSend
         );
         return commandToSend;
+      } else {
+        platform.log.debug(
+          'WARNING - Did not found Override Command for ' +
+            command +
+            ' : ' +
+            device +
+            '/' +
+            cmd
+        );
       }
     }
 
@@ -281,6 +286,9 @@ function mapNavigationDVDKeys(
     } else if (functions[k].name == 'Back') {
       platform.log('INFO - Mapping Back for ' + inputName);
       inputSourceService.BackCommand = functions[k].action;
+    } else if (functions[k].name == 'TopMenu') {
+      platform.log('INFO - Mapping TopMenu for ' + inputName);
+      inputSourceService.TopMenuCommand = functions[k].action;
     }
   }
 }
@@ -328,6 +336,7 @@ function getBackKey(inputService) {
 
 function getInfoKey(inputService) {
   if (inputService.InfoCommand) return inputService.InfoCommand;
+  else if (inputService.TopMenuCommand) return inputService.TopMenuCommand;
   else if (inputService.MenuCommand) return inputService.MenuCommand;
   else return undefined;
 }
