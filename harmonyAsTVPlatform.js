@@ -857,7 +857,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     );
   },
 
-  bindPowerModeSelectionCharacteristic(characteristic, service) {
+  bindPowerModeSelectionCharacteristic(characteristic) {
     characteristic.on(
       'set',
       function(value, callback) {
@@ -912,7 +912,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     } else if (characteristic instanceof Characteristic.TargetVisibilityState) {
       this.bindTargetVisibilityStateCharacteristic(characteristic, service);
     } else if (characteristic instanceof Characteristic.PowerModeSelection) {
-      this.bindPowerModeSelectionCharacteristic(characteristic, service);
+      this.bindPowerModeSelectionCharacteristic(characteristic);
     }
   },
 
