@@ -877,6 +877,37 @@ HarmonyPlatformAsTVPlatform.prototype = {
     );
   },
 
+  bindCharacteristicEventsForTV: function(characteristic, homebridgeAccessory) {
+    if (characteristic instanceof Characteristic.ActiveIdentifier) {
+      this.bindActiveIdentifierCharacteristic(
+        characteristic,
+        homebridgeAccessory
+      );
+    } else if (characteristic instanceof Characteristic.RemoteKey) {
+      this.bindRemoteKeyCharacteristic(characteristic);
+    } else if (characteristic instanceof Characteristic.PowerModeSelection) {
+      this.bindPowerModeSelectionCharacteristic(characteristic);
+    }
+  },
+
+  bindCharacteristicEventsForSpeaker: function(characteristic) {
+    if (characteristic instanceof Characteristic.Mute) {
+      this.bindMuteCharacteristic(characteristic);
+    } else if (characteristic instanceof Characteristic.VolumeSelector) {
+      this.bindVolumeSelectorCharacteristic(characteristic);
+    } else if (characteristic instanceof Characteristic.Volume) {
+      this.bindVolumeCharacteristic(characteristic);
+    }
+  },
+
+  bindCharacteristicEventsForInputs: function(characteristic, service) {
+    if (characteristic instanceof Characteristic.CurrentVisibilityState) {
+      this.bindCurrentVisibilityStateCharacteristic(characteristic, service);
+    } else if (characteristic instanceof Characteristic.TargetVisibilityState) {
+      this.bindTargetVisibilityStateCharacteristic(characteristic, service);
+    }
+  },
+
   bindCharacteristicEvents: function(
     characteristic,
     service,
@@ -884,35 +915,20 @@ HarmonyPlatformAsTVPlatform.prototype = {
   ) {
     if (HarmonyTools.serviceIsNotTv(service)) {
       this.harmonyBase.bindCharacteristicEvents(this, characteristic, service);
+    } else if (characteristic instanceof Characteristic.ConfiguredName) {
+      this.bindConfiguredNameCharacteristic(characteristic, service);
     } else if (characteristic instanceof Characteristic.Active) {
       this.bindActiveCharacteristic(
         characteristic,
         service,
         homebridgeAccessory
       );
-    } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
-      this.bindActiveIdentifierCharacteristic(
-        characteristic,
-        homebridgeAccessory
-      );
-    } else if (characteristic instanceof Characteristic.RemoteKey) {
-      this.bindRemoteKeyCharacteristic(characteristic);
-    } else if (characteristic instanceof Characteristic.Mute) {
-      this.bindMuteCharacteristic(characteristic);
-    } else if (characteristic instanceof Characteristic.VolumeSelector) {
-      this.bindVolumeSelectorCharacteristic(characteristic);
-    } else if (characteristic instanceof Characteristic.Volume) {
-      this.bindVolumeCharacteristic(characteristic);
-    } else if (characteristic instanceof Characteristic.ConfiguredName) {
-      this.bindConfiguredNameCharacteristic(characteristic, service);
-    } else if (
-      characteristic instanceof Characteristic.CurrentVisibilityState
-    ) {
-      this.bindCurrentVisibilityStateCharacteristic(characteristic, service);
-    } else if (characteristic instanceof Characteristic.TargetVisibilityState) {
-      this.bindTargetVisibilityStateCharacteristic(characteristic, service);
-    } else if (characteristic instanceof Characteristic.PowerModeSelection) {
-      this.bindPowerModeSelectionCharacteristic(characteristic);
+    } else if (service.controlService instanceof Service.Television) {
+      this.bindCharacteristicEventsForTV(characteristic, homebridgeAccessory);
+    } else if (service.controlService instanceof Service.TelevisionSpeaker) {
+      this.bindCharacteristicEventsForSpeaker(characteristic);
+    } else if (service.controlService instanceof Service.InputSource) {
+      this.bindCharacteristicEventsForInputs(characteristic, service);
     }
   },
 
