@@ -389,7 +389,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
     let doCommand = true;
     let commandToSend = value;
 
-    let inputName = '';
+    let inputName = commandToSend == -1 ? 'PowerOff' : '';
+
     for (let i = 0, len = this.inputServices.length; i < len; i++) {
       if (this.inputServices[i].activityId == commandToSend) {
         inputName = this.inputServices[i].activityName;
@@ -397,16 +398,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
       }
     }
 
-    if (
-      this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
-      (this.skipedIfSameStateActivities &&
-        this.skipedIfSameStateActivities.includes(inputName))
-    ) {
+    if (HarmonyTools.isActivtyToBeSkipped(this, inputName)) {
       //GLOBAL OFF SWITCH : do command only if we are not off
       if (commandToSend == -1) {
-        doCommand =
-          this._currentActivity != -1 &&
-          this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE;
+        doCommand = this._currentActivity > 0;
       }
       //ELSE, we do the command only if state is different.
       else {
@@ -520,10 +515,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
         }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
       }
     });
-    /*
-      .catch(e => {
-        this.log('ERROR - activityCommand : ' + e);
-      });*/
   },
 
   handlePlayPause: function() {

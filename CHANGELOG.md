@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.3
+
+- [NEW] handle skipedIfSameStateActivities for POWER OFF in TV mode #104 - Just add "PowerOff" to the skipedIfSameStateActivities.
+
 ## 0.5.2
 
 - [FIX] ERROR - TVMODE - Override of a command throw an error if there is no device published in devicesToPublishAsAccessoriesSwitch #99

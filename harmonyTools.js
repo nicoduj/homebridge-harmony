@@ -14,6 +14,14 @@ module.exports = {
     );
   },
 
+  isActivtyToBeSkipped: function(platform, activity) {
+    return (
+      platform.addAllActivitiesToSkipedIfSameStateActivitiesList ||
+      (platform.skipedIfSameStateActivities &&
+        platform.skipedIfSameStateActivities.includes(activity))
+    );
+  },
+
   processCommands: async function(hb, platform, commands) {
     for (const command of commands) {
       let commandTosend = command.split('|');
