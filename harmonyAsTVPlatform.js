@@ -60,18 +60,7 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
 
 HarmonyPlatformAsTVPlatform.prototype = {
   onMessage(newActivity) {
-    this.updateCurrentInputService(newActivity);
-
-    this.harmonyBase.handleCharacteristicUpdate(
-      this,
-      this.mainService.getCharacteristic(Characteristic.Active),
-      this._currentActivity > 0
-    );
-    this.harmonyBase.handleCharacteristicUpdate(
-      this,
-      this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
-      this._currentActivity
-    );
+    this.handleRefreshOfCharacteristic(newActivity);
   },
 
   ///CREATION / STARTUP
@@ -290,20 +279,28 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   ///REFRESHING TOOLS
 
+  handleRefreshOfCharacteristic(activity) {
+    this.updateCurrentInputService(activity);
+
+    this.harmonyBase.handleCharacteristicUpdate(
+      this,
+      this.mainService.controlService.getCharacteristic(Characteristic.Active),
+      this._currentActivity > 0,
+      null
+    );
+    this.harmonyBase.handleCharacteristicUpdate(
+      this,
+      this.mainService.controlService.getCharacteristic(
+        Characteristic.ActiveIdentifier
+      ),
+      this._currentActivity,
+      null
+    );
+  },
+
   refreshAccessory: function() {
     this.harmonyBase.refreshCurrentActivity(this, () => {
-      this.updateCurrentInputService(this._currentActivity);
-
-      this.harmonyBase.handleCharacteristicUpdate(
-        this,
-        this.mainService.getCharacteristic(Characteristic.Active),
-        this._currentActivity > 0
-      );
-      this.harmonyBase.handleCharacteristicUpdate(
-        this,
-        this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
-        this._currentActivity
-      );
+      this.handleRefreshOfCharacteristic(this._currentActivity);
     });
   },
 
@@ -441,39 +438,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         this._currentSetAttemps = 0;
 
         this.log.debug('INFO - activityCommand : command sent');
-
-        this.updateCurrentInputService(commandToSend);
-
-        if (this._currentActivity != -1) {
-          this.log.debug(
-            'INFO - updating characteristics to ' + this._currentActivity
-          );
-
-          this.harmonyBase.handleCharacteristicUpdate(
-            this,
-            this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
-            this._currentActivity
-          );
-          this.harmonyBase.handleCharacteristicUpdate(
-            this,
-            this.mainService.getCharacteristic(Characteristic.Active),
-            true
-          );
-        } else {
-          this.log.debug('INFO - updating characteristics to off');
-
-          this.harmonyBase.handleCharacteristicUpdate(
-            this,
-            this.mainService.getCharacteristic(Characteristic.Active),
-            false
-          );
-
-          this.harmonyBase.handleCharacteristicUpdate(
-            this,
-            this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
-            -1
-          );
-        }
+        this.handleRefreshOfCharacteristic(commandToSend);
       } else if (data && (data.code == 202 || data.code == 100)) {
         this._currentSetAttemps = this._currentSetAttemps + 1;
         //get characteristic
