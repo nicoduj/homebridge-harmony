@@ -78,14 +78,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
     this.harmonyBase.handleCharacteristicUpdate(
       this,
       this.mainService.getCharacteristic(Characteristic.Active),
-      this._currentActivity > 0,
-      null
+      this._currentActivity > 0
     );
     this.harmonyBase.handleCharacteristicUpdate(
       this,
       this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
-      this._currentActivity,
-      null
+      this._currentActivity
     );
   },
 
@@ -102,6 +100,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         'tvService' + this.name
       );
       this.mainService.subtype = subType;
+      accessory.addService(this.mainService);
     }
 
     if (this.savedNames && this.savedNames[0]) {
@@ -119,6 +118,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
       )
       .setCharacteristic(Characteristic.ActiveIdentifier, -1)
       .setCharacteristic(Characteristic.Active, false);
+
+    this.bindCharacteristicEventsForTV(accessory);
 
     this.inputServices = [];
     this.log.debug(
@@ -150,6 +151,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         'TVSpeaker' + this.name
       );
       this.tvSpeakerService.subtype = subType;
+      accessory.addService(this.tvSpeakerService);
     }
 
     this.tvSpeakerService
@@ -159,6 +161,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
         Characteristic.VolumeControlType,
         Characteristic.VolumeControlType.ABSOLUTE
       );
+
+    this.bindCharacteristicEventsForSpeaker(this.tvSpeakerService);
 
     this.mainService.addLinkedService(this.tvSpeakerService);
   },
@@ -182,6 +186,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         'Input' + this.name + inputName
       );
       inputSourceService.subtype = subType;
+      accessory.addService(inputSourceService);
     }
 
     inputSourceService.activityName = inputName;
@@ -229,8 +234,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
     if (!myHarmonyAccessory) {
       this.log('INFO - Adding Accessory : ' + this.name);
       myHarmonyAccessory = new Accessory(this.name, uuid);
-
-      myHarmonyAccessory.platform = this;
       myHarmonyAccessory.name = this.name;
       myHarmonyAccessory.model = this.name;
       myHarmonyAccessory.manufacturer = 'Harmony';
@@ -240,7 +243,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
       isNew = true;
     } else {
       this.log('INFO - Found Accessory : ' + this.name);
-      myHarmonyAccessory.platform = this;
     }
 
     this.log('INFO - configuring Main TV Service');
@@ -284,8 +286,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this.configureMainActivity(myHarmonyAccessory, activities[0]);
     }
 
-    this.bindCharacteristicEventsForTV(myHarmonyAccessory);
-    this.bindCharacteristicEventsForSpeaker(myHarmonyAccessory);
     this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
 
     if (isNew) {
@@ -298,7 +298,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     }
 
     this.harmonyBase.getDevicesAccessories(this, data);
-    //    this.harmonyBase.getSequencesAccessories(this, data);
+    this.harmonyBase.getSequencesAccessories(this, data);
 
     //first refresh
     var that = this;
@@ -327,14 +327,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this.harmonyBase.handleCharacteristicUpdate(
         this,
         this.mainService.getCharacteristic(Characteristic.Active),
-        this._currentActivity > 0,
-        null
+        this._currentActivity > 0
       );
       this.harmonyBase.handleCharacteristicUpdate(
         this,
         this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
-        this._currentActivity,
-        null
+        this._currentActivity
       );
     });
   },
@@ -342,7 +340,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
   refreshCharacteristic: function(characteristic, callback) {
     this.harmonyBase.refreshCurrentActivity(this, () => {
       if (this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
-        if (characteristic instanceof Characteristic.Active) {
+        if (characteristic.UUID == Characteristic.Active.UUID) {
           this.log.debug(
             'INFO - refreshCharacteristic : updating Characteristic.Active to ' +
               (this._currentActivity != -1)
@@ -353,7 +351,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
             this._currentActivity > 0,
             callback
           );
-        } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
+        } else if (
+          characteristic.UUID == Characteristic.ActiveIdentifier.UUID
+        ) {
           this.log.debug(
             'INFO - refreshCharacteristic : updating Characteristic.ActiveIdentifier to ' +
               this._currentActivity
@@ -367,14 +367,16 @@ HarmonyPlatformAsTVPlatform.prototype = {
         }
       } else {
         this.log.debug('WARNING - refreshCharacteristic : no current Activity');
-        if (characteristic instanceof Characteristic.Active) {
+        if (characteristic.UUID == Characteristic.Active.UUID) {
           this.harmonyBase.handleCharacteristicUpdate(
             this,
             characteristic,
             false,
             callback
           );
-        } else if (characteristic instanceof Characteristic.ActiveIdentifier) {
+        } else if (
+          characteristic.UUID == Characteristic.ActiveIdentifier.UUID
+        ) {
           this.harmonyBase.handleCharacteristicUpdate(
             this,
             characteristic,
@@ -448,10 +450,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     }
 
     if (doCommand) {
-      homebridgeAccessory.platform.activityCommand(
-        homebridgeAccessory,
-        commandToSend
-      );
+      this.activityCommand(homebridgeAccessory, commandToSend);
     } else {
       var that = this;
       setTimeout(function() {
@@ -579,6 +578,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   bindActiveCharacteristic(characteristic, service, homebridgeAccessory) {
     //set to main activity / activeIdentifier or off
+
     characteristic.on(
       'set',
       function(value, callback) {
@@ -612,11 +612,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
     characteristic.on(
       'get',
       function(callback) {
-        this.log.debug('INFO - GET Characteristic.Active');
-        homebridgeAccessory.platform.refreshCharacteristic(
-          characteristic,
-          callback
-        );
+        this.log.debug('INFO - GET Characteristic.Active ');
+        this.refreshCharacteristic(characteristic, callback);
       }.bind(this)
     );
   },
@@ -638,10 +635,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       'get',
       function(callback) {
         this.log.debug('INFO - GET Characteristic.ActiveIdentifier');
-        homebridgeAccessory.platform.refreshCharacteristic(
-          characteristic,
-          callback
-        );
+        this.refreshCharacteristic(characteristic, callback);
       }.bind(this)
     );
   },
@@ -886,15 +880,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
   },
 
   bindCharacteristicEventsForTV: function(homebridgeAccessory) {
-    if (
-      !homebridgeAccessory.getServiceByUUIDAndSubType(
-        this.mainService.displayName,
-        this.mainService.subtype
-      )
-    ) {
-      homebridgeAccessory.addService(this.mainService);
-    }
-
     this.bindActiveCharacteristic(
       this.mainService.getCharacteristic(Characteristic.Active),
       this.mainService,
@@ -920,15 +905,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     );
   },
 
-  bindCharacteristicEventsForSpeaker: function(homebridgeAccessory) {
-    if (
-      !homebridgeAccessory.getServiceByUUIDAndSubType(
-        this.tvSpeakerService.displayName,
-        this.tvSpeakerService.subtype
-      )
-    )
-      homebridgeAccessory.addService(this.tvSpeakerService);
-
+  bindCharacteristicEventsForSpeaker: function() {
     this.bindMuteCharacteristic(
       this.tvSpeakerService.getCharacteristic(Characteristic.Mute)
     );
@@ -940,16 +917,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
     );
   },
 
-  bindCharacteristicEventsForInputs: function(homebridgeAccessory) {
+  bindCharacteristicEventsForInputs: function() {
     for (let i = 0, len = this.inputServices.length; i < len; i++) {
-      if (
-        !homebridgeAccessory.getServiceByUUIDAndSubType(
-          this.inputServices[i].displayName,
-          this.inputServices[i].subtype
-        )
-      )
-        homebridgeAccessory.addService(this.inputServices[i]);
-
       this.bindConfiguredNameCharacteristic(
         this.inputServices[i].getCharacteristic(Characteristic.ConfiguredName),
         this.inputServices[i]

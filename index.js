@@ -14,7 +14,6 @@ module.exports = function(homebridge) {
 
 function HarmonyPlatform(log, config, api) {
   log('HarmonyPlatform Init');
-  log(JSON.stringify(config));
 
   this.log = log;
   this.TVPlatformMode = config['TVPlatformMode'];

@@ -115,6 +115,21 @@ HarmonyBase.prototype = {
     }
   },
 
+  configureInformationService: function(homebridgeAccessory) {
+    homebridgeAccessory
+      .getService(Service.AccessoryInformation)
+      .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
+      .setCharacteristic(
+        Characteristic.Manufacturer,
+        homebridgeAccessory.manufacturer
+      )
+      .setCharacteristic(Characteristic.Model, homebridgeAccessory.model)
+      .setCharacteristic(
+        Characteristic.SerialNumber,
+        homebridgeAccessory.serialNumber
+      );
+  },
+
   configureAccessories: function(harmonyPlatform) {
     harmonyPlatform.log('INFO - Loading activities...');
 
@@ -166,7 +181,9 @@ HarmonyBase.prototype = {
         );
         harmonyPlatform.readAccessories(response);
         this.numberAttemps = 0;
-      })
+      });
+
+    /*
       .catch(e => {
         var that = this;
         this.numberAttemps = this.numberAttemps + 1;
@@ -189,6 +206,8 @@ HarmonyBase.prototype = {
           }, HarmonyConst.DELAY_BEFORE_RECONNECT);
         }
       });
+
+      */
   },
 
   refreshCurrentActivity: function(harmonyPlatform, callback) {
@@ -242,7 +261,19 @@ HarmonyBase.prototype = {
     ) {
       harmonyPlatform.log('INFO - Loading sequences...');
       let sequences = data.data.sequence;
-      let services = [];
+
+      var accessoriesToAdd = [];
+      var myHarmonyAccessory;
+
+      if (!harmonyPlatform.publishSequencesAsIndividualAccessories) {
+        let name = harmonyPlatform.name + '-Sequences';
+        myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+        if (!myHarmonyAccessory) {
+          myHarmonyAccessory = this.addAccessory(harmonyPlatform, name);
+          accessoriesToAdd.push(myHarmonyAccessory);
+        }
+      }
+
       for (
         let c = 0,
           len = harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.length;
@@ -262,52 +293,48 @@ HarmonyBase.prototype = {
 
             harmonyPlatform.log('INFO - Discovered sequence : ' + switchName);
 
-            let service = {
-              controlService: new Service.Switch(switchName),
-              characteristics: [Characteristic.On],
-            };
-            service.controlService.subtype = switchName + '-' + sequence;
-            service.controlService.id = sequences[i].id;
-            service.type = HarmonyConst.SEQUENCE_TYPE;
-            services.push(service);
-
             if (harmonyPlatform.publishSequencesAsIndividualAccessories) {
-              harmonyPlatform.log('INFO - Adding Accessory : ' + accessoryName);
-              let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(
-                services
+              myHarmonyAccessory = this.checkAccessory(
+                harmonyPlatform,
+                accessoryName
               );
-              myHarmonyAccessory.getServices = function() {
-                return harmonyPlatform.getServices(myHarmonyAccessory);
-              };
-              myHarmonyAccessory.platform = harmonyPlatform;
-              myHarmonyAccessory.name = accessoryName;
-              myHarmonyAccessory.model = harmonyPlatform.name;
-              myHarmonyAccessory.manufacturer = 'Harmony';
-              myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
-              harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
-              services = [];
+              if (!myHarmonyAccessory) {
+                myHarmonyAccessory = this.addAccessory(
+                  harmonyPlatform,
+                  accessoryName
+                );
+                accessoriesToAdd.push(myHarmonyAccessory);
+              }
             }
+
+            let subType = switchName + '-' + sequence;
+            let service = myHarmonyAccessory.getServiceByUUIDAndSubType(
+              switchName,
+              subType
+            );
+
+            if (!service) {
+              harmonyPlatform.log('INFO - Creating Switch Service');
+              service = new Service.Switch(switchName);
+              service.subtype = subType;
+              myHarmonyAccessory.addService(service);
+            }
+
+            service.SequenceId = sequences[i].id;
+            service.type = HarmonyConst.SEQUENCE_TYPE;
+            this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
           }
         }
       }
 
-      if (
-        !harmonyPlatform.publishSequencesAsIndividualAccessories &&
-        services.length > 0
-      ) {
-        harmonyPlatform.log(
-          'INFO - Adding Accessory : ' + harmonyPlatform.name + '-Sequences'
+      //creating accessories
+      for (let i = 0, len = accessoriesToAdd.length; i < len; i++) {
+        harmonyPlatform._foundAccessories.push(accessoriesToAdd[i]);
+        harmonyPlatform.api.registerPlatformAccessories(
+          'homebridge-harmonyHub',
+          'HarmonyHubWebSocket',
+          [accessoriesToAdd[i]]
         );
-        let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
-        myHarmonyAccessory.getServices = function() {
-          return harmonyPlatform.getServices(myHarmonyAccessory);
-        };
-        myHarmonyAccessory.platform = harmonyPlatform;
-        myHarmonyAccessory.name = harmonyPlatform.name + '-Sequences';
-        myHarmonyAccessory.model = harmonyPlatform.name;
-        myHarmonyAccessory.manufacturer = 'Harmony';
-        myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
-        harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
       }
     }
   },
@@ -402,16 +429,9 @@ HarmonyBase.prototype = {
           (foundToggle && commandFunctions[j].key === 'PowerToggle') ||
           !foundToggle
         ) {
-          if (!myHarmonyAccessory) {
-            harmonyPlatform.log(
-              'INFO - Adding Accessory : ' +
-                accessoryName +
-                '-' +
-                commandFunctions[j].key
-            );
-
+          if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
             let name = accessoryName + '-' + commandFunctions[j].key;
-            let myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+            myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
             if (!myHarmonyAccessory) {
               myHarmonyAccessory = this.addAccessory(harmonyPlatform, name);
               accessoriesToAdd.push(myHarmonyAccessory);
@@ -420,13 +440,13 @@ HarmonyBase.prototype = {
 
           let subType = switchName + '-' + commandFunctions[j].key;
           let service = myHarmonyAccessory.getServiceByUUIDAndSubType(
-            subType,
+            switchName,
             subType
           );
 
           if (!service) {
-            this.log('INFO - Creating Switch Service');
-            service = new Service.Switch(subType);
+            harmonyPlatform.log('INFO - Creating Switch Service');
+            service = new Service.Switch(switchName);
             service.subtype = subType;
             myHarmonyAccessory.addService(service);
           }
@@ -435,7 +455,7 @@ HarmonyBase.prototype = {
           service.type = HarmonyConst.DEVICE_TYPE;
           service.command = commandFunctions[j].value;
 
-          this.bindCharacteristicEventsForSwitch(service);
+          this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
         }
       }
     }
@@ -468,7 +488,10 @@ HarmonyBase.prototype = {
 
           if (functions[k].name === commandTosend[0]) {
             harmonyPlatform.log(
-              'INFO - Activating  ' + commandTosend[0] + ' for ' + switchName
+              'INFO - Activating For Macro ' +
+                commandTosend[0] +
+                ' for ' +
+                switchName
             );
 
             if (commandTosend.length === 2) {
@@ -486,32 +509,33 @@ HarmonyBase.prototype = {
     if (functionsForSwitch.length === 0) {
       harmonyPlatform.log('Error - No function list found for ' + switchName);
     } else {
-      let service = {
-        controlService: new Service.Switch(switchName + '-' + functionsKey),
-        characteristics: [Characteristic.On],
-      };
-      service.controlService.subtype = switchName + '-' + functionsKey;
-      service.controlService.id = device.id;
+      if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
+        let name = accessoryName + '-' + functionsKey;
+        myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+        if (!myHarmonyAccessory) {
+          myHarmonyAccessory = this.addAccessory(harmonyPlatform, name);
+          accessoriesToAdd.push(myHarmonyAccessory);
+        }
+      }
+
+      let subType = switchName + '-' + functionsKey;
+      let service = myHarmonyAccessory.getServiceByUUIDAndSubType(
+        subType,
+        subType
+      );
+
+      if (!service) {
+        harmonyPlatform.log('INFO - Creating Switch Service');
+        service = new Service.Switch(subType);
+        service.subtype = subType;
+        myHarmonyAccessory.addService(service);
+      }
+
+      service.deviceId = device.id;
       service.type = HarmonyConst.DEVICEMACRO_TYPE;
       service.command = JSON.stringify(functionsForSwitch);
-      services.push(service);
 
-      if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
-        harmonyPlatform.log(
-          'INFO - Adding Accessory : ' + accessoryName + '-' + functionsKey
-        );
-        let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
-        myHarmonyAccessory.getServices = function() {
-          return harmonyPlatform.getServices(myHarmonyAccessory);
-        };
-        myHarmonyAccessory.platform = harmonyPlatform;
-        myHarmonyAccessory.name = accessoryName + '-' + functionsKey;
-        myHarmonyAccessory.model = device.model;
-        myHarmonyAccessory.manufacturer = device.manufacturer;
-        myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
-        harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
-        services = [];
-      }
+      this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
     }
 
     return accessoriesToAdd;
@@ -558,7 +582,7 @@ HarmonyBase.prototype = {
 
             //default mode
             if (commands.length === 1) {
-              services.concat(
+              accessoriesToAdd.concat(
                 this.handleDefaultCommandMode(
                   myHarmonyAccessory,
                   harmonyPlatform,
@@ -569,7 +593,7 @@ HarmonyBase.prototype = {
             }
             //specifc command or list mode
             else {
-              services.concat(
+              accessoriesToAdd.concat(
                 this.handleSpecificCommandMode(
                   myHarmonyAccessory,
                   harmonyPlatform,
@@ -602,9 +626,9 @@ HarmonyBase.prototype = {
 
   addAccessory(harmonyPlatform, name) {
     harmonyPlatform.log('INFO - Adding Accessory : ' + name);
-
+    let uuid = UUIDGen.generate(name);
     let myHarmonyAccessory = new Accessory(name, uuid);
-    myHarmonyAccessory.platform = harmonyPlatform;
+
     myHarmonyAccessory.name = name;
     myHarmonyAccessory.model = harmonyPlatform.name;
     myHarmonyAccessory.manufacturer = 'Harmony';
@@ -613,46 +637,45 @@ HarmonyBase.prototype = {
     return myHarmonyAccessory;
   },
 
-  bindCharacteristicEventsForSwitch: function(service) {
-    service
-      .getCharacteristic(Characteristic.On)
-      .on(
-        'set',
-        function(value, callback) {
-          //send command
-          if (value) {
-            if (service.type === HarmonyConst.DEVICE_TYPE) {
-              let command = service.command;
-              this.sendCommand(harmonyPlatform, command);
-            } else if (service.type === HarmonyConst.DEVICEMACRO_TYPE) {
-              let commands = JSON.parse(service.command);
-              HarmonyTools.processCommands(this, harmonyPlatform, commands);
-            } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
-              let command =
-                '{"sequenceId":"' + service.controlService.id + '"}';
-              this.sendCommand(harmonyPlatform, command);
-            }
+  bindCharacteristicEventsForSwitch: function(harmonyPlatform, service) {
+    service.getCharacteristic(Characteristic.On).on(
+      'set',
+      function(value, callback) {
+        //send command
+        if (value) {
+          if (service.type === HarmonyConst.DEVICE_TYPE) {
+            let command = service.command;
+            this.sendCommand(harmonyPlatform, command);
+          } else if (service.type === HarmonyConst.DEVICEMACRO_TYPE) {
+            let commands = JSON.parse(service.command);
+            HarmonyTools.processCommands(this, harmonyPlatform, commands);
+          } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
+            let command = '{"sequenceId":"' + service.sequenceId + '"}';
+            this.sendCommand(harmonyPlatform, command);
           }
+        }
 
-          // In order to behave like a push button reset the status to off
-          setTimeout(function() {
-            characteristic.updateValue(false, undefined);
-          }, HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE);
+        // In order to behave like a push button reset the status to off
+        setTimeout(function() {
+          service
+            .getCharacteristic(Characteristic.On)
+            .updateValue(false, undefined);
+        }, HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE);
 
-          callback();
-        }.bind(this)
-      )
-      .on(
-        'get',
-        function(callback) {
-          this.handleCharacteristicUpdate(
-            harmonyPlatform,
-            characteristic,
-            false,
-            callback
-          );
-        }.bind(this)
-      );
+        callback();
+      }.bind(this)
+    );
+    service.getCharacteristic(Characteristic.On).on(
+      'get',
+      function(callback) {
+        this.handleCharacteristicUpdate(
+          harmonyPlatform,
+          service.getCharacteristic(Characteristic.On),
+          false,
+          callback
+        );
+      }.bind(this)
+    );
   },
 
   sendCommand: function(harmonyPlatform, commandToSend) {
