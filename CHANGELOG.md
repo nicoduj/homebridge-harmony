@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.4
+
+- [BUG] - Devices are not published if publishDevicesAsIndividualAccessories is set to false #106
+
 ## 0.5.3
 
 - [NEW] handle skipedIfSameStateActivities for POWER OFF in TV mode #104 - Just add "PowerOff" to the skipedIfSameStateActivities.

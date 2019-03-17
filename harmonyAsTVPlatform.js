@@ -18,7 +18,7 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);
   this.mainActivity = config['mainActivity'];
-  this.playPauseBehavior = HarmonyTools.checkParemeter(
+  this.playPauseBehavior = HarmonyTools.checkParameter(
     config['playPauseBehavior'],
     false
   );
@@ -61,22 +61,7 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
 
 HarmonyPlatformAsTVPlatform.prototype = {
   onMessage(newActivity) {
-    this.updateCurrentInputService(newActivity);
-
-    this.harmonyBase.handleCharacteristicUpdate(
-      this,
-      this.mainService.controlService.getCharacteristic(Characteristic.Active),
-      this._currentActivity > 0,
-      null
-    );
-    this.harmonyBase.handleCharacteristicUpdate(
-      this,
-      this.mainService.controlService.getCharacteristic(
-        Characteristic.ActiveIdentifier
-      ),
-      this._currentActivity,
-      null
-    );
+    this.handleRefreshOfCharacteristic(newActivity);
   },
 
   ///CREATION / STARTUP
@@ -290,26 +275,28 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   ///REFRESHING TOOLS
 
+  handleRefreshOfCharacteristic(activity) {
+    this.updateCurrentInputService(activity);
+
+    this.harmonyBase.handleCharacteristicUpdate(
+      this,
+      this.mainService.controlService.getCharacteristic(Characteristic.Active),
+      this._currentActivity > 0,
+      null
+    );
+    this.harmonyBase.handleCharacteristicUpdate(
+      this,
+      this.mainService.controlService.getCharacteristic(
+        Characteristic.ActiveIdentifier
+      ),
+      this._currentActivity,
+      null
+    );
+  },
+
   refreshAccessory: function() {
     this.harmonyBase.refreshCurrentActivity(this, () => {
-      this.updateCurrentInputService(this._currentActivity);
-
-      this.harmonyBase.handleCharacteristicUpdate(
-        this,
-        this.mainService.controlService.getCharacteristic(
-          Characteristic.Active
-        ),
-        this._currentActivity > 0,
-        null
-      );
-      this.harmonyBase.handleCharacteristicUpdate(
-        this,
-        this.mainService.controlService.getCharacteristic(
-          Characteristic.ActiveIdentifier
-        ),
-        this._currentActivity,
-        null
-      );
+      this.handleRefreshOfCharacteristic(this._currentActivity);
     });
   },
 

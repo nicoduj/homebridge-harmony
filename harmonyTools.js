@@ -1,7 +1,7 @@
 const HarmonyConst = require('./harmonyConst');
 
 module.exports = {
-  checkParemeter: function(parameter, def) {
+  checkParameter: function(parameter, def) {
     if (parameter == undefined) return def;
     else return parameter;
   },

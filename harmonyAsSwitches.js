@@ -15,7 +15,7 @@ function HarmonyPlatformAsSwitches(log, config, api) {
   this.harmonyBase.configCommonProperties(log, config, api, this);
 
   this.showTurnOffActivity = config['showTurnOffActivity'];
-  this.publishActivitiesAsIndividualAccessories = HarmonyTools.checkParemeter(
+  this.publishActivitiesAsIndividualAccessories = HarmonyTools.checkParameter(
     config['publishActivitiesAsIndividualAccessories'],
     true
   );
@@ -42,22 +42,6 @@ HarmonyPlatformAsSwitches.prototype = {
     myHarmonyAccessory.manufacturer = 'Harmony';
     myHarmonyAccessory.serialNumber = this.hubIP;
     this._foundAccessories.push(myHarmonyAccessory);
-  },
-
-  readOptionnalAccessories: function(data) {
-    if (
-      this.devicesToPublishAsAccessoriesSwitch &&
-      this.devicesToPublishAsAccessoriesSwitch.length > 0
-    ) {
-      this.harmonyBase.getDevicesAccessories(this, data);
-    }
-
-    if (
-      this.sequencesToPublishAsAccessoriesSwitch &&
-      this.sequencesToPublishAsAccessoriesSwitch.length > 0
-    ) {
-      this.harmonyBase.getSequencesAccessories(this, data);
-    }
   },
 
   showActivity: function(activity) {
@@ -98,7 +82,8 @@ HarmonyPlatformAsSwitches.prototype = {
       this.addAccessory(services, this.name);
     }
 
-    this.readOptionnalAccessories(data);
+    this.harmonyBase.getDevicesAccessories(this, data);
+    this.harmonyBase.getSequencesAccessories(this, data);
 
     //first refresh
 

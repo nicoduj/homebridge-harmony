@@ -30,7 +30,7 @@ HarmonyBase.prototype = {
 
     harmonyPlatform.devicesToPublishAsAccessoriesSwitch =
       config['devicesToPublishAsAccessoriesSwitch'];
-    harmonyPlatform.publishDevicesAsIndividualAccessories = HarmonyTools.checkParemeter(
+    harmonyPlatform.publishDevicesAsIndividualAccessories = HarmonyTools.checkParameter(
       config['publishDevicesAsIndividualAccessories'],
       true
     );
@@ -38,7 +38,7 @@ HarmonyBase.prototype = {
     harmonyPlatform.sequencesToPublishAsAccessoriesSwitch =
       config['sequencesToPublishAsAccessoriesSwitch'];
 
-    harmonyPlatform.publishSequencesAsIndividualAccessories = HarmonyTools.checkParemeter(
+    harmonyPlatform.publishSequencesAsIndividualAccessories = HarmonyTools.checkParameter(
       config['publishSequencesAsIndividualAccessories'],
       true
     );
@@ -561,7 +561,7 @@ HarmonyBase.prototype = {
       harmonyPlatform.devicesToPublishAsAccessoriesSwitch.length > 0
     ) {
       harmonyPlatform.log('INFO - Loading devices...');
-      let services = [];
+      var services = [];
 
       for (
         let c = 0,
@@ -581,7 +581,8 @@ HarmonyBase.prototype = {
 
             //default mode
             if (commands.length === 1) {
-              services.concat(
+              services.push.apply(
+                services,
                 this.handleDefaultCommandMode(
                   harmonyPlatform,
                   controlGroup,
@@ -591,7 +592,8 @@ HarmonyBase.prototype = {
             }
             //specifc command or list mode
             else {
-              services.concat(
+              services.push.apply(
+                services,
                 this.handleSpecificCommandMode(
                   harmonyPlatform,
                   commands,
@@ -609,7 +611,7 @@ HarmonyBase.prototype = {
         services.length > 0
       ) {
         harmonyPlatform.log(
-          'INFO - Adding Accessory : ' + harmonyPlatform.name
+          'INFO - Adding Accessory : ' + harmonyPlatform.name + '-Devices'
         );
         let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
         myHarmonyAccessory.getServices = function() {
