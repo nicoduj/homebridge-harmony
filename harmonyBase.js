@@ -45,10 +45,13 @@ HarmonyBase.prototype = {
       true
     );
 
+    harmonyPlatform.cleanCache = config['cleanCache'];
+
     harmonyPlatform._currentActivity = -9999;
     harmonyPlatform._currentActivityLastUpdate = undefined;
     harmonyPlatform._currentSetAttemps = 0;
     harmonyPlatform._foundAccessories = [];
+    harmonyPlatform._currentActivity = -1;
 
     harmonyPlatform.log.debug(
       'INFO : following activites controls will be ignored if they are in the same state : ' +
@@ -60,14 +63,33 @@ HarmonyBase.prototype = {
     if (api) {
       // Save the API object as plugin needs to register new accessory via this object
       harmonyPlatform.api = api;
-      harmonyPlatform.api.on(
-        'shutdown',
-        function() {
-          harmonyPlatform.log('INFO - shutdown');
-          this.harmony.removeAllListeners();
-          this.harmony.end();
-        }.bind(this)
-      );
+
+      harmonyPlatform.api
+        .on(
+          'shutdown',
+          function() {
+            harmonyPlatform.log('INFO - shutdown');
+            this.harmony.removeAllListeners();
+            this.harmony.end();
+          }.bind(this)
+        )
+        .on(
+          'didFinishLaunching',
+          function() {
+            harmonyPlatform.log('DidFinishLaunching');
+
+            if (harmonyPlatform.cleanCache) {
+              harmonyPlatform.log('WARNING - Removing Accessories');
+              harmonyPlatform.api.unregisterPlatformAccessories(
+                'homebridge-harmonyHub',
+                'HarmonyHubWebSocket',
+                harmonyPlatform._foundAccessories
+              );
+              harmonyPlatform._foundAccessories = [];
+            }
+            harmonyPlatform.loadAccessories();
+          }.bind(this)
+        );
     }
   },
 
@@ -181,9 +203,7 @@ HarmonyBase.prototype = {
         );
         harmonyPlatform.readAccessories(response);
         this.numberAttemps = 0;
-      });
-
-    /*
+      })
       .catch(e => {
         var that = this;
         this.numberAttemps = this.numberAttemps + 1;
@@ -206,8 +226,6 @@ HarmonyBase.prototype = {
           }, HarmonyConst.DELAY_BEFORE_RECONNECT);
         }
       });
-
-      */
   },
 
   refreshCurrentActivity: function(harmonyPlatform, callback) {

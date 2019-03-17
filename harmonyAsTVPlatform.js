@@ -19,6 +19,7 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
 
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);
+
   this.mainActivity = config['mainActivity'];
   this.playPauseBehavior = HarmonyTools.checkParemeter(
     config['playPauseBehavior'],
@@ -56,18 +57,6 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
     );
   } catch (err) {
     this.log.debug('INFO - input visibility file does not exist');
-  }
-
-  this._currentActivity = -1;
-
-  if (api) {
-    this.api.on(
-      'didFinishLaunching',
-      function() {
-        this.log('DidFinishLaunching');
-        this.loadAccessories();
-      }.bind(this)
-    );
   }
 }
 

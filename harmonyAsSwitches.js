@@ -21,18 +21,6 @@ function HarmonyPlatformAsSwitches(log, config, api) {
     config['publishActivitiesAsIndividualAccessories'],
     true
   );
-
-  this._currentActivity = -1;
-
-  if (api) {
-    this.api.on(
-      'didFinishLaunching',
-      function() {
-        this.log('DidFinishLaunching');
-        this.loadAccessories();
-      }.bind(this)
-    );
-  }
 }
 
 HarmonyPlatformAsSwitches.prototype = {
