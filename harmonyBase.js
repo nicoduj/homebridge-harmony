@@ -326,17 +326,12 @@ HarmonyBase.prototype = {
             }
 
             let subType = switchName + '-' + sequence;
-            let service = myHarmonyAccessory.getServiceByUUIDAndSubType(
+            let service = this.getSwitchService(
+              harmonyPlatform,
+              myHarmonyAccessory,
               switchName,
               subType
             );
-
-            if (!service) {
-              harmonyPlatform.log('INFO - Creating Switch Service');
-              service = new Service.Switch(switchName);
-              service.subtype = subType;
-              myHarmonyAccessory.addService(service);
-            }
 
             service.SequenceId = sequences[i].id;
             service.type = HarmonyConst.SEQUENCE_TYPE;
@@ -450,17 +445,12 @@ HarmonyBase.prototype = {
           }
 
           let subType = switchName + '-' + commandFunctions[j].key;
-          let service = myHarmonyAccessory.getServiceByUUIDAndSubType(
+          let service = this.getSwitchService(
+            harmonyPlatform,
+            myHarmonyAccessory,
             switchName,
             subType
           );
-
-          if (!service) {
-            harmonyPlatform.log('INFO - Creating Switch Service');
-            service = new Service.Switch(switchName);
-            service.subtype = subType;
-            myHarmonyAccessory.addService(service);
-          }
 
           service.deviceId = device.id;
           service.type = HarmonyConst.DEVICE_TYPE;
@@ -530,17 +520,12 @@ HarmonyBase.prototype = {
       }
 
       let subType = switchName + '-' + functionsKey;
-      let service = myHarmonyAccessory.getServiceByUUIDAndSubType(
-        subType,
+      let service = this.getSwitchService(
+        harmonyPlatform,
+        myHarmonyAccessory,
+        switchName,
         subType
       );
-
-      if (!service) {
-        harmonyPlatform.log('INFO - Creating Switch Service');
-        service = new Service.Switch(subType);
-        service.subtype = subType;
-        myHarmonyAccessory.addService(service);
-      }
 
       service.deviceId = device.id;
       service.type = HarmonyConst.DEVICEMACRO_TYPE;
@@ -650,6 +635,22 @@ HarmonyBase.prototype = {
         [accessoriesToAdd[i]]
       );
     }
+  },
+
+  getSwitchService(harmonyPlatform, accessory, switchName, serviceSubType) {
+    let service = accessory.getServiceByUUIDAndSubType(
+      switchName,
+      serviceSubType
+    );
+    if (!service) {
+      harmonyPlatform.log(
+        'INFO - Creating Switch Service ' + switchName + '/' + serviceSubType
+      );
+      service = new Service.Switch(switchName);
+      service.subtype = serviceSubType;
+      accessory.addService(service);
+    }
+    return service;
   },
 
   bindCharacteristicEventsForSwitch: function(harmonyPlatform, service) {

@@ -70,19 +70,14 @@ HarmonyPlatformAsSwitches.prototype = {
         }
 
         this.log('INFO - Discovered Activity : ' + switchName);
-
         let subType = switchName;
-        let service = myHarmonyAccessory.getServiceByUUIDAndSubType(
-          subType,
+        let service = this.harmonyBase.getSwitchService(
+          this,
+          myHarmonyAccessory,
+          switchName,
           subType
         );
 
-        if (!service) {
-          this.log('INFO - Creating Switch Service');
-          service = new Service.Switch(switchName);
-          service.subtype = subType;
-          myHarmonyAccessory.addService(service);
-        }
         service.activityId = activities[i].id;
         service.type = HarmonyConst.ACTIVITY_TYPE;
 
