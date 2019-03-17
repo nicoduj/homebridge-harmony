@@ -1,4 +1,4 @@
-var Service, Characteristic;
+var Service, Characteristic, Accessory, UUIDGen;
 
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
@@ -14,6 +14,8 @@ module.exports = {
 function HarmonyPlatformAsTVPlatform(log, config, api) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
+  Accessory = api.platformAccessory;
+  UUIDGen = api.hap.uuid;
 
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);
@@ -57,6 +59,16 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   }
 
   this._currentActivity = -1;
+
+  if (api) {
+    this.api.on(
+      'didFinishLaunching',
+      function() {
+        this.log('DidFinishLaunching');
+        this.loadAccessories();
+      }.bind(this)
+    );
+  }
 }
 
 HarmonyPlatformAsTVPlatform.prototype = {
@@ -81,12 +93,18 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   ///CREATION / STARTUP
 
-  configureMainService: function() {
+  configureMainService: function(accessory) {
+    let subType = this.name + ' TV';
+    var ctrlService = accessory.getService(subType);
+
+    if (!ctrlService) {
+      this.log('INFO - Creating TV Service');
+      ctrlService = new Service.Television(this.name, 'tvService' + this.name);
+      ctrlService.subtype = subType;
+    }
+
     this.mainService = {
-      controlService: new Service.Television(
-        this.name,
-        'tvService' + this.name
-      ),
+      controlService: ctrlService,
       characteristics: [
         Characteristic.Active,
         Characteristic.ActiveIdentifier,
@@ -95,7 +113,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
         Characteristic.PowerModeSelection,
       ],
     };
-    this.mainService.controlService.subtype = this.name + ' TV';
 
     if (this.savedNames && this.savedNames[0]) {
       mainServiceName = this.savedNames[0];
@@ -119,7 +136,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     );
   },
 
-  configureMainActivity: function(activity) {
+  configureMainActivity: function(accessory, activity) {
     let inputName = activity.label;
     if (this.devMode) {
       inputName = 'DEV' + inputName;
@@ -131,12 +148,20 @@ HarmonyPlatformAsTVPlatform.prototype = {
     this.mainService.activityId = activity.id;
     this.mainService.controlService.id = 'M' + activity.id;
 
-    this.log('INFO - Creating TV Speaker Service');
-    this.tvSpeakerService = {
-      controlService: new Service.TelevisionSpeaker(
+    let subType = this.name + ' Volume';
+    var ctrlService = accessory.getService(subType);
+
+    if (!ctrlService) {
+      this.log('INFO - Creating TV Speaker Service');
+      ctrlService = new Service.TelevisionSpeaker(
         this.name,
         'TVSpeaker' + this.name
-      ),
+      );
+      ctrlService.subtype = subType;
+    }
+
+    this.tvSpeakerService = {
+      controlService: ctrlService,
       characteristics: [
         Characteristic.Mute,
         Characteristic.VolumeSelector,
@@ -152,18 +177,31 @@ HarmonyPlatformAsTVPlatform.prototype = {
       );
 
     this.tvSpeakerService.controlService.id = 'V' + activity.id;
-    this.tvSpeakerService.controlService.subtype = this.name + ' Volume';
     this.mainService.controlService.addLinkedService(
       this.tvSpeakerService.controlService
     );
   },
 
-  configureInputSourceService: function(inputName, inputId, activity) {
-    let inputSourceService = {
-      controlService: new Service.InputSource(
-        inputName,
+  configureInputSourceService: function(
+    accessory,
+    inputName,
+    inputId,
+    activity
+  ) {
+    let subType = inputName + ' Activity';
+    var ctrlService = accessory.getService(subType);
+
+    if (!ctrlService) {
+      this.log('INFO - Creating Input Service - ' + inputName);
+      ctrlService = new Service.InputSource(
+        this.name,
         'Input' + this.name + inputName
-      ),
+      );
+      ctrlService.subtype = subType;
+    }
+
+    let inputSourceService = {
+      controlService: ctrlService,
       characteristics: [
         Characteristic.ConfiguredName,
         Characteristic.CurrentVisibilityState,
@@ -173,7 +211,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
     inputSourceService.controlService.id = inputId;
     inputSourceService.activityName = inputName;
     inputSourceService.activityId = inputId;
-    inputSourceService.controlService.subtype = inputName + ' Activity';
 
     let controlGroup = activity.controlGroup;
 
@@ -206,13 +243,34 @@ HarmonyPlatformAsTVPlatform.prototype = {
     return inputSourceService;
   },
 
-  readAccessories: function(data, callback) {
+  readAccessories: function(data) {
     let activities = data.data.activity;
     let services = [];
 
-    this.log('INFO - Creating Main TV Service');
+    uuid = UUIDGen.generate(this.name);
 
-    this.configureMainService();
+    let myHarmonyAccessory = this._foundAccessories.find(x => (x.UUID = uuid));
+    var isNew = false;
+    //we di not find an create one
+    if (!myHarmonyAccessory) {
+      this.log('INFO - Adding Accessory : ' + this.name);
+      myHarmonyAccessory = new Accessory(this.name, uuid);
+
+      myHarmonyAccessory.platform = this;
+      myHarmonyAccessory.name = this.name;
+      myHarmonyAccessory.model = this.name;
+      myHarmonyAccessory.manufacturer = 'Harmony';
+      myHarmonyAccessory.serialNumber = this.name + this.hubIP;
+
+      this.harmonyBase.configureInformationService(myHarmonyAccessory);
+      isNew = true;
+    } else {
+      this.log('INFO - Found Accessory : ' + this.name);
+      myHarmonyAccessory.platform = this;
+    }
+
+    this.log('INFO - configuring Main TV Service');
+    this.configureMainService(myHarmonyAccessory);
 
     let mainActivityConfigured = false;
 
@@ -228,13 +286,14 @@ HarmonyPlatformAsTVPlatform.prototype = {
         );
 
         if (this.mainActivity == inputName) {
-          this.configureMainActivity(activities[i]);
+          this.configureMainActivity(myHarmonyAccessory, activities[i]);
           mainActivityConfigured = true;
         }
 
         this.log('INFO - Creating InputSourceService ' + inputName);
 
         let inputSourceService = this.configureInputSourceService(
+          myHarmonyAccessory,
           inputName,
           inputId,
           activities[i]
@@ -252,40 +311,45 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this.log(
         'WARNING - No main Activity that match config file found, default to first one'
       );
-      this.configureMainActivity(activities[0]);
+      this.configureMainActivity(myHarmonyAccessory, activities[0]);
     }
+
     for (let s = 0, len = this.inputServices.length; s < len; s++) {
       services.push(this.inputServices[s]);
     }
     services.push(this.tvSpeakerService);
     services.push(this.mainService);
 
-    this.log('INFO - Adding Accessory : ' + this.name);
-    let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
-    var that = this;
-    myHarmonyAccessory.getServices = function() {
-      return that.getServices(myHarmonyAccessory);
-    };
-    myHarmonyAccessory.platform = this;
-    myHarmonyAccessory.name = this.name;
-    myHarmonyAccessory.model = this.name;
-    myHarmonyAccessory.manufacturer = 'Harmony';
-    myHarmonyAccessory.serialNumber = this.name + this.hubIP;
-    this._foundAccessories.push(myHarmonyAccessory);
+    this.harmonyBase.bindServices(myHarmonyAccessory, services, isNew);
 
-    this.harmonyBase.getDevicesAccessories(this, data);
-    this.harmonyBase.getSequencesAccessories(this, data);
+    if (isNew) {
+      this._foundAccessories.push(myHarmonyAccessory);
+      this.api.registerPlatformAccessories(
+        'homebridge-harmonyHub',
+        'HarmonyHubWebSocket',
+        [myHarmonyAccessory]
+      );
+    }
+
+    //    this.harmonyBase.getDevicesAccessories(this, data);
+    //    this.harmonyBase.getSequencesAccessories(this, data);
 
     //first refresh
+    var that = this;
     setTimeout(function() {
       that.refreshAccessory();
     }, HarmonyConst.DELAY_LAUNCH_REFRESH);
-
-    callback(this._foundAccessories);
   },
 
-  accessories: function(callback) {
-    this.harmonyBase.configureAccessories(this, callback);
+  //ask for retrieving info from hub
+  loadAccessories: function() {
+    this.harmonyBase.configureAccessories(this);
+  },
+
+  //Cache call method
+  configureAccessory: function(accessory) {
+    this.log(accessory.displayName, 'Configure Accessory');
+    this._foundAccessories.push(accessory);
   },
 
   ///REFRESHING TOOLS
@@ -787,9 +851,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
         let idConf = service.controlService.id;
         this.log.debug(
           'INFO - GET Characteristic.CurrentVisibilityState : ' +
-            this.savedVisibility[idConf]
-            ? this.savedVisibility[idConf]
-            : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN
+            (this.savedVisibility[idConf]
+              ? this.savedVisibility[idConf]
+              : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN)
         );
         if (this.savedVisibility[idConf])
           callback(null, this.savedVisibility[idConf]);
@@ -805,9 +869,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
         let idConf = service.controlService.id;
         this.log.debug(
           'INFO - GET Characteristic.TargetVisibilityState : ' +
-            this.savedVisibility[idConf]
-            ? this.savedVisibility[idConf]
-            : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN
+            (this.savedVisibility[idConf]
+              ? this.savedVisibility[idConf]
+              : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN)
         );
         if (this.savedVisibility[idConf])
           callback(null, this.savedVisibility[idConf]);
@@ -930,9 +994,5 @@ HarmonyPlatformAsTVPlatform.prototype = {
     } else if (service.controlService instanceof Service.InputSource) {
       this.bindCharacteristicEventsForInputs(characteristic, service);
     }
-  },
-
-  getServices: function(homebridgeAccessory) {
-    return this.harmonyBase.getServices(homebridgeAccessory);
   },
 };

@@ -7,11 +7,15 @@ module.exports = function(homebridge) {
   homebridge.registerPlatform(
     'homebridge-harmonyHub',
     'HarmonyHubWebSocket',
-    HarmonyPlatform
+    HarmonyPlatform,
+    true
   );
 };
 
 function HarmonyPlatform(log, config, api) {
+  log('HarmonyPlatform Init');
+  log(JSON.stringify(config));
+
   this.log = log;
   this.TVPlatformMode = config['TVPlatformMode'];
 

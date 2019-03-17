@@ -69,9 +69,9 @@ HarmonyBase.prototype = {
     }
   },
 
-  getInformationService: function(homebridgeAccessory) {
-    let informationService = new Service.AccessoryInformation();
-    informationService
+  configureInformationService: function(homebridgeAccessory) {
+    homebridgeAccessory
+      .getService(Service.AccessoryInformation)
       .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
       .setCharacteristic(
         Characteristic.Manufacturer,
@@ -82,15 +82,11 @@ HarmonyBase.prototype = {
         Characteristic.SerialNumber,
         homebridgeAccessory.serialNumber
       );
-    return informationService;
   },
 
-  getServices: function(homebridgeAccessory) {
-    let services = [];
-    let informationService = this.getInformationService(homebridgeAccessory);
-    services.push(informationService);
-    for (let s = 0; s < homebridgeAccessory.services.length; s++) {
-      let service = homebridgeAccessory.services[s];
+  bindServices: function(homebridgeAccessory, services, isNew) {
+    for (let s = 0; s < services.length; s++) {
+      let service = services[s];
       for (let i = 0; i < service.characteristics.length; i++) {
         let characteristic = service.controlService.getCharacteristic(
           service.characteristics[i]
@@ -105,9 +101,10 @@ HarmonyBase.prototype = {
           homebridgeAccessory
         );
       }
-      services.push(service.controlService);
+      if (isNew) {
+        homebridgeAccessory.addService(service.controlService);
+      }
     }
-    return services;
   },
 
   handleCharacteristicUpdate: function(
@@ -154,7 +151,7 @@ HarmonyBase.prototype = {
     }
   },
 
-  configureAccessories: function(harmonyPlatform, callback) {
+  configureAccessories: function(harmonyPlatform) {
     harmonyPlatform.log('INFO - Loading activities...');
 
     this.harmony.removeAllListeners();
@@ -203,7 +200,7 @@ HarmonyBase.prototype = {
         harmonyPlatform.log.debug(
           'INFO - Hub config : ' + JSON.stringify(response)
         );
-        harmonyPlatform.readAccessories(response, callback);
+        harmonyPlatform.readAccessories(response);
         this.numberAttemps = 0;
       })
       .catch(e => {
@@ -224,7 +221,7 @@ HarmonyBase.prototype = {
             " is not available - can't start plugin";
         } else {
           setTimeout(function() {
-            that.configureAccessories(harmonyPlatform, callback);
+            that.configureAccessories(harmonyPlatform);
           }, HarmonyConst.DELAY_BEFORE_RECONNECT);
         }
       });
