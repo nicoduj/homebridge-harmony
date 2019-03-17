@@ -301,14 +301,6 @@ HarmonyPlatformAsSwitches.prototype = {
       });
   },
 
-  isActivtyToBeSkipped: function(activity) {
-    return (
-      this.addAllActivitiesToSkipedIfSameStateActivitiesList ||
-      (this.skipedIfSameStateActivities &&
-        this.skipedIfSameStateActivities.includes(activity))
-    );
-  },
-
   setSwitchOnCharacteristic: function(
     homebridgeAccessory,
     characteristic,
@@ -321,7 +313,9 @@ HarmonyPlatformAsSwitches.prototype = {
     let currentValue = characteristic.value;
 
     //Actitiy in skipedIfSameState
-    if (this.isActivtyToBeSkipped(service.controlService.subtype)) {
+    if (
+      HarmonyTools.isActivtyToBeSkipped(this, service.controlService.subtype)
+    ) {
       this.log.debug(
         'INFO : SET on an activty in skipedIfsameState list ' +
           service.controlService.subtype
