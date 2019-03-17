@@ -319,7 +319,10 @@ HarmonyPlatformAsSwitches.prototype = {
       //ELSE, we do the command only if state is different.
       doCommand =
         service.controlService.id == -1
-          ? !currentValue && value
+          ? (this.showTurnOffActivity == 'inverted' &&
+              currentValue &&
+              !value) ||
+            (this.showTurnOffActivity != 'inverted' && !currentValue && value)
           : currentValue !== value;
     } else {
       this.log.debug(
