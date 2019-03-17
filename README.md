@@ -17,7 +17,6 @@
 > ## Work In Progress For TV MODE
 >
 > - IOS 12.2 TV MODE is still beta. This mode will focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
-> - This plugin is not a dynamic platform : hub configured MUST be available at homebridge startup, however it will crash homebridge start process. Work in Progress on this, but be warned and thus thnik of having a separate homebridge instance for it
 
 ## Installation
 
@@ -77,6 +76,7 @@ Fields:
 - `mainActivity` set the mainactivity of the TV mode
 - `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
 - `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
+- `cleanCache` option to clean all cached Accessory. Please use with caution, might be neeeded if you change mode / config and there is some ghost devices in Homkit. Be sure that all your icloud sync is done while launching Homebridge with this option set to true. Set it back to false after and launch again !
 
 All devices / Activites names are the one configured in harmony configuration, even if you rename them in home app.
 

@@ -213,18 +213,12 @@ HarmonyBase.prototype = {
             e.message +
             '-(' +
             this.numberAttemps +
-            '/3)'
+            ')'
         );
 
-        if (this.numberAttemps > 3) {
-          throw 'Error - Harmony HUB at ' +
-            harmonyPlatform.hubIP +
-            " is not available - can't start plugin";
-        } else {
-          setTimeout(function() {
-            that.configureAccessories(harmonyPlatform);
-          }, HarmonyConst.DELAY_BEFORE_RECONNECT);
-        }
+        setTimeout(function() {
+          that.configureAccessories(harmonyPlatform);
+        }, HarmonyConst.DELAY_BEFORE_RECONNECT);
       });
   },
 
