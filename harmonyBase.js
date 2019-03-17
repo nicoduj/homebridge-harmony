@@ -1,4 +1,4 @@
-var Service, Characteristic;
+var Service, Characteristic, Accessory, UUIDGen;
 const HarmonyConst = require('./harmonyConst');
 
 const Harmony = require('harmony-websocket');
@@ -13,6 +13,8 @@ function HarmonyBase(api) {
   Characteristic = api.hap.Characteristic;
   this.harmony = new Harmony();
   this.numberAttemps = 0;
+  Accessory = api.platformAccessory;
+  UUIDGen = api.hap.uuid;
 }
 
 HarmonyBase.prototype = {
@@ -66,44 +68,6 @@ HarmonyBase.prototype = {
           this.harmony.end();
         }.bind(this)
       );
-    }
-  },
-
-  configureInformationService: function(homebridgeAccessory) {
-    homebridgeAccessory
-      .getService(Service.AccessoryInformation)
-      .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
-      .setCharacteristic(
-        Characteristic.Manufacturer,
-        homebridgeAccessory.manufacturer
-      )
-      .setCharacteristic(Characteristic.Model, homebridgeAccessory.model)
-      .setCharacteristic(
-        Characteristic.SerialNumber,
-        homebridgeAccessory.serialNumber
-      );
-  },
-
-  bindServices: function(homebridgeAccessory, services, isNew) {
-    for (let s = 0; s < services.length; s++) {
-      let service = services[s];
-      for (let i = 0; i < service.characteristics.length; i++) {
-        let characteristic = service.controlService.getCharacteristic(
-          service.characteristics[i]
-        );
-        if (characteristic == undefined)
-          characteristic = service.controlService.addCharacteristic(
-            service.characteristics[i]
-          );
-        homebridgeAccessory.platform.bindCharacteristicEvents(
-          characteristic,
-          service,
-          homebridgeAccessory
-        );
-      }
-      if (isNew) {
-        homebridgeAccessory.addService(service.controlService);
-      }
     }
   },
 
@@ -404,8 +368,13 @@ HarmonyBase.prototype = {
     return commandFunctions;
   },
 
-  handleDefaultCommandMode: function(harmonyPlatform, controlGroup, device) {
-    let services = [];
+  handleDefaultCommandMode: function(
+    myHarmonyAccessory,
+    harmonyPlatform,
+    controlGroup,
+    device
+  ) {
+    let accessoriesToAdd = [];
 
     let accessoryName = harmonyPlatform.name + '-' + device.label;
     let switchName = harmonyPlatform.devMode
@@ -433,54 +402,54 @@ HarmonyBase.prototype = {
           (foundToggle && commandFunctions[j].key === 'PowerToggle') ||
           !foundToggle
         ) {
-          let service = {
-            controlService: new Service.Switch(
-              switchName + '-' + commandFunctions[j].key
-            ),
-            characteristics: [Characteristic.On],
-          };
-          service.controlService.subtype =
-            switchName + '-' + commandFunctions[j].key;
-          service.controlService.id = device.id;
-          service.type = HarmonyConst.DEVICE_TYPE;
-          service.command = commandFunctions[j].value;
-          services.push(service);
-
-          if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
+          if (!myHarmonyAccessory) {
             harmonyPlatform.log(
               'INFO - Adding Accessory : ' +
                 accessoryName +
                 '-' +
                 commandFunctions[j].key
             );
-            let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(
-              services
-            );
-            myHarmonyAccessory.getServices = function() {
-              return harmonyPlatform.getServices(myHarmonyAccessory);
-            };
-            myHarmonyAccessory.platform = harmonyPlatform;
-            myHarmonyAccessory.name =
-              accessoryName + '-' + commandFunctions[j].key;
-            myHarmonyAccessory.model = device.model;
-            myHarmonyAccessory.manufacturer = device.manufacturer;
-            myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
-            harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
-            services = [];
+
+            let name = accessoryName + '-' + commandFunctions[j].key;
+            let myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+            if (!myHarmonyAccessory) {
+              myHarmonyAccessory = this.addAccessory(harmonyPlatform, name);
+              accessoriesToAdd.push(myHarmonyAccessory);
+            }
           }
+
+          let subType = switchName + '-' + commandFunctions[j].key;
+          let service = myHarmonyAccessory.getServiceByUUIDAndSubType(
+            subType,
+            subType
+          );
+
+          if (!service) {
+            this.log('INFO - Creating Switch Service');
+            service = new Service.Switch(subType);
+            service.subtype = subType;
+            myHarmonyAccessory.addService(service);
+          }
+
+          service.deviceId = device.id;
+          service.type = HarmonyConst.DEVICE_TYPE;
+          service.command = commandFunctions[j].value;
+
+          this.bindCharacteristicEventsForSwitch(service);
         }
       }
     }
-    return services;
+    return accessoriesToAdd;
   },
 
   handleSpecificCommandMode: function(
+    myHarmonyAccessory,
     harmonyPlatform,
     commands,
     controlGroup,
     device
   ) {
-    let services = [];
+    let accessoriesToAdd = [];
 
     let accessoryName = harmonyPlatform.name + '-' + device.label;
     let switchName = harmonyPlatform.devMode
@@ -545,7 +514,7 @@ HarmonyBase.prototype = {
       }
     }
 
-    return services;
+    return accessoriesToAdd;
   },
 
   getDevicesAccessories: function(harmonyPlatform, data) {
@@ -553,12 +522,23 @@ HarmonyBase.prototype = {
     //printing and storing
     this.printAndStoreCommands(harmonyPlatform, devices);
 
+    var accessoriesToAdd = [];
+    var myHarmonyAccessory;
+
     if (
       harmonyPlatform.devicesToPublishAsAccessoriesSwitch &&
       harmonyPlatform.devicesToPublishAsAccessoriesSwitch.length > 0
     ) {
       harmonyPlatform.log('INFO - Loading devices...');
-      let services = [];
+
+      if (!harmonyPlatform.publishDevicesAsIndividualAccessories) {
+        let name = harmonyPlatform.name + '-Devices';
+        myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+        if (!myHarmonyAccessory) {
+          myHarmonyAccessory = this.addAccessory(harmonyPlatform, name);
+          accessoriesToAdd.push(myHarmonyAccessory);
+        }
+      }
 
       for (
         let c = 0,
@@ -580,6 +560,7 @@ HarmonyBase.prototype = {
             if (commands.length === 1) {
               services.concat(
                 this.handleDefaultCommandMode(
+                  myHarmonyAccessory,
                   harmonyPlatform,
                   controlGroup,
                   devices[i]
@@ -590,6 +571,7 @@ HarmonyBase.prototype = {
             else {
               services.concat(
                 this.handleSpecificCommandMode(
+                  myHarmonyAccessory,
                   harmonyPlatform,
                   commands,
                   controlGroup,
@@ -601,65 +583,76 @@ HarmonyBase.prototype = {
         }
       }
 
-      if (
-        !harmonyPlatform.publishDevicesAsIndividualAccessories &&
-        services.length > 0
-      ) {
-        harmonyPlatform.log(
-          'INFO - Adding Accessory : ' + harmonyPlatform.name
+      //creating accessories
+      for (let i = 0, len = accessoriesToAdd.length; i < len; i++) {
+        harmonyPlatform._foundAccessories.push(accessoriesToAdd[i]);
+        harmonyPlatform.api.registerPlatformAccessories(
+          'homebridge-harmonyHub',
+          'HarmonyHubWebSocket',
+          [accessoriesToAdd[i]]
         );
-        let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
-        myHarmonyAccessory.getServices = function() {
-          return harmonyPlatform.getServices(myHarmonyAccessory);
-        };
-        myHarmonyAccessory.platform = harmonyPlatform;
-        myHarmonyAccessory.name = harmonyPlatform.name + '-Devices';
-        myHarmonyAccessory.model = harmonyPlatform.name;
-        myHarmonyAccessory.manufacturer = 'Harmony';
-        myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
-        harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
       }
     }
   },
 
-  bindCharacteristicEvents: function(harmonyPlatform, characteristic, service) {
-    characteristic.on(
-      'set',
-      function(value, callback) {
-        //send command
-        if (value) {
-          if (service.type === HarmonyConst.DEVICE_TYPE) {
-            let command = service.command;
-            this.sendCommand(harmonyPlatform, command);
-          } else if (service.type === HarmonyConst.DEVICEMACRO_TYPE) {
-            let commands = JSON.parse(service.command);
-            HarmonyTools.processCommands(this, harmonyPlatform, commands);
-          } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
-            let command = '{"sequenceId":"' + service.controlService.id + '"}';
-            this.sendCommand(harmonyPlatform, command);
+  checkAccessory(harmonyPlatform, name) {
+    let uuid = UUIDGen.generate(name);
+    return harmonyPlatform._foundAccessories.find(x => (x.UUID = uuid));
+  },
+
+  addAccessory(harmonyPlatform, name) {
+    harmonyPlatform.log('INFO - Adding Accessory : ' + name);
+
+    let myHarmonyAccessory = new Accessory(name, uuid);
+    myHarmonyAccessory.platform = harmonyPlatform;
+    myHarmonyAccessory.name = name;
+    myHarmonyAccessory.model = harmonyPlatform.name;
+    myHarmonyAccessory.manufacturer = 'Harmony';
+    myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
+
+    return myHarmonyAccessory;
+  },
+
+  bindCharacteristicEventsForSwitch: function(service) {
+    service
+      .getCharacteristic(Characteristic.On)
+      .on(
+        'set',
+        function(value, callback) {
+          //send command
+          if (value) {
+            if (service.type === HarmonyConst.DEVICE_TYPE) {
+              let command = service.command;
+              this.sendCommand(harmonyPlatform, command);
+            } else if (service.type === HarmonyConst.DEVICEMACRO_TYPE) {
+              let commands = JSON.parse(service.command);
+              HarmonyTools.processCommands(this, harmonyPlatform, commands);
+            } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
+              let command =
+                '{"sequenceId":"' + service.controlService.id + '"}';
+              this.sendCommand(harmonyPlatform, command);
+            }
           }
-        }
 
-        // In order to behave like a push button reset the status to off
-        setTimeout(function() {
-          characteristic.updateValue(false, undefined);
-        }, HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE);
+          // In order to behave like a push button reset the status to off
+          setTimeout(function() {
+            characteristic.updateValue(false, undefined);
+          }, HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE);
 
-        callback();
-      }.bind(this)
-    );
-
-    characteristic.on(
-      'get',
-      function(callback) {
-        this.handleCharacteristicUpdate(
-          harmonyPlatform,
-          characteristic,
-          false,
-          callback
-        );
-      }.bind(this)
-    );
+          callback();
+        }.bind(this)
+      )
+      .on(
+        'get',
+        function(callback) {
+          this.handleCharacteristicUpdate(
+            harmonyPlatform,
+            characteristic,
+            false,
+            callback
+          );
+        }.bind(this)
+      );
   },
 
   sendCommand: function(harmonyPlatform, commandToSend) {
