@@ -1,4 +1,4 @@
-var Service, Characteristic, Accessory, UUIDGen;
+var Characteristic;
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
 const HarmonyTools = require('./harmonyTools.js');
@@ -8,10 +8,7 @@ module.exports = {
 };
 
 function HarmonyPlatformAsSwitches(log, config, api) {
-  Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
-  Accessory = api.platformAccessory;
-  UUIDGen = api.hap.uuid;
 
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);

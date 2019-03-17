@@ -1,4 +1,4 @@
-var Service, Characteristic, Accessory, UUIDGen;
+var Service, Characteristic;
 
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
@@ -14,8 +14,6 @@ module.exports = {
 function HarmonyPlatformAsTVPlatform(log, config, api) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
-  Accessory = api.platformAccessory;
-  UUIDGen = api.hap.uuid;
 
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);
