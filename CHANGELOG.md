@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.5
+
+- [BUG] - showTurnOffActivity doesn’t work properly when inverterted #107
+
 ## 0.5.4
 
 - [BUG] - Devices are not published if publishDevicesAsIndividualAccessories is set to false #106
