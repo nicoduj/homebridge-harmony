@@ -16,9 +16,9 @@ module.exports = {
 
   isActivtyToBeSkipped: function(platform, activity) {
     return (
-      platform.addAllActivitiesToSkipedIfSameStateActivitiesList ||
-      (platform.skipedIfSameStateActivities &&
-        platform.skipedIfSameStateActivities.includes(activity))
+      platform.addAllActivitiesTopIfSameStateActivitiesList ||
+      (platform.skippedIfSameStateActivities &&
+        platform.skippedIfSameStateActivities.includes(activity))
     );
   },
 

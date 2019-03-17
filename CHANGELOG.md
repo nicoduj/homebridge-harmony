@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## NOT RELEASED PLANED 1.0.0
+
+- [NEW] Act as a dynamic platform
+- [BREAKING] skipedIfSameStateActivities -> skippedIfSameStateActivities / addAllActivitiesToSkipedIfSameStateActivitiesList -> addAllActivitiesToSkippedIfSameStateActivitiesList
+
 ## 0.5.3
 
 - [NEW] handle skipedIfSameStateActivities for POWER OFF in TV mode #104 - Just add "PowerOff" to the skipedIfSameStateActivities.
@@ -138,7 +143,7 @@ All notable changes to this project will be documented in this file.
 
 ## 0.2.3
 
-- [NEW] TV MODE - restoring `SkipedIfSameStateActivities` options #46
+- [NEW] TV MODE - restoring `SkippedIfSameStateActivities` options #46
 
 ## 0.2.2
 

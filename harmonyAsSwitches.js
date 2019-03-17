@@ -316,12 +316,12 @@ HarmonyPlatformAsSwitches.prototype = {
     let commandToSend = value ? service.controlService.id : '-1';
     let currentValue = characteristic.value;
 
-    //Actitiy in skipedIfSameState
+    //Actitiy in skippedIfSameState
     if (
       HarmonyTools.isActivtyToBeSkipped(this, service.controlService.subtype)
     ) {
       this.log.debug(
-        'INFO : SET on an activty in skipedIfsameState list ' +
+        'INFO : SET on an activty in skippedIfsameState list ' +
           service.controlService.subtype
       );
 
@@ -342,7 +342,7 @@ HarmonyPlatformAsSwitches.prototype = {
           : currentValue !== value;
     } else {
       this.log.debug(
-        'INFO : SET on an activty not in skipedIfsameState list ' +
+        'INFO : SET on an activty not in pIfsameState list ' +
           service.controlService.subtype
       );
     }

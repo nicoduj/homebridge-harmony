@@ -25,10 +25,10 @@ HarmonyBase.prototype = {
     harmonyPlatform.name = config['name'];
     harmonyPlatform.devMode = config['DEVMODE'];
 
-    harmonyPlatform.addAllActivitiesToSkipedIfSameStateActivitiesList =
-      config['addAllActivitiesToSkipedIfSameStateActivitiesList'];
-    harmonyPlatform.skipedIfSameStateActivities =
-      config['skipedIfSameStateActivities'];
+    harmonyPlatform.addAllActivitiesToSkippedIfSameStateActivitiesList =
+      config['addAllActivitiesToSkippedIfSameStateActivitiesList'];
+    harmonyPlatform.skippedIfSameStateActivities =
+      config['skippedIfSameStateActivities'];
 
     harmonyPlatform.devicesToPublishAsAccessoriesSwitch =
       config['devicesToPublishAsAccessoriesSwitch'];
@@ -52,9 +52,9 @@ HarmonyBase.prototype = {
 
     harmonyPlatform.log.debug(
       'INFO : following activites controls will be ignored if they are in the same state : ' +
-        (harmonyPlatform.addAllActivitiesToSkipedIfSameStateActivitiesList
+        (harmonyPlatform.addAllActivitiesToSkippedIfSameStateActivitiesList
           ? 'ALL'
-          : harmonyPlatform.skipedIfSameStateActivities)
+          : harmonyPlatform.skippedIfSameStateActivities)
     );
 
     if (api) {

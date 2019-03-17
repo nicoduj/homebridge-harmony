@@ -36,7 +36,7 @@ For Switch Mode :
     "name": "HubName",
     "hubIP": "192.168.1.XX",
     "showTurnOffActivity" : true,
-    "skipedIfSameStateActivities" : ["PowerOff","La musique"],
+    "skippedIfSameStateActivities" : ["PowerOff","La musique"],
     "publishActivitiesAsIndividualAccessories" : false
   }
 ]
@@ -66,8 +66,8 @@ Fields:
   - if you set to true, The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
   - if you set to "inverted", The "switch" will be "off" if and only if there is no current activity, and toggling it while "off" does nothing.
   - if you set to "stateless", it will always be off, but can be triggered to switch off current activity.
-- `skipedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app . For TV mode, and PowerOff feature, you can add "PowerOff" to this list if you want.
-- `addAllActivitiesToSkipedIfSameStateActivitiesList` option to add all activities automatically to skipedIfSameStateActivities behavior. (defaults : false)
+- `skippedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app . For TV mode, and PowerOff feature, you can add "PowerOff" to this list if you want.
+- `addAllActivitiesToSkippedIfSameStateActivitiesList` option to add all activities automatically to skippedIfSameStateActivities behavior. (defaults : false)
 - `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
 - `devicesToPublishAsAccessoriesSwitch` array of Devices to exposes with on/off function or custom functions
 - `publishDevicesAsIndividualAccessories` option to publish devices as individual accessories. Defaults to true.
