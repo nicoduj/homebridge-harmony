@@ -572,7 +572,8 @@ HarmonyBase.prototype = {
 
             //default mode
             if (commands.length === 1) {
-              accessoriesToAdd.concat(
+              accessoriesToAdd.push.apply(
+                accessoriesToAdd,
                 this.handleDefaultCommandMode(
                   myHarmonyAccessory,
                   harmonyPlatform,
@@ -583,7 +584,8 @@ HarmonyBase.prototype = {
             }
             //specifc command or list mode
             else {
-              accessoriesToAdd.concat(
+              accessoriesToAdd.push.apply(
+                accessoriesToAdd,
                 this.handleSpecificCommandMode(
                   myHarmonyAccessory,
                   harmonyPlatform,
