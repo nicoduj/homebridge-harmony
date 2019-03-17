@@ -1,4 +1,4 @@
-var Service, Characteristic;
+var Service, Characteristic, Accessory, UUIDGen;
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
 const HarmonyTools = require('./harmonyTools.js');
@@ -10,6 +10,8 @@ module.exports = {
 function HarmonyPlatformAsSwitches(log, config, api) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
+  Accessory = api.platformAccessory;
+  UUIDGen = api.hap.uuid;
 
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);
@@ -21,6 +23,16 @@ function HarmonyPlatformAsSwitches(log, config, api) {
   );
 
   this._currentActivity = -1;
+
+  if (api) {
+    this.api.on(
+      'didFinishLaunching',
+      function() {
+        this.log('DidFinishLaunching');
+        this.loadAccessories();
+      }.bind(this)
+    );
+  }
 }
 
 HarmonyPlatformAsSwitches.prototype = {
@@ -29,89 +41,88 @@ HarmonyPlatformAsSwitches.prototype = {
     this.refreshAccessory();
   },
 
-  addAccessory: function(services, accessoryName) {
-    this.log('INFO - Adding Accessory : ' + accessoryName);
-    let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
-    var that = this;
-    myHarmonyAccessory.getServices = function() {
-      return that.getServices(myHarmonyAccessory);
-    };
-    myHarmonyAccessory.platform = this;
-    myHarmonyAccessory.name = accessoryName;
-    myHarmonyAccessory.model = this.name;
-    myHarmonyAccessory.manufacturer = 'Harmony';
-    myHarmonyAccessory.serialNumber = this.hubIP;
-    this._foundAccessories.push(myHarmonyAccessory);
-  },
-
-  readOptionnalAccessories: function(data) {
-    if (
-      this.devicesToPublishAsAccessoriesSwitch &&
-      this.devicesToPublishAsAccessoriesSwitch.length > 0
-    ) {
-      this.harmonyBase.getDevicesAccessories(this, data);
-    }
-
-    if (
-      this.sequencesToPublishAsAccessoriesSwitch &&
-      this.sequencesToPublishAsAccessoriesSwitch.length > 0
-    ) {
-      this.harmonyBase.getSequencesAccessories(this, data);
-    }
-  },
-
   showActivity: function(activity) {
     return activity.id != -1 || this.showTurnOffActivity;
   },
 
-  readAccessories: function(data, callback) {
+  readAccessories: function(data) {
     let activities = data.data.activity;
-    let services = [];
+
+    let accessoriesToAdd = [];
+    var myHarmonyAccessory;
+
+    if (!this.publishActivitiesAsIndividualAccessories) {
+      myHarmonyAccessory = this.harmonyBase.checkAccessory(this, this.name);
+      if (!myHarmonyAccessory) {
+        myHarmonyAccessory = this.harmonyBase.createAccessory(this, this.name);
+        accessoriesToAdd.push(myHarmonyAccessory);
+      }
+    }
 
     for (let i = 0, len = activities.length; i < len; i++) {
       if (this.showActivity(activities[i])) {
         let switchName = this.devMode
           ? 'DEV' + activities[i].label
           : activities[i].label;
+
         let accessoryName = this.name + '-' + activities[i].label;
+
+        if (this.publishActivitiesAsIndividualAccessories) {
+          myHarmonyAccessory = this.harmonyBase.checkAccessory(
+            this,
+            accessoryName
+          );
+          if (!myHarmonyAccessory) {
+            myHarmonyAccessory = this.harmonyBase.createAccessory(
+              this,
+              accessoryName
+            );
+            accessoriesToAdd.push(myHarmonyAccessory);
+          }
+        }
 
         this.log('INFO - Discovered Activity : ' + switchName);
 
-        let service = {
-          controlService: new Service.Switch(switchName),
-          characteristics: [Characteristic.On],
-        };
+        let subType = switchName;
+        let service = myHarmonyAccessory.getServiceByUUIDAndSubType(
+          subType,
+          subType
+        );
 
-        service.controlService.subtype = switchName;
-        service.controlService.id = activities[i].id;
-        service.type = HarmonyConst.ACTIVITY_TYPE;
-        services.push(service);
-
-        if (this.publishActivitiesAsIndividualAccessories) {
-          this.addAccessory(services, accessoryName);
-          services = [];
+        if (!service) {
+          this.log('INFO - Creating Switch Service');
+          service = new Service.Switch(switchName);
+          service.subtype = subType;
+          myHarmonyAccessory.addService(service);
         }
+        service.activityId = activities[i].id;
+        service.type = HarmonyConst.ACTIVITY_TYPE;
+
+        this.bindCharacteristicEventsForSwitch(myHarmonyAccessory, service);
       }
     }
 
-    if (!this.publishActivitiesAsIndividualAccessories) {
-      this.addAccessory(services, this.name);
-    }
+    this.harmonyBase.getDevicesAccessories(this, data);
+    this.harmonyBase.getSequencesAccessories(this, data);
 
-    this.readOptionnalAccessories(data);
+    //creating accessories
+    this.harmonyBase.addAccesories(this, accessoriesToAdd);
 
     //first refresh
-
     var that = this;
     setTimeout(function() {
       that.refreshAccessory();
     }, HarmonyConst.DELAY_LAUNCH_REFRESH);
-
-    callback(this._foundAccessories);
   },
 
-  accessories: function(callback) {
-    this.harmonyBase.configureAccessories(this, callback);
+  loadAccessories: function() {
+    this.harmonyBase.configureAccessories(this);
+  },
+
+  //Cache call method
+  configureAccessory: function(accessory) {
+    this.log(accessory.displayName, 'Configure Accessory');
+    this._foundAccessories.push(accessory);
   },
 
   refreshCurrentActivity: function(response) {
@@ -119,18 +130,18 @@ HarmonyPlatformAsSwitches.prototype = {
     this._currentActivityLastUpdate = Date.now();
   },
 
-  checkOn(serviceControl) {
+  checkOn(service) {
     this.log.debug(
       'checkOn : ' +
         this._currentActivity +
         '/' +
-        serviceControl.id +
+        service.activityId +
         '/' +
         (this.showTurnOffActivity == 'inverted') +
         '/' +
         (this.showTurnOffActivity == 'stateless')
     );
-    if (serviceControl.id == -1) {
+    if (service.activityId == -1) {
       if (
         this._currentActivity == -1 &&
         (this.showTurnOffActivity == 'inverted' ||
@@ -146,26 +157,25 @@ HarmonyPlatformAsSwitches.prototype = {
       }
     }
 
-    return this._currentActivity == serviceControl.id;
+    return this._currentActivity == service.activityId;
   },
 
-  refreshService: function(service, homebridgeAccessory, callback) {
-    var serviceControl = service.controlService;
-    var characteristic = serviceControl.getCharacteristic(Characteristic.On);
+  refreshService: function(service, callback) {
+    var characteristic = service.getCharacteristic(Characteristic.On);
 
     this.harmonyBase.refreshCurrentActivity(this, () => {
       if (this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
-        let characteristicIsOn = this.checkOn(serviceControl);
+        let characteristicIsOn = this.checkOn(service);
 
         this.log.debug(
           'Got status for ' +
-            serviceControl.displayName +
+            service.displayName +
             ' - was ' +
             characteristic.value +
             ' set to ' +
             characteristicIsOn
         );
-        homebridgeAccessory.platform.harmonyBase.handleCharacteristicUpdate(
+        this.harmonyBase.handleCharacteristicUpdate(
           this,
           characteristic,
           characteristicIsOn,
@@ -173,7 +183,7 @@ HarmonyPlatformAsSwitches.prototype = {
         );
       } else {
         this.log.debug('WARNING : no current Activity');
-        homebridgeAccessory.platform.harmonyBase.handleCharacteristicUpdate(
+        this.harmonyBase.handleCharacteristicUpdate(
           this,
           characteristic,
           characteristic.value,
@@ -188,21 +198,9 @@ HarmonyPlatformAsSwitches.prototype = {
       let myHarmonyAccessory = this._foundAccessories[a];
       for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
         let service = myHarmonyAccessory.services[s];
-        this.refreshService(service, myHarmonyAccessory, undefined);
+        this.refreshService(service, undefined);
       }
     }
-  },
-
-  getServiceControl: function(homebridgeAccessory, idToFind) {
-    var serviceControl;
-    for (let a = 0; a < homebridgeAccessory.services.length; a++) {
-      if (homebridgeAccessory.services[a].controlService.id == idToFind) {
-        serviceControl = homebridgeAccessory.services[a].controlService;
-        this.log('INFO - ' + serviceControl.displayName + ' activated');
-        break;
-      }
-    }
-    return serviceControl;
   },
 
   isActivityOk: function(data) {
@@ -221,24 +219,21 @@ HarmonyPlatformAsSwitches.prototype = {
     for (let a = 0; a < this._foundAccessories.length; a++) {
       let foundHarmonyAccessory = this._foundAccessories[a];
       for (let s = 0; s < foundHarmonyAccessory.services.length; s++) {
-        let otherServiceControl =
-          foundHarmonyAccessory.services[s].controlService;
+        let otherService = foundHarmonyAccessory.services[s];
 
-        let characteristic = otherServiceControl.getCharacteristic(
-          Characteristic.On
-        );
+        let characteristic = otherService.getCharacteristic(Characteristic.On);
 
         HarmonyTools.disablePreviousActivity(
           this,
           characteristic,
-          otherServiceControl,
+          otherService,
           commandToSend,
           characteristic.value
         );
         HarmonyTools.handleOffActivity(
           this,
           characteristic,
-          otherServiceControl,
+          otherService,
           commandToSend
         );
       }
@@ -247,15 +242,24 @@ HarmonyPlatformAsSwitches.prototype = {
     this._currentActivity = commandToSend;
   },
 
+  getService: function(homebridgeAccessory, idToFind) {
+    var service;
+    for (let a = 0; a < homebridgeAccessory.services.length; a++) {
+      if (homebridgeAccessory.services[a].ActivityId == idToFind) {
+        service = homebridgeAccessory.services[a];
+        this.log('INFO - ' + service.displayName + ' activated');
+        break;
+      }
+    }
+    return service;
+  },
+
   handleActivityInProgress: function(homebridgeAccessory, commandToSend) {
     this._currentSetAttemps = this._currentSetAttemps + 1;
-    //get characteristic
 
-    var charactToSet = serviceControl.getCharacteristic(Characteristic.On);
-    var serviceControl = this.getServiceControl(
-      homebridgeAccessory,
-      commandToSend
-    );
+    //get characteristic
+    var service = this.getService(homebridgeAccessory, commandToSend);
+    var charactToSet = service.getCharacteristic(Characteristic.On);
 
     //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
     var that = this;
@@ -263,13 +267,13 @@ HarmonyPlatformAsSwitches.prototype = {
       if (that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE) {
         that.log.debug(
           'INFO - activityCommand : RETRY to send command ' +
-            serviceControl.displayName
+            service.displayName
         );
         that.activityCommand(homebridgeAccessory, commandToSend);
       } else {
         that.log(
           'ERROR - activityCommand : could not SET status, no more RETRY : ' +
-            serviceControl.displayName
+            service.displayName
         );
         charactToSet.updateValue(false);
       }
@@ -364,41 +368,27 @@ HarmonyPlatformAsSwitches.prototype = {
       }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
     }
   },
-  bindCharacteristicEvents: function(
-    characteristic,
-    service,
-    homebridgeAccessory
-  ) {
-    if (service.type !== HarmonyConst.ACTIVITY_TYPE) {
-      this.harmonyBase.bindCharacteristicEvents(this, characteristic, service);
-    } else {
-      characteristic.on(
+
+  bindCharacteristicEventsForSwitch: function(homebridgeAccessory, service) {
+    service
+      .getCharacteristic(Characteristic.On)
+      .on(
         'set',
         function(value, callback) {
-          homebridgeAccessory.platform.setSwitchOnCharacteristic(
+          this.setSwitchOnCharacteristic(
             homebridgeAccessory,
-            characteristic,
+            service.getCharacteristic(Characteristic.On),
             service,
             value,
             callback
           );
         }.bind(this)
-      );
-
-      characteristic.on(
+      )
+      .on(
         'get',
         function(callback) {
-          homebridgeAccessory.platform.refreshService(
-            service,
-            homebridgeAccessory,
-            callback
-          );
+          this.refreshService(service, callback);
         }.bind(this)
       );
-    }
-  },
-
-  getServices: function(homebridgeAccessory) {
-    return this.harmonyBase.getServices(homebridgeAccessory);
   },
 };

@@ -226,23 +226,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
   readAccessories: function(data) {
     let activities = data.data.activity;
 
-    let uuid = UUIDGen.generate(this.name);
+    let accessoriesToAdd = [];
 
-    let myHarmonyAccessory = this._foundAccessories.find(x => (x.UUID = uuid));
-    var isNew = false;
-    //we di not find an create one
+    myHarmonyAccessory = this.harmonyBase.checkAccessory(this, this.name);
     if (!myHarmonyAccessory) {
-      this.log('INFO - Adding Accessory : ' + this.name);
-      myHarmonyAccessory = new Accessory(this.name, uuid);
-      myHarmonyAccessory.name = this.name;
-      myHarmonyAccessory.model = this.name;
-      myHarmonyAccessory.manufacturer = 'Harmony';
-      myHarmonyAccessory.serialNumber = this.name + this.hubIP;
-
-      this.harmonyBase.configureInformationService(myHarmonyAccessory);
-      isNew = true;
-    } else {
-      this.log('INFO - Found Accessory : ' + this.name);
+      myHarmonyAccessory = this.harmonyBase.createAccessory(this, this.name);
+      accessoriesToAdd.push(myHarmonyAccessory);
     }
 
     this.log('INFO - configuring Main TV Service');
@@ -288,14 +277,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
 
-    if (isNew) {
-      this._foundAccessories.push(myHarmonyAccessory);
-      this.api.registerPlatformAccessories(
-        'homebridge-harmonyHub',
-        'HarmonyHubWebSocket',
-        [myHarmonyAccessory]
-      );
-    }
+    //creating accessories
+    this.harmonyBase.addAccesories(this, accessoriesToAdd);
 
     this.harmonyBase.getDevicesAccessories(this, data);
     this.harmonyBase.getSequencesAccessories(this, data);

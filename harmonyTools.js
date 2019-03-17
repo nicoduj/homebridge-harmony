@@ -34,10 +34,6 @@ module.exports = {
     }
   },
 
-  HarmonyAccessory: function(services) {
-    this.services = services;
-  },
-
   disablePreviousActivity: function(
     platform,
     characteristic,
