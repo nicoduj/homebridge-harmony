@@ -19,7 +19,7 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   this.harmonyBase.configCommonProperties(log, config, api, this);
 
   this.mainActivity = config['mainActivity'];
-  this.playPauseBehavior = HarmonyTools.checkParemeter(
+  this.playPauseBehavior = HarmonyTools.checkParameter(
     config['playPauseBehavior'],
     false
   );

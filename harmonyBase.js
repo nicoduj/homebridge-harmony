@@ -32,7 +32,7 @@ HarmonyBase.prototype = {
 
     harmonyPlatform.devicesToPublishAsAccessoriesSwitch =
       config['devicesToPublishAsAccessoriesSwitch'];
-    harmonyPlatform.publishDevicesAsIndividualAccessories = HarmonyTools.checkParemeter(
+    harmonyPlatform.publishDevicesAsIndividualAccessories = HarmonyTools.checkParameter(
       config['publishDevicesAsIndividualAccessories'],
       true
     );
@@ -40,7 +40,7 @@ HarmonyBase.prototype = {
     harmonyPlatform.sequencesToPublishAsAccessoriesSwitch =
       config['sequencesToPublishAsAccessoriesSwitch'];
 
-    harmonyPlatform.publishSequencesAsIndividualAccessories = HarmonyTools.checkParemeter(
+    harmonyPlatform.publishSequencesAsIndividualAccessories = HarmonyTools.checkParameter(
       config['publishSequencesAsIndividualAccessories'],
       true
     );

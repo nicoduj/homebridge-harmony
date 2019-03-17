@@ -14,7 +14,7 @@ function HarmonyPlatformAsSwitches(log, config, api) {
   this.harmonyBase.configCommonProperties(log, config, api, this);
 
   this.showTurnOffActivity = config['showTurnOffActivity'];
-  this.publishActivitiesAsIndividualAccessories = HarmonyTools.checkParemeter(
+  this.publishActivitiesAsIndividualAccessories = HarmonyTools.checkParameter(
     config['publishActivitiesAsIndividualAccessories'],
     true
   );
