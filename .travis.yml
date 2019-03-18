@@ -14,6 +14,7 @@ jobs:
         provider: npm
         email: '$NPM_EMAIL'
         api_key: '$NPM_TOKEN'
+        tag: beta
         on:
           tags: true
     - stage: GitHub Release
@@ -24,7 +25,6 @@ jobs:
         api_key: $GITHUB_OAUTH_TOKEN
         skip_cleanup: true
         prerelease: true
-        tag: beta
         name: $TRAVIS_TAG
         on:
           tags: true
