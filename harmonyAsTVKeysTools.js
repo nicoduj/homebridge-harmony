@@ -44,6 +44,8 @@ module.exports = {
         );
       } else if (controlGroup[j].name == 'GameType3') {
         mapGameType3Keys(platform, functions, inputName, inputSourceService);
+      } else if (controlGroup[j].name == 'Setup') {
+        mapSetupKeys(platform, functions, inputName, inputSourceService);
       }
     }
   },
@@ -315,6 +317,15 @@ function mapGameType3Keys(platform, functions, inputName, inputSourceService) {
     if (functions[k].name == 'Home') {
       platform.log('INFO - Mapping Home for ' + inputName);
       inputSourceService.HomeCommand = functions[k].action;
+    }
+  }
+}
+
+function mapSetupKeys(platform, functions, inputName, inputSourceService) {
+  for (let k = 0, len = functions.length; k < len; k++) {
+    if (functions[k].name == 'Setup') {
+      platform.log('INFO - Mapping Setup for ' + inputName);
+      inputSourceService.SetupCommand = functions[k].action;
     }
   }
 }

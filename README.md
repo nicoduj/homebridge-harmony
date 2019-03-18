@@ -167,7 +167,7 @@ Button List is :
 - VOLUME_UP
 - VOLUME_DOWN
 - MUTE
-- MENU
+- SETUP
 
 Commands of your device is shown in the log at startup in lines like : 'INFO - Command : **COMMAND_NAME** discovered for device : **DEVICENAME**'
 

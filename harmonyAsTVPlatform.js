@@ -805,8 +805,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
           this,
           HarmonyAsTVKeysTools.getOverrideCommand(
             this,
-            'MENU',
-            this._currentInputService.MenuCommand
+            'SETUP',
+            this._currentInputService.SetupCommand
           )
         );
         callback(null);
