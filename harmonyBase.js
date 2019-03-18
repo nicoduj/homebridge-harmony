@@ -137,21 +137,6 @@ HarmonyBase.prototype = {
     }
   },
 
-  configureInformationService: function(homebridgeAccessory) {
-    homebridgeAccessory
-      .getService(Service.AccessoryInformation)
-      .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
-      .setCharacteristic(
-        Characteristic.Manufacturer,
-        homebridgeAccessory.manufacturer
-      )
-      .setCharacteristic(Characteristic.Model, homebridgeAccessory.model)
-      .setCharacteristic(
-        Characteristic.SerialNumber,
-        homebridgeAccessory.serialNumber
-      );
-  },
-
   configureAccessories: function(harmonyPlatform) {
     harmonyPlatform.log('INFO - Loading activities...');
 

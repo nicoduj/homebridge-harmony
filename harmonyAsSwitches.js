@@ -178,7 +178,8 @@ HarmonyPlatformAsSwitches.prototype = {
       let myHarmonyAccessory = this._foundAccessories[a];
       for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
         let service = myHarmonyAccessory.services[s];
-        this.refreshService(service, undefined);
+        if (service.type == HarmonyConst.ACTIVITY_TYPE)
+          this.refreshService(service, undefined);
       }
     }
   },
@@ -199,23 +200,27 @@ HarmonyPlatformAsSwitches.prototype = {
     for (let a = 0; a < this._foundAccessories.length; a++) {
       let foundHarmonyAccessory = this._foundAccessories[a];
       for (let s = 0; s < foundHarmonyAccessory.services.length; s++) {
-        let otherService = foundHarmonyAccessory.services[s];
+        if (service.type == HarmonyConst.ACTIVITY_TYPE) {
+          let otherService = foundHarmonyAccessory.services[s];
 
-        let characteristic = otherService.getCharacteristic(Characteristic.On);
+          let characteristic = otherService.getCharacteristic(
+            Characteristic.On
+          );
 
-        HarmonyTools.disablePreviousActivity(
-          this,
-          characteristic,
-          otherService,
-          commandToSend,
-          characteristic.value
-        );
-        HarmonyTools.handleOffActivity(
-          this,
-          characteristic,
-          otherService,
-          commandToSend
-        );
+          HarmonyTools.disablePreviousActivity(
+            this,
+            characteristic,
+            otherService,
+            commandToSend,
+            characteristic.value
+          );
+          HarmonyTools.handleOffActivity(
+            this,
+            characteristic,
+            otherService,
+            commandToSend
+          );
+        }
       }
     }
 
