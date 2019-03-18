@@ -253,27 +253,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
 
-    //creating accessories
-    this.harmonyBase.addAccesories(this, accessoriesToAdd);
-
-    this.harmonyBase.getDevicesAccessories(this, data);
-    this.harmonyBase.getSequencesAccessories(this, data);
-
-    //first refresh
-    var that = this;
-    setTimeout(function() {
-      that.refreshAccessory();
-    }, HarmonyConst.DELAY_LAUNCH_REFRESH);
-  },
-
-  //ask for retrieving info from hub
-  loadAccessories: function() {
-    this.harmonyBase.configureAccessories(this);
+    this.harmonyBase.setupFoundAccessories(this, accessoriesToAdd, data);
   },
 
   //Cache call method
   configureAccessory: function(accessory) {
-    this.log(accessory.displayName, 'Configure Accessory');
+    this.log.debug(
+      accessory.displayName,
+      'Got cached Accessory For TVMode ' + accessory.UUID
+    );
     this._foundAccessories.push(accessory);
   },
 

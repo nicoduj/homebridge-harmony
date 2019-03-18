@@ -87,7 +87,7 @@ HarmonyBase.prototype = {
               );
               harmonyPlatform._foundAccessories = [];
             }
-            harmonyPlatform.loadAccessories();
+            this.configureAccessories(harmonyPlatform);
           }.bind(this)
         );
     }
@@ -205,6 +205,19 @@ HarmonyBase.prototype = {
           that.configureAccessories(harmonyPlatform);
         }, HarmonyConst.DELAY_BEFORE_RECONNECT);
       });
+  },
+
+  setupFoundAccessories(harmonyPlatform, accessoriesToAdd, data) {
+    //creating accessories
+    this.addAccesories(harmonyPlatform, accessoriesToAdd);
+
+    this.getDevicesAccessories(harmonyPlatform, data);
+    this.getSequencesAccessories(harmonyPlatform, data);
+
+    //first refresh
+    setTimeout(function() {
+      harmonyPlatform.refreshAccessory();
+    }, HarmonyConst.DELAY_LAUNCH_REFRESH);
   },
 
   refreshCurrentActivity: function(harmonyPlatform, callback) {
