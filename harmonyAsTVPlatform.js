@@ -284,15 +284,13 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     this.harmonyBase.handleCharacteristicUpdate(
       this,
-      this.mainService.controlService.getCharacteristic(Characteristic.Active),
+      this.mainService.getCharacteristic(Characteristic.Active),
       this._currentActivity > 0,
       null
     );
     this.harmonyBase.handleCharacteristicUpdate(
       this,
-      this.mainService.controlService.getCharacteristic(
-        Characteristic.ActiveIdentifier
-      ),
+      this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
       this._currentActivity,
       null
     );
