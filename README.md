@@ -18,11 +18,23 @@
 >
 > - IOS 12.2 TV MODE is still beta. This mode will focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
 
+You can discuss this plugin on [Slack](https://homebridge-slackin.glitch.me) in #homebridge-harmony channel
+
+[![Slack Status](https://homebridge-slackin.glitch.me/badge.svg)](https://homebridge-slackin.glitch.me)
+
 ## Installation
 
 1. Install Homebridge using: `npm install -g homebridge`
 2. Install this plugin using: `npm install -g homebridge-harmony`
 3. Update your Homebridge `config.json` using the sample below.
+
+## Migration from 0.X to 1.X
+
+You have to rename `skipedIfSameStateActivities` to `skippedIfSameStateActivities` (with 2 `p` ) or `addAllActivitiesToSkipedIfSameStateActivitiesList` to `addAllActivitiesToSkippedIfSameStateActivitiesList` (also with 2 `p` ) if you were using one of those options.
+
+If you were overriding **MENU** through `remoteOverrideCommandsList` you have to use **SETUP** instead now.
+
+In case of any trouble like accessorie allready added (or missing), you can try to use the option `cleanCache` but please report in order for me to fix if possible (see Fields section).
 
 ## Configuration
 
