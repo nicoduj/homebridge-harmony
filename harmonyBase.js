@@ -47,6 +47,8 @@ HarmonyBase.prototype = {
 
     harmonyPlatform.cleanCache = config['cleanCache'];
 
+    harmonyPlatform.showCommandsAtStartup = config['showCommandsAtStartup'];
+
     harmonyPlatform._currentActivity = -9999;
     harmonyPlatform._currentActivityLastUpdate = undefined;
     harmonyPlatform._currentSetAttemps = 0;
@@ -344,12 +346,13 @@ HarmonyBase.prototype = {
       for (let j = 0, len = controlGroup.length; j < len; j++) {
         let functions = controlGroup[j].function;
         for (let k = 0, len = functions.length; k < len; k++) {
-          harmonyPlatform.log(
-            'INFO - Command : ' +
-              functions[k].name +
-              ' discovered for device : ' +
-              devices[i].label
-          );
+          if (harmonyPlatform.showCommandsAtStartup)
+            harmonyPlatform.log(
+              'INFO - Command : ' +
+                functions[k].name +
+                ' discovered for device : ' +
+                devices[i].label
+            );
           //Store command
           this.deviceCommands[[devices[i].label, functions[k].name]] =
             functions[k].action;
@@ -366,19 +369,23 @@ HarmonyBase.prototype = {
         let functions = controlGroup[j].function;
         for (let k = 0, len = functions.length; k < len; k++) {
           if (functions[k].name === 'PowerOff') {
-            harmonyPlatform.log('INFO - Activating PowerOff for ' + switchName);
+            harmonyPlatform.log.debug(
+              'INFO - Activating PowerOff for ' + switchName
+            );
             commandFunctions.push({
               key: 'PowerOff',
               value: functions[k].action,
             });
           } else if (functions[k].name === 'PowerOn') {
-            harmonyPlatform.log('INFO - Activating  PowerOn for ' + switchName);
+            harmonyPlatform.log.debug(
+              'INFO - Activating  PowerOn for ' + switchName
+            );
             commandFunctions.push({
               key: 'PowerOn',
               value: functions[k].action,
             });
           } else if (functions[k].name === 'PowerToggle') {
-            harmonyPlatform.log(
+            harmonyPlatform.log.debug(
               'INFO - Activating  PowerToggle for ' + switchName
             );
             commandFunctions.push({
@@ -480,8 +487,8 @@ HarmonyBase.prototype = {
           let commandTosend = commands[l].split('|');
 
           if (functions[k].name === commandTosend[0]) {
-            harmonyPlatform.log(
-              'INFO - Activating For Macro ' +
+            harmonyPlatform.log.debug(
+              'INFO - Activating  Macro ' +
                 commandTosend[0] +
                 ' for ' +
                 switchName
@@ -604,7 +611,7 @@ HarmonyBase.prototype = {
 
   checkAccessory(harmonyPlatform, name) {
     let uuid = UUIDGen.generate(name);
-    return harmonyPlatform._foundAccessories.find(x => (x.UUID = uuid));
+    return harmonyPlatform._foundAccessories.find(x => x.UUID == uuid);
   },
 
   createAccessory(harmonyPlatform, name) {
@@ -621,14 +628,15 @@ HarmonyBase.prototype = {
   },
 
   addAccesories(harmonyPlatform, accessoriesToAdd) {
-    for (let i = 0, len = accessoriesToAdd.length; i < len; i++) {
-      harmonyPlatform._foundAccessories.push(accessoriesToAdd[i]);
-      harmonyPlatform.api.registerPlatformAccessories(
-        'homebridge-harmonyHub',
-        'HarmonyHubWebSocket',
-        [accessoriesToAdd[i]]
-      );
-    }
+    harmonyPlatform._foundAccessories.push.apply(
+      harmonyPlatform._foundAccessories,
+      accessoriesToAdd
+    );
+    harmonyPlatform.api.registerPlatformAccessories(
+      'homebridge-harmonyHub',
+      'HarmonyHubWebSocket',
+      accessoriesToAdd
+    );
   },
 
   getSwitchService(harmonyPlatform, accessory, switchName, serviceSubType) {
@@ -640,7 +648,7 @@ HarmonyBase.prototype = {
       harmonyPlatform.log(
         'INFO - Creating Switch Service ' + switchName + '/' + serviceSubType
       );
-      service = new Service.Switch(switchName);
+      service = new Service.Switch(switchName, 'switchService' + switchName);
       service.subtype = serviceSubType;
       accessory.addService(service);
     }

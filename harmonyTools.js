@@ -42,7 +42,7 @@ module.exports = {
     on
   ) {
     //we disable previous activities that were on
-    if (service.id != -1 && service.id != commandToSend && on) {
+    if (service.activityId != -1 && service.activityId != commandToSend && on) {
       platform.log.debug('Switching off ' + otherServiceControl.displayName);
       characteristic.updateValue(false);
     }
@@ -55,7 +55,7 @@ module.exports = {
     commandToSend
   ) {
     //we turn off Off Activity if another activity was launched
-    if (service.id == -1 && commandToSend != -1) {
+    if (service.activityId == -1 && commandToSend != -1) {
       platform.log.debug(
         'New activity on , turning off off Activity ' + service.displayName
       );
@@ -65,7 +65,7 @@ module.exports = {
     }
 
     //we turn on Off Activity if we turned off an activity (or turn on the general switch)
-    if (service.id == -1 && commandToSend == -1) {
+    if (service.activityId == -1 && commandToSend == -1) {
       platform.log.debug('Turning on off Activity ' + service.displayName);
       characteristic.updateValue(
         platform.showTurnOffActivity != 'inverted' &&

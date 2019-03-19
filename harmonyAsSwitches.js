@@ -87,7 +87,7 @@ HarmonyPlatformAsSwitches.prototype = {
 
   //Cache call method
   configureAccessory: function(accessory) {
-    this.log.debug(
+    this.log(
       accessory.displayName,
       'Got cached Accessory For SwitchMode ' + accessory.UUID
     );
@@ -287,21 +287,18 @@ HarmonyPlatformAsSwitches.prototype = {
     callback
   ) {
     let doCommand = true;
-    let commandToSend = value ? service.controlService.id : '-1';
+    let commandToSend = value ? service.activityId : '-1';
     let currentValue = characteristic.value;
 
     //Actitiy in skippedIfSameState
-    if (
-      HarmonyTools.isActivtyToBeSkipped(this, service.controlService.subtype)
-    ) {
+    if (HarmonyTools.isActivtyToBeSkipped(this, service.subtype)) {
       this.log.debug(
-        'INFO : SET on an activty in skippedIfsameState list ' +
-          service.controlService.subtype
+        'INFO : SET on an activty in skippedIfsameState list ' + service.subtype
       );
 
       this.log.debug(
         'INFO : Activty ' +
-          service.controlService.subtype +
+          service.subtype +
           ' is ' +
           currentValue +
           ', wants to set to ' +
@@ -311,7 +308,7 @@ HarmonyPlatformAsSwitches.prototype = {
       //GLOBAL OFF SWITCH : do command only if it is off and we want to set it on since on state can't be reversed
       //ELSE, we do the command only if state is different.
       doCommand =
-        service.controlService.id == -1
+        service.activityId == -1
           ? (this.showTurnOffActivity == 'inverted' &&
               currentValue &&
               !value) ||
@@ -319,15 +316,14 @@ HarmonyPlatformAsSwitches.prototype = {
           : currentValue !== value;
     } else {
       this.log.debug(
-        'INFO : SET on an activty not in pIfsameState list ' +
-          service.controlService.subtype
+        'INFO : SET on an activty not in pIfsameState list ' + service.subtype
       );
     }
 
     if (doCommand) {
       this.log.debug(
         'INFO : Activty ' +
-          service.controlService.subtype +
+          service.subtype +
           ' will be sent command ' +
           commandToSend
       );
@@ -335,9 +331,7 @@ HarmonyPlatformAsSwitches.prototype = {
       callback();
     } else {
       this.log.debug(
-        'INFO : Activty ' +
-          service.controlService.subtype +
-          ' will not be sent any command '
+        'INFO : Activty ' + service.subtype + ' will not be sent any command '
       );
       callback();
       setTimeout(function() {

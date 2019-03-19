@@ -89,6 +89,7 @@ Fields:
 - `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
 - `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
 - `cleanCache` option to clean all cached Accessory. Please use with caution, might be neeeded if you change mode / config and there is some ghost devices in Homkit. Be sure that all your icloud sync is done while launching Homebridge with this option set to true. Set it back to false after and launch again !
+- `showCommandsAtStartup` show commands and device losts at startup (defaults to false)
 
 All devices / Activites names are the one configured in harmony configuration, even if you rename them in home app.
 

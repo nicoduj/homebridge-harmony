@@ -191,13 +191,16 @@ module.exports = {
 function mapVolumeKeys(platform, functions, inputName, inputSourceService) {
   for (let k = 0, len = functions.length; k < len; k++) {
     if (functions[k].name == 'Mute') {
-      platform.log('INFO - Mapping Mute for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Mute for ' + inputName);
       inputSourceService.MuteCommand = functions[k].action;
     } else if (functions[k].name == 'VolumeDown') {
-      platform.log('INFO - Mapping VolumeDown for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping VolumeDown for ' + inputName);
       inputSourceService.VolumeDownCommand = functions[k].action;
     } else if (functions[k].name == 'VolumeUp') {
-      platform.log('INFO - Mapping VolumeUp for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping VolumeUp for ' + inputName);
       inputSourceService.VolumeUpCommand = functions[k].action;
     }
   }
@@ -211,19 +214,24 @@ function mapNavigationBasicKeys(
 ) {
   for (let k = 0, len = functions.length; k < len; k++) {
     if (functions[k].name == 'DirectionDown') {
-      platform.log('INFO - Mapping DirectionDown for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping DirectionDown for ' + inputName);
       inputSourceService.DirectionDownCommand = functions[k].action;
     } else if (functions[k].name == 'DirectionLeft') {
-      platform.log('INFO - Mapping DirectionLeft for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping DirectionLeft for ' + inputName);
       inputSourceService.DirectionLeftCommand = functions[k].action;
     } else if (functions[k].name == 'DirectionRight') {
-      platform.log('INFO - Mapping DirectionRight for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping DirectionRight for ' + inputName);
       inputSourceService.DirectionRightCommand = functions[k].action;
     } else if (functions[k].name == 'DirectionUp') {
-      platform.log('INFO - Mapping DirectionUp for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping DirectionUp for ' + inputName);
       inputSourceService.DirectionUpCommand = functions[k].action;
     } else if (functions[k].name == 'Select') {
-      platform.log('INFO - Mapping Select for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Select for ' + inputName);
       inputSourceService.SelectCommand = functions[k].action;
     }
   }
@@ -237,10 +245,12 @@ function mapNavigationExtendedKeys(
 ) {
   for (let k = 0, len = functions.length; k < len; k++) {
     if (functions[k].name == 'Exit') {
-      platform.log('INFO - Mapping Exit for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Exit for ' + inputName);
       inputSourceService.ExitCommand = functions[k].action;
     } else if (functions[k].name == 'Info') {
-      platform.log('INFO - Mapping Info for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Info for ' + inputName);
       inputSourceService.InfoCommand = functions[k].action;
     }
   }
@@ -254,19 +264,24 @@ function mapTransportBasicKeys(
 ) {
   for (let k = 0, len = functions.length; k < len; k++) {
     if (functions[k].name == 'Stop') {
-      platform.log('INFO - Mapping Stop for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Stop for ' + inputName);
       inputSourceService.StopCommand = functions[k].action;
     } else if (functions[k].name == 'Play') {
-      platform.log('INFO - Mapping Play for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Play for ' + inputName);
       inputSourceService.PlayCommand = functions[k].action;
     } else if (functions[k].name == 'Rewind') {
-      platform.log('INFO - Mapping Rewind for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Rewind for ' + inputName);
       inputSourceService.RewindCommand = functions[k].action;
     } else if (functions[k].name == 'Pause') {
-      platform.log('INFO - Mapping Pause for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Pause for ' + inputName);
       inputSourceService.PauseCommand = functions[k].action;
     } else if (functions[k].name == 'FastForward') {
-      platform.log('INFO - Mapping FastForward for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping FastForward for ' + inputName);
       inputSourceService.FastForwardCommand = functions[k].action;
     }
   }
@@ -280,16 +295,20 @@ function mapNavigationDVDKeys(
 ) {
   for (let k = 0, len = functions.length; k < len; k++) {
     if (functions[k].name == 'Return' || functions[k].name == 'Back') {
-      platform.log('INFO - Mapping Return for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Return for ' + inputName);
       inputSourceService.ReturnCommand = functions[k].action;
     } else if (functions[k].name == 'Menu') {
-      platform.log('INFO - Mapping Menu for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Menu for ' + inputName);
       inputSourceService.MenuCommand = functions[k].action;
     } else if (functions[k].name == 'Back') {
-      platform.log('INFO - Mapping Back for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Back for ' + inputName);
       inputSourceService.BackCommand = functions[k].action;
     } else if (functions[k].name == 'TopMenu') {
-      platform.log('INFO - Mapping TopMenu for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping TopMenu for ' + inputName);
       inputSourceService.TopMenuCommand = functions[k].action;
     }
   }
@@ -303,10 +322,12 @@ function mapTransportExtendedKeys(
 ) {
   for (let k = 0, len = functions.length; k < len; k++) {
     if (functions[k].name == 'SkipBackward') {
-      platform.log('INFO - Mapping SkipBackward for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping SkipBackward for ' + inputName);
       inputSourceService.SkipBackwardCommand = functions[k].action;
     } else if (functions[k].name == 'SkipForward') {
-      platform.log('INFO - Mapping SkipForward for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping SkipForward for ' + inputName);
       inputSourceService.SkipForwardCommand = functions[k].action;
     }
   }
@@ -315,7 +336,8 @@ function mapTransportExtendedKeys(
 function mapGameType3Keys(platform, functions, inputName, inputSourceService) {
   for (let k = 0, len = functions.length; k < len; k++) {
     if (functions[k].name == 'Home') {
-      platform.log('INFO - Mapping Home for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Home for ' + inputName);
       inputSourceService.HomeCommand = functions[k].action;
     }
   }
@@ -324,7 +346,8 @@ function mapGameType3Keys(platform, functions, inputName, inputSourceService) {
 function mapSetupKeys(platform, functions, inputName, inputSourceService) {
   for (let k = 0, len = functions.length; k < len; k++) {
     if (functions[k].name == 'Setup') {
-      platform.log('INFO - Mapping Setup for ' + inputName);
+      if (platform.showCommandsAtStartup)
+        platform.log('INFO - Mapping Setup for ' + inputName);
       inputSourceService.SetupCommand = functions[k].action;
     }
   }
