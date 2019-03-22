@@ -683,7 +683,7 @@ HarmonyBase.prototype = {
         controlService: new Service.Switch(switchName),
         characteristics: [Characteristic.On],
       };
-      service.controlService.subtype = switchName + '-' + homeControl;
+      service.controlService.subtype = switchName;
       service.controlService.id = key;
       service.type = HarmonyConst.HOME_TYPE;
       services.push(service);
