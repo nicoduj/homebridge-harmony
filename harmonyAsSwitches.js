@@ -48,7 +48,7 @@ HarmonyPlatformAsSwitches.prototype = {
     return activity.id != -1 || this.showTurnOffActivity;
   },
 
-  readAccessories: function(data, callback) {
+  readAccessories: function(data, homedata, callback) {
     let activities = data.data.activity;
     let services = [];
 
@@ -84,7 +84,7 @@ HarmonyPlatformAsSwitches.prototype = {
 
     this.harmonyBase.getDevicesAccessories(this, data);
     this.harmonyBase.getSequencesAccessories(this, data);
-    this.harmonyBase.getHomeControlsAccessories(this);
+    this.harmonyBase.handleHomeControls(this, homedata);
 
     //first refresh
 
@@ -174,7 +174,8 @@ HarmonyPlatformAsSwitches.prototype = {
       let myHarmonyAccessory = this._foundAccessories[a];
       for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
         let service = myHarmonyAccessory.services[s];
-        this.refreshService(service, myHarmonyAccessory, undefined);
+        if (service.type !== HarmonyConst.HOME_TYPE)
+          this.refreshService(service, myHarmonyAccessory, undefined);
       }
     }
   },

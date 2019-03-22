@@ -191,7 +191,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     return inputSourceService;
   },
 
-  readAccessories: function(data, callback) {
+  readAccessories: function(data, homedata, callback) {
     let activities = data.data.activity;
     let services = [];
 
@@ -260,7 +260,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     this.harmonyBase.getDevicesAccessories(this, data);
     this.harmonyBase.getSequencesAccessories(this, data);
-    this.harmonyBase.getHomeControlsAccessories(this);
+    this.harmonyBase.handleHomeControls(this, homedata);
 
     //first refresh
     setTimeout(function() {

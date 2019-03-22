@@ -10,7 +10,8 @@ module.exports = {
     return (
       service.type === HarmonyConst.DEVICE_TYPE ||
       service.type === HarmonyConst.DEVICEMACRO_TYPE ||
-      service.type === HarmonyConst.SEQUENCE_TYPE
+      service.type === HarmonyConst.SEQUENCE_TYPE ||
+      service.type === HarmonyConst.HOME_TYPE
     );
   },
 
