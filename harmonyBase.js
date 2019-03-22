@@ -43,6 +43,14 @@ HarmonyBase.prototype = {
       true
     );
 
+    harmonyPlatform.publishHomeControlButtons =
+      config['publishHomeControlButtons'];
+
+    harmonyPlatform.publishHomeControlsAsIndividualAccessories = HarmonyTools.checkParameter(
+      config['publishHomeControlsAsIndividualAccessories'],
+      true
+    );
+
     harmonyPlatform._currentActivity = -9999;
     harmonyPlatform._currentActivityLastUpdate = undefined;
     harmonyPlatform._currentSetAttemps = 0;
@@ -627,6 +635,95 @@ HarmonyBase.prototype = {
     }
   },
 
+  getHomeControlsAccessories: function(harmonyPlatform) {
+    if (harmonyPlatform.publishHomeControlButtons) {
+      harmonyPlatform.log('INFO - Loading home controls ...');
+
+      var payload = {
+        hubId: this._remoteId,
+        timeout: 30,
+        hbus: {
+          cmd: 'harmony.automation?getstate',
+          id: 0,
+          params: {
+            verb: 'get',
+            format: 'json',
+          },
+        },
+      };
+
+      this.harmony._client
+        .open()
+        .then(() => this.harmony._client.sendRequest(payload))
+        .then(response => {
+          this.handleHomeControls(harmonyPlatform, response);
+        })
+        .catch(e => {
+          harmonyPlatform.log('ERROR - getHomeControlsAccessories ' + e);
+        });
+    }
+  },
+
+  handleHomeControls: function(harmonyPlatform, data) {
+    let homeControls = data.data;
+    let services = [];
+
+    harmonyPlatform.log('INFO - got Home Control : ' + JSON.stringify(data));
+    for (var key in homeControls) {
+      let switchName = key;
+      let accessoryName = harmonyPlatform.name + '-' + switchName;
+
+      if (harmonyPlatform.devMode) {
+        switchName = 'DEV' + switchName;
+      }
+
+      harmonyPlatform.log('INFO - Discovered Home Control : ' + switchName);
+
+      let service = {
+        controlService: new Service.Switch(switchName),
+        characteristics: [Characteristic.On],
+      };
+      service.controlService.subtype = switchName + '-' + homeControl;
+      service.controlService.id = key;
+      service.type = HarmonyConst.HOME_TYPE;
+      services.push(service);
+
+      if (harmonyPlatform.publishSequencesAsIndividualAccessories) {
+        harmonyPlatform.log('INFO - Adding Accessory : ' + accessoryName);
+        let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
+        myHarmonyAccessory.getServices = function() {
+          return harmonyPlatform.getServices(myHarmonyAccessory);
+        };
+        myHarmonyAccessory.platform = harmonyPlatform;
+        myHarmonyAccessory.name = accessoryName;
+        myHarmonyAccessory.model = harmonyPlatform.name;
+        myHarmonyAccessory.manufacturer = 'Harmony';
+        myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
+        harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
+        services = [];
+      }
+    }
+
+    if (
+      !harmonyPlatform.publishHomeControlsAsIndividualAccessories &&
+      services.length > 0
+    ) {
+      harmonyPlatform.log(
+        'INFO - Adding Accessory : ' + harmonyPlatform.name + '-HomeControls'
+      );
+      let myHarmonyAccessory = new HarmonyTools.HarmonyAccessory(services);
+      myHarmonyAccessory.getServices = function() {
+        return harmonyPlatform.getServices(myHarmonyAccessory);
+      };
+      myHarmonyAccessory.platform = harmonyPlatform;
+      myHarmonyAccessory.name = harmonyPlatform.name + '-HomeControls';
+      myHarmonyAccessory.model = harmonyPlatform.name;
+      myHarmonyAccessory.manufacturer = 'Harmony';
+      myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
+      harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
+    }
+  },
+
   bindCharacteristicEvents: function(harmonyPlatform, characteristic, service) {
     characteristic.on(
       'set',
@@ -642,6 +739,14 @@ HarmonyBase.prototype = {
           } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
             let command = '{"sequenceId":"' + service.controlService.id + '"}';
             this.sendCommand(harmonyPlatform, command);
+          } else if (service.type === HarmonyConst.HOME_TYPE) {
+            let command =
+              '{"state":{"' +
+              service.controlService.id +
+              '":{"on":' +
+              value +
+              '}}}}}';
+            this.sendAutomationCommand(harmonyPlatform, command);
           }
         }
 
@@ -683,6 +788,40 @@ HarmonyBase.prototype = {
       })
       .catch(e => {
         harmonyPlatform.log('ERROR - sendCommand : ' + e);
+      });
+  },
+
+  sendAutomationCommand: function(harmonyPlatform, commandToSend) {
+    if (!commandToSend) {
+      harmonyPlatform.log.debug(
+        'INFO - sendAutomationCommand : Command not available '
+      );
+      return;
+    }
+    harmonyPlatform.log.debug(
+      'INFO - sendingAutomationCommand' + commandToSend
+    );
+
+    var payload = {
+      hubId: this._remoteId,
+      timeout: 30,
+      hbus: {
+        cmd: 'harmony.automation?setstate',
+        id: 0,
+        params: commandToSend,
+      },
+    };
+
+    return this.harmony._client
+      .open()
+      .then(() => this.harmony._client.sendRequest(payload))
+      .then(data => {
+        harmonyPlatform.log.debug(
+          'INFO - sendingAutomationCommand done' + JSON.stringify(data)
+        );
+      })
+      .catch(e => {
+        harmonyPlatform.log('ERROR - sendingAutomationCommand : ' + e);
       });
   },
 };

@@ -260,6 +260,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     this.harmonyBase.getDevicesAccessories(this, data);
     this.harmonyBase.getSequencesAccessories(this, data);
+    this.harmonyBase.getHomeControlsAccessories(this);
 
     //first refresh
     setTimeout(function() {
