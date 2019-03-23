@@ -29,8 +29,6 @@ module.exports = {
       let timeToWait = HarmonyConst.DELAY_FOR_MACRO;
       if (commandTosend.length === 2) timeToWait = commandTosend[1];
       else timeToWait = HarmonyConst.DELAY_FOR_MACRO;
-      console.log(commandTosend[0]);
-      console.log(timeToWait);
       await processCommand(hb, platform, commandTosend[0], timeToWait);
     }
   },
@@ -79,6 +77,16 @@ module.exports = {
           : false
       );
     }
+  },
+
+  isCommandOk: function(data) {
+    return (
+      data && data.code && data.code == 200 && data.msg && data.msg == 'OK'
+    );
+  },
+
+  isCommandInProgress: function(data) {
+    return data && (data.code == 202 || data.code == 100);
   },
 };
 

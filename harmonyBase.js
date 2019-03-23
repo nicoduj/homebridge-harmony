@@ -37,7 +37,6 @@ HarmonyBase.prototype = {
 
     harmonyPlatform.sequencesToPublishAsAccessoriesSwitch =
       config['sequencesToPublishAsAccessoriesSwitch'];
-
     harmonyPlatform.publishSequencesAsIndividualAccessories = HarmonyTools.checkParameter(
       config['publishSequencesAsIndividualAccessories'],
       true
@@ -45,7 +44,6 @@ HarmonyBase.prototype = {
 
     harmonyPlatform.publishHomeControlButtons =
       config['publishHomeControlButtons'];
-
     harmonyPlatform.publishHomeControlsAsIndividualAccessories = HarmonyTools.checkParameter(
       config['publishHomeControlsAsIndividualAccessories'],
       true
@@ -197,7 +195,7 @@ HarmonyBase.prototype = {
           message.data.activityId === '-1' &&
           message.data.runningActivityList === '')
       ) {
-        harmonyPlatform.log(
+        harmonyPlatform.log.debug(
           'INFO - onMessage : Refreshing activity to ' + message.data.activityId
         );
         harmonyPlatform.onMessage(message.data.activityId);
@@ -206,7 +204,7 @@ HarmonyBase.prototype = {
           'INFO - onMessage : Refreshing Home Automation Switch ' +
             JSON.stringify(message.data)
         );
-        this.refreshHomeSwitch(harmonyPlatform, message.data);
+        this.refreshHomeSwitch(harmonyPlatform, JSON.stringify(message.data));
       }
     });
 
@@ -381,19 +379,23 @@ HarmonyBase.prototype = {
         let functions = controlGroup[j].function;
         for (let k = 0, len = functions.length; k < len; k++) {
           if (functions[k].name === 'PowerOff') {
-            harmonyPlatform.log('INFO - Activating PowerOff for ' + switchName);
+            harmonyPlatform.log.debug(
+              'INFO - Activating PowerOff for ' + switchName
+            );
             commandFunctions.push({
               key: 'PowerOff',
               value: functions[k].action,
             });
           } else if (functions[k].name === 'PowerOn') {
-            harmonyPlatform.log('INFO - Activating  PowerOn for ' + switchName);
+            harmonyPlatform.log.debug(
+              'INFO - Activating  PowerOn for ' + switchName
+            );
             commandFunctions.push({
               key: 'PowerOn',
               value: functions[k].action,
             });
           } else if (functions[k].name === 'PowerToggle') {
-            harmonyPlatform.log(
+            harmonyPlatform.log.debug(
               'INFO - Activating  PowerToggle for ' + switchName
             );
             commandFunctions.push({
@@ -494,7 +496,7 @@ HarmonyBase.prototype = {
           let commandTosend = commands[l].split('|');
 
           if (functions[k].name === commandTosend[0]) {
-            harmonyPlatform.log(
+            harmonyPlatform.log.debug(
               'INFO - Activating  ' + commandTosend[0] + ' for ' + switchName
             );
 
@@ -606,8 +608,7 @@ HarmonyBase.prototype = {
 
   getHomeControlsAccessories: function(harmonyPlatform) {
     if (harmonyPlatform.publishHomeControlButtons) {
-      harmonyPlatform.log('INFO - getting home controls ...');
-
+      harmonyPlatform.log.debug('INFO - getting home controls ...');
       var payload = {
         hubId: this.harmony._remoteId,
         timeout: 30,
@@ -632,13 +633,14 @@ HarmonyBase.prototype = {
       'INFO - got Home Control : ' + JSON.stringify(data)
     );
     //DEBUG
-    //data = JSON.parse(' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}');
+    //data = JSON.parse(' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}');
+
+    if (!data || !data.data) {
+      return;
+    }
     let homeControls = data.data;
     let services = [];
 
-    harmonyPlatform.log.debug(
-      'INFO - got Home Control : ' + JSON.stringify(homeControls)
-    );
     for (var key in homeControls) {
       let switchName = key;
       let accessoryName = harmonyPlatform.name + '-' + switchName;
@@ -688,11 +690,8 @@ HarmonyBase.prototype = {
             let characteristic = service.controlService.getCharacteristic(
               Characteristic.On
             );
+
             harmonyPlatform.log.debug(
-              'INFO - refreshHomeSwitch - found charaterisitc for home switch ' +
-                characteristic
-            );
-            harmonyPlatform.log(
               'INFO - refreshHomeSwitch - Refreshing home switch ' +
                 service.controlService.displayName +
                 ' to ' +
@@ -857,6 +856,10 @@ HarmonyBase.prototype = {
         harmonyPlatform.log.debug(
           'INFO - sendingAutomationCommand done' + JSON.stringify(data)
         );
+
+        if (!HarmonyTools.isCommandOk(data)) {
+          this.refreshHomeAccessory(harmonyPlatform);
+        }
       })
       .catch(e => {
         harmonyPlatform.log('ERROR - sendingAutomationCommand : ' + e);

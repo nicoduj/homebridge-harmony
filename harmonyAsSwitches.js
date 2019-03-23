@@ -186,21 +186,11 @@ HarmonyPlatformAsSwitches.prototype = {
     for (let a = 0; a < homebridgeAccessory.services.length; a++) {
       if (homebridgeAccessory.services[a].controlService.id == idToFind) {
         serviceControl = homebridgeAccessory.services[a].controlService;
-        this.log('INFO - ' + serviceControl.displayName + ' activated');
+        this.log.debug('INFO - ' + serviceControl.displayName + ' activated');
         break;
       }
     }
     return serviceControl;
-  },
-
-  isActivityOk: function(data) {
-    return (
-      data && data.code && data.code == 200 && data.msg && data.msg == 'OK'
-    );
-  },
-
-  isActivityInProgress: function(data) {
-    return data && (data.code == 202 || data.code == 100);
   },
 
   handleActivityOk: function(commandToSend) {
@@ -272,9 +262,9 @@ HarmonyPlatformAsSwitches.prototype = {
           'INFO - activityCommand : Returned from hub ' + JSON.stringify(data)
         );
 
-        if (this.isActivityOk(data)) {
+        if (HarmonyTools.iscommandOk(data)) {
           this.handleActivityOk(commandToSend);
-        } else if (this.isActivityInProgress(data)) {
+        } else if (HarmonyTools.isCommandInProgress(data)) {
           this.log.debug(
             'WARNING - activityCommand : could not SET status : ' +
               JSON.stringify(data)
