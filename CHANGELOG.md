@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## 0.6.0
 
-- [NEW] - support for Exposing Home Control buttons #67
+- [NEW] support for Exposing Home Control buttons #67
+- [BUG] ReferenceError #110
 
 ## 0.5.5
 

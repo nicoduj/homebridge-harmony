@@ -48,7 +48,7 @@ module.exports = {
   ) {
     //we disable previous activities that were on
     if (service.id != -1 && service.id != commandToSend && on) {
-      platform.log.debug('Switching off ' + otherServiceControl.displayName);
+      platform.log.debug('Switching off ' + service.displayName);
       characteristic.updateValue(false);
     }
   },

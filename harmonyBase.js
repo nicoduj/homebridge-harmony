@@ -184,7 +184,8 @@ HarmonyBase.prototype = {
         'INFO - onMessage : received message : ' + JSON.stringify(message)
       );
 
-      // message = JSON.parse('{"type": "automation.state?notify","data": {"hue-light.harmony_virtual_button_3": {"on": true,"status": 0}}}');
+      //DEBUG
+      //message = JSON.parse('{"type": "automation.state?notify","data": {"hue-light.harmony_virtual_button_3": {"on": true,"status": 0}}}');
 
       if (
         message.type === 'connect.stateDigest?get' ||
@@ -605,10 +606,10 @@ HarmonyBase.prototype = {
 
   getHomeControlsAccessories: function(harmonyPlatform) {
     if (harmonyPlatform.publishHomeControlButtons) {
-      harmonyPlatform.log('INFO - Loading home controls ...');
+      harmonyPlatform.log('INFO - getting home controls ...');
 
       var payload = {
-        hubId: this._remoteId,
+        hubId: this.harmony._remoteId,
         timeout: 30,
         hbus: {
           cmd: 'harmony.automation?getstate',
@@ -630,8 +631,8 @@ HarmonyBase.prototype = {
     harmonyPlatform.log.debug(
       'INFO - got Home Control : ' + JSON.stringify(data)
     );
-
-    // data = JSON.parse(' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}');
+    //DEBUG
+    //data = JSON.parse(' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}');
     let homeControls = data.data;
     let services = [];
 
@@ -722,12 +723,28 @@ HarmonyBase.prototype = {
     harmonyPlatform._foundAccessories.push(myHarmonyAccessory);
   },
 
+  refreshHomeAccessory(harmonyPlatform) {
+    this.getHomeControlsAccessories(harmonyPlatform).then(responseHome => {
+      //DEBUG
+      //responseHome = JSON.parse(' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}');
+      if (responseHome && responseHome.data)
+        this.refreshHomeSwitch(harmonyPlatform, responseHome.data);
+    });
+  },
+
   bindCharacteristicEvents: function(harmonyPlatform, characteristic, service) {
     characteristic.on(
       'set',
       function(value, callback) {
         //send command
-        if (value) {
+        if (service.type === HarmonyConst.HOME_TYPE) {
+          let command = '{"on":"' + value + '"}';
+          let commandToSend = {};
+          commandToSend[service.controlService.id] = command;
+          this.sendAutomationCommand(harmonyPlatform, commandToSend);
+        }
+        //send command for other devices
+        else if (value) {
           if (service.type === HarmonyConst.DEVICE_TYPE) {
             let command = service.command;
             this.sendCommand(harmonyPlatform, command);
@@ -737,19 +754,9 @@ HarmonyBase.prototype = {
           } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
             let command = '{"sequenceId":"' + service.controlService.id + '"}';
             this.sendCommand(harmonyPlatform, command);
-          } else if (service.type === HarmonyConst.HOME_TYPE) {
-            let command =
-              '{"state":{"' +
-              service.controlService.id +
-              '":{"on":' +
-              value +
-              '}}}}}';
-            this.sendAutomationCommand(harmonyPlatform, command);
           }
-        }
 
-        // In order to behave like a push button reset the status to off
-        if (service.type !== HarmonyConst.HOME_TYPE) {
+          // In order to behave like a push button reset the status to off
           setTimeout(function() {
             characteristic.updateValue(false, undefined);
           }, HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE);
@@ -762,12 +769,38 @@ HarmonyBase.prototype = {
     characteristic.on(
       'get',
       function(callback) {
-        this.handleCharacteristicUpdate(
-          harmonyPlatform,
-          characteristic,
-          false,
-          callback
-        );
+        //send command
+        if (service.type === HarmonyConst.HOME_TYPE) {
+          this.getHomeControlsAccessories(harmonyPlatform).then(
+            responseHome => {
+              var newValue = false;
+
+              //DEBUG
+              //responseHome = JSON.parse(' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}');
+
+              if (
+                responseHome &&
+                responseHome.data &&
+                responseHome.data[service.controlService.id]
+              )
+                newValue = responseHome.data[service.controlService.id].on;
+
+              this.handleCharacteristicUpdate(
+                harmonyPlatform,
+                characteristic,
+                newValue,
+                callback
+              );
+            }
+          );
+        } else {
+          this.handleCharacteristicUpdate(
+            harmonyPlatform,
+            characteristic,
+            false,
+            callback
+          );
+        }
       }.bind(this)
     );
   },
@@ -803,14 +836,19 @@ HarmonyBase.prototype = {
     );
 
     var payload = {
-      hubId: this._remoteId,
+      hubId: this.harmony._remoteId,
       timeout: 30,
       hbus: {
         cmd: 'harmony.automation?setstate',
         id: 0,
-        params: commandToSend,
+        params: {
+          state: {},
+        },
       },
     };
+
+    Object.assign(payload.hbus.params.state, commandToSend);
+    harmonyPlatform.log.debug(JSON.stringify(payload));
 
     return this.harmony._client
       .open()
@@ -822,6 +860,7 @@ HarmonyBase.prototype = {
       })
       .catch(e => {
         harmonyPlatform.log('ERROR - sendingAutomationCommand : ' + e);
+        this.refreshHomeAccessory(harmonyPlatform);
       });
   },
 };

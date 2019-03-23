@@ -178,6 +178,7 @@ HarmonyPlatformAsSwitches.prototype = {
           this.refreshService(service, myHarmonyAccessory, undefined);
       }
     }
+    this.harmonyBase.refreshHomeAccessory(this);
   },
 
   getServiceControl: function(homebridgeAccessory, idToFind) {
