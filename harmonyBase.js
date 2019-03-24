@@ -737,8 +737,10 @@ HarmonyBase.prototype = {
       function(value, callback) {
         //send command
         if (service.type === HarmonyConst.HOME_TYPE) {
-          let command = '{"on":"' + value + '"}';
+          let command = {};
+          command.on = value;
           let commandToSend = {};
+          Object.assign(commandToSend, command);
           commandToSend[service.controlService.id] = command;
           this.sendAutomationCommand(harmonyPlatform, commandToSend);
         }
