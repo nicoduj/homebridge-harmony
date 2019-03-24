@@ -722,6 +722,18 @@ HarmonyBase.prototype = {
     myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
     myHarmonyAccessory.context.subPlatformName = harmonyPlatform.name;
 
+    myHarmonyAccessory
+      .getService(Service.AccessoryInformation)
+      .setCharacteristic(
+        Characteristic.Manufacturer,
+        myHarmonyAccessory.manufacturer
+      )
+      .setCharacteristic(Characteristic.Model, myHarmonyAccessory.model)
+      .setCharacteristic(
+        Characteristic.SerialNumber,
+        myHarmonyAccessory.serialNumber
+      );
+
     return myHarmonyAccessory;
   },
 
