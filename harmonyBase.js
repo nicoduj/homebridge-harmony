@@ -691,18 +691,24 @@ HarmonyBase.prototype = {
 
       for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
         let service = myHarmonyAccessory.services[s];
-        if (service.type == HOME_TYPE && data[service.controlService.id]) {
-          let characteristic = service.controlService.getCharacteristic(
-            Characteristic.On
-          );
-
+        if (service.type == HOME_TYPE) {
+          let newValue = data[service.controlService.id];
           harmonyPlatform.log.debug(
-            'INFO - refreshHomeSwitch - Refreshing home switch ' +
-              service.controlService.displayName +
-              ' to ' +
-              data[service.controlService.id].on
+            'INFO - refreshHomeSwitch - got status for ' + newValue
           );
-          characteristic.updateValue(data[service.controlService.id].on);
+          if (newValue) {
+            let characteristic = service.controlService.getCharacteristic(
+              Characteristic.On
+            );
+
+            harmonyPlatform.log.debug(
+              'INFO - refreshHomeSwitch - Refreshing home switch ' +
+                service.controlService.displayName +
+                ' to ' +
+                newValue.on
+            );
+            characteristic.updateValue(newValue.on);
+          }
         }
       }
     }
