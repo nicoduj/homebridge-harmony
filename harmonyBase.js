@@ -160,6 +160,12 @@ HarmonyBase.prototype = {
     }
   },
 
+  _onMessage(message) {
+    if (message.type === 'automation.state?notify') {
+      this.harmony.emit('automationState', message);
+    }
+  },
+
   configureAccessories: function(harmonyPlatform, callback) {
     harmonyPlatform.log('INFO - Loading activities...');
 
@@ -167,6 +173,10 @@ HarmonyBase.prototype = {
 
     this.harmony.on('open', () => {
       harmonyPlatform.log.debug('INFO - socket opened');
+      //adding listener
+      this.harmony._client.onUnpackedMessage.addListener(
+        this._onMessage.bind(this)
+      );
     });
 
     this.harmony.on('close', () => {
