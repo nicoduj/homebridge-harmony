@@ -103,7 +103,7 @@ Fields:
 
 - `platform` must be "HarmonyHubWebSocket" (required).
 - `name` is the name of the published Platform (required).
-- `cleanCache` option to clean all cached Accessory. Please use with caution, might be neeeded if you change mode / config and there is some ghost devices in Homkit. Be sure that all your icloud sync is done while launching Homebridge with this option set to true. Set it back to false after and launch again !
+- `cleanCache` option to clean all cached Accessory. Please use with caution, might be needed if you change names / config of the hub and there is some ghost devices in Homekit. Be sure that all your icloud sync is done while launching Homebridge with this option set to true. Set it back to false after and launch again !
 - `subPlatform` is an array of hubs platform
   - `name` is the name of the published hub (required). Use a different name for each entry if you have multiple hubs or if you had the same hub multiple times.
   - `hubIP` is the static IP address of the hub (required). A static IP address is required.
