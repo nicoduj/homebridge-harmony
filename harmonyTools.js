@@ -10,7 +10,8 @@ module.exports = {
     return (
       service.type === HarmonyConst.DEVICE_TYPE ||
       service.type === HarmonyConst.DEVICEMACRO_TYPE ||
-      service.type === HarmonyConst.SEQUENCE_TYPE
+      service.type === HarmonyConst.SEQUENCE_TYPE ||
+      service.type === HarmonyConst.HOME_TYPE
     );
   },
 
@@ -74,6 +75,16 @@ module.exports = {
           : false
       );
     }
+  },
+
+  isCommandOk: function(data) {
+    return (
+      data && data.code && data.code == 200 && data.msg && data.msg == 'OK'
+    );
+  },
+
+  isCommandInProgress: function(data) {
+    return data && (data.code == 202 || data.code == 100);
   },
 };
 

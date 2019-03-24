@@ -30,7 +30,7 @@ HarmonyPlatformAsSwitches.prototype = {
     return activity.id != -1 || this.showTurnOffActivity;
   },
 
-  readAccessories: function(data) {
+  readAccessories: function(data, homedata) {
     let activities = data.data.activity;
 
     let accessoriesToAdd = [];
@@ -82,7 +82,12 @@ HarmonyPlatformAsSwitches.prototype = {
       }
     }
 
-    this.harmonyBase.setupFoundAccessories(this, accessoriesToAdd, data);
+    this.harmonyBase.setupFoundAccessories(
+      this,
+      accessoriesToAdd,
+      data,
+      homedata
+    );
   },
 
   //Cache call method
@@ -173,16 +178,6 @@ HarmonyPlatformAsSwitches.prototype = {
     }
   },
 
-  isActivityOk: function(data) {
-    return (
-      data && data.code && data.code == 200 && data.msg && data.msg == 'OK'
-    );
-  },
-
-  isActivityInProgress: function(data) {
-    return data && (data.code == 202 || data.code == 100);
-  },
-
   handleActivityOk: function(commandToSend) {
     this._currentSetAttemps = 0;
 
@@ -262,9 +257,9 @@ HarmonyPlatformAsSwitches.prototype = {
           'INFO - activityCommand : Returned from hub ' + JSON.stringify(data)
         );
 
-        if (this.isActivityOk(data)) {
+        if (HarmonyTools.isCommandOk(data)) {
           this.handleActivityOk(commandToSend);
-        } else if (this.isActivityInProgress(data)) {
+        } else if (HarmonyTools.isCommandInProgress(data)) {
           this.log.debug(
             'WARNING - activityCommand : could not SET status : ' +
               JSON.stringify(data)

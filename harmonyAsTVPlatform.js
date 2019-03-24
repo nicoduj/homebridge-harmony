@@ -199,7 +199,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     return inputSourceService;
   },
 
-  readAccessories: function(data) {
+  readAccessories: function(data, homedata) {
     let activities = data.data.activity;
 
     let accessoriesToAdd = [];
@@ -253,7 +253,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
     this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
 
-    this.harmonyBase.setupFoundAccessories(this, accessoriesToAdd, data);
+    this.harmonyBase.setupFoundAccessories(
+      this,
+      accessoriesToAdd,
+      data,
+      homedata
+    );
   },
 
   //Cache call method
@@ -414,13 +419,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   activityCommand: function(homebridgeAccessory, commandToSend) {
     this.harmonyBase.harmony.startActivity(commandToSend).then(data => {
-      if (
-        data &&
-        data.code &&
-        data.code == 200 &&
-        data.msg &&
-        data.msg == 'OK'
-      ) {
+      if (HarmonyTools.isCommandOk(data)) {
         this._currentSetAttemps = 0;
 
         this.log.debug('INFO - activityCommand : command sent');

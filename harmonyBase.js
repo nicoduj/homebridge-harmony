@@ -39,9 +39,15 @@ HarmonyBase.prototype = {
 
     harmonyPlatform.sequencesToPublishAsAccessoriesSwitch =
       config['sequencesToPublishAsAccessoriesSwitch'];
-
     harmonyPlatform.publishSequencesAsIndividualAccessories = HarmonyTools.checkParameter(
       config['publishSequencesAsIndividualAccessories'],
+      true
+    );
+
+    harmonyPlatform.publishHomeControlButtons =
+      config['publishHomeControlButtons'];
+    harmonyPlatform.publishHomeControlsAsIndividualAccessories = HarmonyTools.checkParameter(
+      config['publishHomeControlsAsIndividualAccessories'],
       true
     );
 
@@ -156,40 +162,55 @@ HarmonyBase.prototype = {
       }, HarmonyConst.DELAY_BEFORE_RECONNECT);
     });
 
+    this.harmony.on('automationState', message => {
+      //DEBUG
+      //message = JSON.parse('{"type":"automation.state?notify","data":{"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0}}}');
+
+      harmonyPlatform.log.debug(
+        'INFO - onMessage : Refreshing Home Automation Switch ' +
+          JSON.stringify(message.data)
+      );
+      this.refreshHomeSwitch(harmonyPlatform, message.data);
+    });
+
     this.harmony.on('stateDigest', message => {
       harmonyPlatform.log.debug(
         'INFO - onMessage : received message : ' + JSON.stringify(message)
       );
       if (
-        message.type === 'connect.stateDigest?get' ||
-        (message.type === 'connect.stateDigest?notify' &&
-          message.data.activityStatus === 2 &&
+        (message.data.activityStatus === 2 &&
           message.data.activityId === message.data.runningActivityList) ||
-        (message.type === 'connect.stateDigest?notify' &&
-          message.data.activityStatus === 0 &&
+        (message.data.activityStatus === 0 &&
           message.data.activityId === '-1' &&
           message.data.runningActivityList === '')
       ) {
-        harmonyPlatform.log(
+        harmonyPlatform.log.debug(
           'INFO - onMessage : Refreshing activity to ' + message.data.activityId
         );
         harmonyPlatform.onMessage(message.data.activityId);
       }
     });
 
+    this.harmony.sendTimeout = HarmonyConst.HUB_SEND_TIMEOUT;
+    this.harmony.connectTimeout = HarmonyConst.HUB_CONNECT_TIMEOUT;
+
     this.harmony
-      .connect(
-        harmonyPlatform.hubIP,
-        HarmonyConst.HUB_CONNECT_TIMEOUT,
-        HarmonyConst.HUB_SEND_TIMEOUT
-      )
+      .connect(harmonyPlatform.hubIP)
       .then(() => this.harmony.getConfig())
       .then(response => {
         harmonyPlatform.log.debug(
           'INFO - Hub config : ' + JSON.stringify(response)
         );
-        harmonyPlatform.readAccessories(response);
-        this.numberAttemps = 0;
+        this.getHomeControlsAccessories(harmonyPlatform).then(responseHome => {
+          //DEBUG
+
+          responseHome = JSON.parse(
+            ' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}'
+          );
+
+          harmonyPlatform.readAccessories(response, responseHome);
+          this.numberAttemps = 0;
+        });
       })
       .catch(e => {
         var that = this;
@@ -209,12 +230,13 @@ HarmonyBase.prototype = {
       });
   },
 
-  setupFoundAccessories(harmonyPlatform, accessoriesToAdd, data) {
+  setupFoundAccessories(harmonyPlatform, accessoriesToAdd, data, homedata) {
     //creating accessories
     this.addAccesories(harmonyPlatform, accessoriesToAdd);
 
     this.getDevicesAccessories(harmonyPlatform, data);
     this.getSequencesAccessories(harmonyPlatform, data);
+    this.handleHomeControls(harmonyPlatform, homedata);
 
     //first refresh
     setTimeout(function() {
@@ -263,6 +285,117 @@ HarmonyBase.prototype = {
           );
           if (!callbackDone) callback();
         });
+    }
+  },
+
+  refreshHomeAccessory(harmonyPlatform) {
+    this.getHomeControlsAccessories(harmonyPlatform).then(responseHome => {
+      if (responseHome && responseHome.data) {
+        harmonyPlatform.log.debug(
+          'INFO - got home controls : ' + JSON.stringify(responseHome)
+        );
+        this.refreshHomeSwitch(harmonyPlatform, responseHome.data);
+      }
+    });
+  },
+
+  refreshHomeSwitch(harmonyPlatform, data) {
+    for (let a = 0; a < harmonyPlatform._foundAccessories.length; a++) {
+      let myHarmonyAccessory = harmonyPlatform._foundAccessories[a];
+
+      for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
+        let service = myHarmonyAccessory.services[s];
+        if (service.type == HOME_TYPE) {
+          let newValue = data[service.id];
+
+          if (newValue) {
+            let characteristic = service.getCharacteristic(Characteristic.On);
+
+            harmonyPlatform.log.debug(
+              'INFO - refreshHomeSwitch - Refreshing home switch ' +
+                service.displayName +
+                ' to ' +
+                newValue.on
+            );
+            characteristic.updateValue(newValue.on);
+          }
+        }
+      }
+    }
+  },
+
+  handleHomeControls: function(harmonyPlatform, data) {
+    if (!data || !data.data) {
+      return;
+    }
+
+    harmonyPlatform.log.debug(
+      'INFO - got Home Control : ' + JSON.stringify(data)
+    );
+
+    let homeControls = data.data;
+    let services = [];
+
+    var accessoriesToAdd = [];
+    var myHarmonyAccessory;
+
+    if (!harmonyPlatform.publishHomeControlsAsIndividualAccessories) {
+      let name = harmonyPlatform.name + '-HomeControls';
+      myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+      if (!myHarmonyAccessory) {
+        myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
+        accessoriesToAdd.push(myHarmonyAccessory);
+      }
+    }
+
+    for (var key in homeControls) {
+      let switchName = key;
+      let accessoryName = harmonyPlatform.name + '-' + switchName;
+
+      if (harmonyPlatform.devMode) {
+        switchName = 'DEV' + switchName;
+      }
+
+      harmonyPlatform.log('INFO - Discovered Home Control : ' + switchName);
+
+      if (harmonyPlatform.publishHomeControlsAsIndividualAccessories) {
+        myHarmonyAccessory = this.checkAccessory(
+          harmonyPlatform,
+          accessoryName
+        );
+        if (!myHarmonyAccessory) {
+          myHarmonyAccessory = this.createAccessory(
+            harmonyPlatform,
+            accessoryName
+          );
+          accessoriesToAdd.push(myHarmonyAccessory);
+        }
+      }
+
+      let subType = switchName;
+      let service = this.getSwitchService(
+        harmonyPlatform,
+        myHarmonyAccessory,
+        switchName,
+        subType
+      );
+
+      service.HomeId = key;
+      service.type = HarmonyConst.HOME_TYPE;
+      this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
+    }
+
+    //creating accessories
+    this.addAccesories(harmonyPlatform, accessoriesToAdd);
+  },
+
+  getHomeControlsAccessories: function(harmonyPlatform) {
+    if (harmonyPlatform.publishHomeControlButtons) {
+      harmonyPlatform.log.debug('INFO - getting home controls ...');
+      return this.harmony.getAutomationCommands();
+    } else {
+      var responseHome = {};
+      return Promise.resolve(responseHome);
     }
   },
 
@@ -662,7 +795,13 @@ HarmonyBase.prototype = {
         'set',
         function(value, callback) {
           //send command
-          if (value) {
+          if (service.type === HarmonyConst.HOME_TYPE) {
+            let command = {};
+            command.on = value;
+            let commandToSend = {};
+            commandToSend[service.HomeId] = command;
+            this.sendAutomationCommand(harmonyPlatform, commandToSend);
+          } else if (value) {
             if (service.type === HarmonyConst.DEVICE_TYPE) {
               let command = service.command;
               this.sendCommand(harmonyPlatform, command);
@@ -673,14 +812,14 @@ HarmonyBase.prototype = {
               let command = '{"sequenceId":"' + service.sequenceId + '"}';
               this.sendCommand(harmonyPlatform, command);
             }
-          }
 
-          // In order to behave like a push button reset the status to off
-          setTimeout(function() {
-            service
-              .getCharacteristic(Characteristic.On)
-              .updateValue(false, undefined);
-          }, HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE);
+            // In order to behave like a push button reset the status to off
+            setTimeout(function() {
+              service
+                .getCharacteristic(Characteristic.On)
+                .updateValue(false, undefined);
+            }, HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE);
+          }
 
           callback();
         }.bind(this)
@@ -688,12 +827,33 @@ HarmonyBase.prototype = {
       .on(
         'get',
         function(callback) {
-          this.handleCharacteristicUpdate(
-            harmonyPlatform,
-            service.getCharacteristic(Characteristic.On),
-            false,
-            callback
-          );
+          if (service.type === HarmonyConst.HOME_TYPE) {
+            this.getHomeControlsAccessories(harmonyPlatform).then(
+              responseHome => {
+                var newValue = false;
+                if (
+                  responseHome &&
+                  responseHome.data &&
+                  responseHome.data[service.controlService.id]
+                )
+                  newValue = responseHome.data[service.controlService.id].on;
+
+                this.handleCharacteristicUpdate(
+                  harmonyPlatform,
+                  service.getCharacteristic(Characteristic.On),
+                  newValue,
+                  callback
+                );
+              }
+            );
+          } else {
+            this.handleCharacteristicUpdate(
+              harmonyPlatform,
+              service.getCharacteristic(Characteristic.On),
+              false,
+              callback
+            );
+          }
         }.bind(this)
       );
   },
@@ -706,7 +866,7 @@ HarmonyBase.prototype = {
     harmonyPlatform.log.debug('INFO - sendingCommand' + commandToSend);
 
     return this.harmony
-      .sendCommands(commandToSend)
+      .sendCommand(commandToSend)
       .then(data => {
         harmonyPlatform.log.debug(
           'INFO - sendCommand done' + JSON.stringify(data)
@@ -714,6 +874,34 @@ HarmonyBase.prototype = {
       })
       .catch(e => {
         harmonyPlatform.log('ERROR - sendCommand : ' + e);
+      });
+  },
+
+  sendAutomationCommand: function(harmonyPlatform, commandToSend) {
+    if (!commandToSend) {
+      harmonyPlatform.log.debug(
+        'INFO - sendAutomationCommand : Command not available '
+      );
+      return;
+    }
+    harmonyPlatform.log.debug(
+      'INFO - sendingAutomationCommand' + JSON.stringify(commandToSend)
+    );
+
+    return this.harmony
+      .sendAutomationCommand(commandToSend)
+      .then(data => {
+        harmonyPlatform.log.debug(
+          'INFO - sendingAutomationCommand done' + JSON.stringify(data)
+        );
+
+        if (!HarmonyTools.isCommandOk(data)) {
+          this.refreshHomeAccessory(harmonyPlatform);
+        }
+      })
+      .catch(e => {
+        harmonyPlatform.log('ERROR - sendingAutomationCommand : ' + e);
+        this.refreshHomeAccessory(harmonyPlatform);
       });
   },
 };

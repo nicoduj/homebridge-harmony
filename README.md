@@ -84,6 +84,8 @@ Fields:
 - `publishDevicesAsIndividualAccessories` option to publish devices as individual accessories. Defaults to true.
 - `sequencesToPublishAsAccessoriesSwitch` array of Sequences to exposes through a switch.
 - `publishSequencesAsIndividualAccessories` option to publish sequences as individual accessories. Defaults to true.
+- `publishHomeControlButtons` set to true if you want to publish home controls as switches
+- `publishHomeControlsAsIndividualAccessories` option to publish home controls as individual accessories. Defaults to true.
 - `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
 - `mainActivity` set the mainactivity of the TV mode
 - `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
@@ -196,10 +198,11 @@ Thanks to
 
 - [iandday] for the Harmoney WebSocket protocol implementation and understanding of it.
 - [lopelex] for his clean plugin.
-- every tester / contributor that test, and give feedback in any way !
+- every tester / contributor that test, and give feedback in any way , and especially [gitgayhub] for Home controls in 0.6.0
 
 [lopelex]: https://github.com/lopelex/harmony-websocket
 [iandday]: https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py
+[gitgayhub]: https://github.com/gitgayhub
 
 ## Donating
 

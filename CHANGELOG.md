@@ -8,6 +8,15 @@ All notable changes to this project will be documented in this file.
 - [BREAKING] skipedIfSameStateActivities -> skippedIfSameStateActivities / addAllActivitiesToSkipedIfSameStateActivitiesList -> addAllActivitiesToSkippedIfSameStateActivitiesList
 - [BREAKING] MENU command (inside properties of TV Service) renamed to SETUP and will be mapped to setup function if avaliable (can be ovewridden)
 
+## 0.6.1
+
+- [NEW] swithcing to @lopelex 1.0.9
+
+## 0.6.0
+
+- [NEW] support for Exposing Home Control buttons #67
+- [BUG] ReferenceError #110
+
 ## 0.5.5
 
 - [BUG] - showTurnOffActivity doesn’t work properly when inverterted #107
@@ -152,7 +161,7 @@ All notable changes to this project will be documented in this file.
 
 ## 0.2.3
 
-- [NEW] TV MODE - restoring `SkippedIfSameStateActivities` options #46
+- [NEW] TV MODE - restoring `SkipedIfSameStateActivities` options #46
 
 ## 0.2.2
 
