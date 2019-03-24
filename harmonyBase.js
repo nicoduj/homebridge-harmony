@@ -179,11 +179,7 @@ HarmonyBase.prototype = {
 
     this.harmony.on('automationState', message => {
       //DEBUG
-      //message = JSON.parse('{"type": "automation.state?notify","data": {"hue-light.harmony_virtual_button_3": {"on": true,"status": 0}}}');
-      harmonyPlatform.log.debug(
-        'INFO - onMessage : received automation message : ' +
-          JSON.stringify(message)
-      );
+      //message = JSON.parse('{"type":"automation.state?notify","data":{"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0}}}');
 
       harmonyPlatform.log.debug(
         'INFO - onMessage : Refreshing Home Automation Switch ' +
@@ -628,15 +624,20 @@ HarmonyBase.prototype = {
       return this.harmony._client
         .open()
         .then(() => this.harmony._client.sendRequest(payload));
-    } else return;
+    } else {
+      //DEBUG
+      var responseHome = JSON.parse(
+        ' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}'
+      );
+
+      return Promise.resolve(responseHome);
+    }
   },
 
   handleHomeControls: function(harmonyPlatform, data) {
     harmonyPlatform.log.debug(
       'INFO - got Home Control : ' + JSON.stringify(data)
     );
-    //DEBUG
-    //data = JSON.parse(' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}');
 
     if (!data || !data.data) {
       return;
@@ -727,8 +728,6 @@ HarmonyBase.prototype = {
 
   refreshHomeAccessory(harmonyPlatform) {
     this.getHomeControlsAccessories(harmonyPlatform).then(responseHome => {
-      //DEBUG
-      //responseHome = JSON.parse(' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}');
       if (responseHome && responseHome.data)
         this.refreshHomeSwitch(harmonyPlatform, responseHome.data);
     });
@@ -777,9 +776,6 @@ HarmonyBase.prototype = {
           this.getHomeControlsAccessories(harmonyPlatform).then(
             responseHome => {
               var newValue = false;
-
-              //DEBUG
-              //responseHome = JSON.parse(' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}');
 
               if (
                 responseHome &&
@@ -835,7 +831,7 @@ HarmonyBase.prototype = {
       return;
     }
     harmonyPlatform.log.debug(
-      'INFO - sendingAutomationCommand' + commandToSend
+      'INFO - sendingAutomationCommand' + JSON.stringify(commandToSend)
     );
 
     var payload = {
@@ -851,7 +847,6 @@ HarmonyBase.prototype = {
     };
 
     Object.assign(payload.hbus.params.state, commandToSend);
-    harmonyPlatform.log.debug(JSON.stringify(payload));
 
     return this.harmony._client
       .open()
