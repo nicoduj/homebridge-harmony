@@ -10,8 +10,9 @@ module.exports = {
 function HarmonyPlatformAsSwitches(log, config, api) {
   Characteristic = api.hap.Characteristic;
 
+  this.api = api;
   this.harmonyBase = new HarmonyBase(api);
-  this.harmonyBase.configCommonProperties(log, config, api, this);
+  this.harmonyBase.configCommonProperties(log, config, this);
 
   this.showTurnOffActivity = config['showTurnOffActivity'];
   this.publishActivitiesAsIndividualAccessories = HarmonyTools.checkParameter(
@@ -37,9 +38,9 @@ HarmonyPlatformAsSwitches.prototype = {
     var myHarmonyAccessory;
 
     if (!this.publishActivitiesAsIndividualAccessories) {
-      myHarmonyAccessory = this.harmonyBase.checkAccessory(this, this.name);
+      myHarmonyAccessory = this.harmonyBase.checkAccessory(this, '');
       if (!myHarmonyAccessory) {
-        myHarmonyAccessory = this.harmonyBase.createAccessory(this, this.name);
+        myHarmonyAccessory = this.harmonyBase.createAccessory(this, '');
         accessoriesToAdd.push(myHarmonyAccessory);
       }
     }
@@ -50,17 +51,15 @@ HarmonyPlatformAsSwitches.prototype = {
           ? 'DEV' + activities[i].label
           : activities[i].label;
 
-        let accessoryName = this.name + '-' + activities[i].label;
-
         if (this.publishActivitiesAsIndividualAccessories) {
           myHarmonyAccessory = this.harmonyBase.checkAccessory(
             this,
-            accessoryName
+            switchName
           );
           if (!myHarmonyAccessory) {
             myHarmonyAccessory = this.harmonyBase.createAccessory(
               this,
-              accessoryName
+              switchName
             );
             accessoriesToAdd.push(myHarmonyAccessory);
           }
@@ -88,15 +87,6 @@ HarmonyPlatformAsSwitches.prototype = {
       data,
       homedata
     );
-  },
-
-  //Cache call method
-  configureAccessory: function(accessory) {
-    this.log(
-      accessory.displayName,
-      'Got cached Accessory For SwitchMode ' + accessory.UUID
-    );
-    this._foundAccessories.push(accessory);
   },
 
   refreshCurrentActivity: function(response) {

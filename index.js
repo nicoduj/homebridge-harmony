@@ -1,7 +1,4 @@
-const HarmonyPlatformAsSwitches = require('./harmonyAsSwitches')
-  .HarmonyPlatformAsSwitches;
-const HarmonyPlatformAsTVPlatform = require('./harmonyAsTVPlatform')
-  .HarmonyPlatformAsTVPlatform;
+const HarmonyPlatform = require('./harmonyPlatform').HarmonyPlatform;
 
 module.exports = function(homebridge) {
   homebridge.registerPlatform(
@@ -11,20 +8,3 @@ module.exports = function(homebridge) {
     true
   );
 };
-
-function HarmonyPlatform(log, config, api) {
-  log('HarmonyPlatform Init');
-
-  this.log = log;
-  this.TVPlatformMode = config['TVPlatformMode'];
-
-  if (this.TVPlatformMode == undefined) this.TVPlatformMode = false;
-
-  this.log('INFO - TVPlatformMode : ' + this.TVPlatformMode);
-
-  if (this.TVPlatformMode) {
-    return new HarmonyPlatformAsTVPlatform(log, config, api);
-  } else {
-    return new HarmonyPlatformAsSwitches(log, config, api);
-  }
-}

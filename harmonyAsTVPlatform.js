@@ -15,8 +15,9 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
 
+  this.api = api;
   this.harmonyBase = new HarmonyBase(api);
-  this.harmonyBase.configCommonProperties(log, config, api, this);
+  this.harmonyBase.configCommonProperties(log, config, this);
 
   this.mainActivity = config['mainActivity'];
   this.playPauseBehavior = HarmonyTools.checkParameter(
@@ -201,12 +202,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   readAccessories: function(data, homedata) {
     let activities = data.data.activity;
-
     let accessoriesToAdd = [];
+    let name = this.devMode ? 'DEV' : '';
 
-    myHarmonyAccessory = this.harmonyBase.checkAccessory(this, this.name);
+    myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
     if (!myHarmonyAccessory) {
-      myHarmonyAccessory = this.harmonyBase.createAccessory(this, this.name);
+      myHarmonyAccessory = this.harmonyBase.createAccessory(this, name);
       accessoriesToAdd.push(myHarmonyAccessory);
     }
 
@@ -259,15 +260,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
       data,
       homedata
     );
-  },
-
-  //Cache call method
-  configureAccessory: function(accessory) {
-    this.log.debug(
-      accessory.displayName,
-      'Got cached Accessory For TVMode ' + accessory.UUID
-    );
-    this._foundAccessories.push(accessory);
   },
 
   ///REFRESHING TOOLS
