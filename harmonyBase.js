@@ -626,22 +626,23 @@ HarmonyBase.prototype = {
         .then(() => this.harmony._client.sendRequest(payload));
     } else {
       //DEBUG
-      var responseHome = JSON.parse(
-        ' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}'
-      );
-
+      //var responseHome = JSON.parse(
+      //  ' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}'
+      //);
+      var responseHome = {};
       return Promise.resolve(responseHome);
     }
   },
 
   handleHomeControls: function(harmonyPlatform, data) {
+    if (!data || !data.data) {
+      return;
+    }
+
     harmonyPlatform.log.debug(
       'INFO - got Home Control : ' + JSON.stringify(data)
     );
 
-    if (!data || !data.data) {
-      return;
-    }
     let homeControls = data.data;
     let services = [];
 
@@ -684,12 +685,18 @@ HarmonyBase.prototype = {
 
   refreshHomeSwitch(harmonyPlatform, data) {
     for (var key in data) {
+      harmonyPlatform.log.debug('1 refreshHomeSwitch ' + key);
       var found = false;
       for (let a = 0; a < harmonyPlatform._foundAccessories.length; a++) {
         let myHarmonyAccessory = harmonyPlatform._foundAccessories[a];
+        harmonyPlatform.log.debug(
+          '2 refreshHomeSwitch ' + myHarmonyAccessory.name
+        );
         for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
           let service = myHarmonyAccessory.services[s];
-
+          harmonyPlatform.log.debug(
+            '3 refreshHomeSwitch ' + service.controlService.id
+          );
           if (service.type == HOME_TYPE && service.controlService.id == key) {
             let characteristic = service.controlService.getCharacteristic(
               Characteristic.On
