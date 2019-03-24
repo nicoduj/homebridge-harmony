@@ -77,7 +77,7 @@ For TV platform mode with ios 12.2 and homebridge 0.0.46 :
 
 For multiple hubs (or same hub with both TVMode and Switch Mode):
 
-````json
+```json
 "platforms": [
   {
     "platform": "HarmonyHubWebSocket",
@@ -97,7 +97,7 @@ For multiple hubs (or same hub with both TVMode and Switch Mode):
     }]
   }
 ]
-
+```
 
 Fields:
 
@@ -138,7 +138,7 @@ As a sample :
 
 ```json
   "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up|Up|2500;Down"]
-````
+```
 
 will add
 
