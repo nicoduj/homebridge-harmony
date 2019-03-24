@@ -565,6 +565,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
         callback(null);
       }.bind(this)
     );
+
     characteristic.on(
       'get',
       function(callback) {
@@ -727,9 +728,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
         let idConf = service.controlService.id;
         this.log.debug(
           'INFO - GET Characteristic.CurrentVisibilityState : ' +
-            this.savedVisibility[idConf]
-            ? this.savedVisibility[idConf]
-            : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN
+            (this.savedVisibility[idConf]
+              ? this.savedVisibility[idConf]
+              : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN)
         );
         if (this.savedVisibility[idConf])
           callback(null, this.savedVisibility[idConf]);
@@ -745,9 +746,9 @@ HarmonyPlatformAsTVPlatform.prototype = {
         let idConf = service.controlService.id;
         this.log.debug(
           'INFO - GET Characteristic.TargetVisibilityState : ' +
-            this.savedVisibility[idConf]
-            ? this.savedVisibility[idConf]
-            : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN
+            (this.savedVisibility[idConf]
+              ? this.savedVisibility[idConf]
+              : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN)
         );
         if (this.savedVisibility[idConf])
           callback(null, this.savedVisibility[idConf]);

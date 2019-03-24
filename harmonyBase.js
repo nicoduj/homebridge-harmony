@@ -693,9 +693,7 @@ HarmonyBase.prototype = {
         let service = myHarmonyAccessory.services[s];
         if (service.type == HOME_TYPE) {
           let newValue = data[service.controlService.id];
-          harmonyPlatform.log.debug(
-            'INFO - refreshHomeSwitch - got status for ' + newValue
-          );
+
           if (newValue) {
             let characteristic = service.controlService.getCharacteristic(
               Characteristic.On
