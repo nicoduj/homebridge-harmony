@@ -177,21 +177,30 @@ HarmonyBase.prototype = {
       }, HarmonyConst.DELAY_BEFORE_RECONNECT);
     });
 
+    this.harmony.on('automationState', message => {
+      //DEBUG
+      //message = JSON.parse('{"type": "automation.state?notify","data": {"hue-light.harmony_virtual_button_3": {"on": true,"status": 0}}}');
+      harmonyPlatform.log.debug(
+        'INFO - onMessage : received automation message : ' +
+          JSON.stringify(message)
+      );
+
+      harmonyPlatform.log.debug(
+        'INFO - onMessage : Refreshing Home Automation Switch ' +
+          JSON.stringify(message.data)
+      );
+      this.refreshHomeSwitch(harmonyPlatform, JSON.stringify(message.data));
+    });
+
     this.harmony.on('stateDigest', message => {
       harmonyPlatform.log.debug(
         'INFO - onMessage : received message : ' + JSON.stringify(message)
       );
 
-      //DEBUG
-      //message = JSON.parse('{"type": "automation.state?notify","data": {"hue-light.harmony_virtual_button_3": {"on": true,"status": 0}}}');
-
       if (
-        message.type === 'connect.stateDigest?get' ||
-        (message.type === 'connect.stateDigest?notify' &&
-          message.data.activityStatus === 2 &&
+        (message.data.activityStatus === 2 &&
           message.data.activityId === message.data.runningActivityList) ||
-        (message.type === 'connect.stateDigest?notify' &&
-          message.data.activityStatus === 0 &&
+        (message.data.activityStatus === 0 &&
           message.data.activityId === '-1' &&
           message.data.runningActivityList === '')
       ) {
@@ -199,12 +208,6 @@ HarmonyBase.prototype = {
           'INFO - onMessage : Refreshing activity to ' + message.data.activityId
         );
         harmonyPlatform.onMessage(message.data.activityId);
-      } else if (message.type === 'automation.state?notify') {
-        harmonyPlatform.log.debug(
-          'INFO - onMessage : Refreshing Home Automation Switch ' +
-            JSON.stringify(message.data)
-        );
-        this.refreshHomeSwitch(harmonyPlatform, JSON.stringify(message.data));
       }
     });
 
