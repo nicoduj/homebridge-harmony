@@ -505,7 +505,6 @@ HarmonyBase.prototype = {
   ) {
     let accessoriesToAdd = [];
 
-    let accessoryName = harmonyPlatform.name + '-' + device.label;
     let switchName = harmonyPlatform.devMode
       ? 'DEV' + device.label
       : device.label;
@@ -568,7 +567,6 @@ HarmonyBase.prototype = {
   ) {
     let accessoriesToAdd = [];
 
-    let accessoryName = harmonyPlatform.name + '-' + device.label;
     let switchName = harmonyPlatform.devMode
       ? 'DEV' + device.label
       : device.label;
