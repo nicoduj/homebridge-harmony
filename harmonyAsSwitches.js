@@ -175,9 +175,9 @@ HarmonyPlatformAsSwitches.prototype = {
     for (let a = 0; a < this._foundAccessories.length; a++) {
       let foundHarmonyAccessory = this._foundAccessories[a];
       for (let s = 0; s < foundHarmonyAccessory.services.length; s++) {
-        if (service.type == HarmonyConst.ACTIVITY_TYPE) {
-          let otherService = foundHarmonyAccessory.services[s];
+        let otherService = foundHarmonyAccessory.services[s];
 
+        if (otherService.type == HarmonyConst.ACTIVITY_TYPE) {
           let characteristic = otherService.getCharacteristic(
             Characteristic.On
           );
