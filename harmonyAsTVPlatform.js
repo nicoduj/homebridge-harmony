@@ -425,18 +425,12 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   activityCommand: function(homebridgeAccessory, commandToSend) {
     this.harmonyBase.harmony.startActivity(commandToSend).then(data => {
-      if (
-        data &&
-        data.code &&
-        data.code == 200 &&
-        data.msg &&
-        data.msg == 'OK'
-      ) {
+      if (HarmonyTools.isCommandOk(data)) {
         this._currentSetAttemps = 0;
 
         this.log.debug('INFO - activityCommand : command sent');
         this.handleRefreshOfCharacteristic(commandToSend);
-      } else if (data && (data.code == 202 || data.code == 100)) {
+      } else if (HarmonyTools.isCommandInProgress(data)) {
         this._currentSetAttemps = this._currentSetAttemps + 1;
         //get characteristic
         this.log.debug(

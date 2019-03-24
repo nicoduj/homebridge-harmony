@@ -262,7 +262,7 @@ HarmonyPlatformAsSwitches.prototype = {
           'INFO - activityCommand : Returned from hub ' + JSON.stringify(data)
         );
 
-        if (HarmonyTools.iscommandOk(data)) {
+        if (HarmonyTools.isCommandOk(data)) {
           this.handleActivityOk(commandToSend);
         } else if (HarmonyTools.isCommandInProgress(data)) {
           this.log.debug(
