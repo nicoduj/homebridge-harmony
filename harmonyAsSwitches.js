@@ -176,6 +176,7 @@ HarmonyPlatformAsSwitches.prototype = {
           this.refreshService(service, undefined);
       }
     }
+    this.harmonyBase.refreshHomeAccessory(this);
   },
 
   handleActivityOk: function(commandToSend) {
@@ -216,7 +217,7 @@ HarmonyPlatformAsSwitches.prototype = {
     for (let a = 0; a < homebridgeAccessory.services.length; a++) {
       if (homebridgeAccessory.services[a].ActivityId == idToFind) {
         service = homebridgeAccessory.services[a];
-        this.log('INFO - ' + service.displayName + ' activated');
+        this.log.debug('INFO - ' + service.displayName + ' activated');
         break;
       }
     }

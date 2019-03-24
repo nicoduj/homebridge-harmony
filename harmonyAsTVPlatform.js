@@ -293,6 +293,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
     this.harmonyBase.refreshCurrentActivity(this, () => {
       this.handleRefreshOfCharacteristic(this._currentActivity);
     });
+    this.harmonyBase.refreshHomeAccessory(this);
   },
 
   refreshCharacteristic: function(characteristic, callback) {

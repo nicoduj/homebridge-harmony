@@ -202,12 +202,6 @@ HarmonyBase.prototype = {
           'INFO - Hub config : ' + JSON.stringify(response)
         );
         this.getHomeControlsAccessories(harmonyPlatform).then(responseHome => {
-          //DEBUG
-
-          responseHome = JSON.parse(
-            ' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}'
-          );
-
           harmonyPlatform.readAccessories(response, responseHome);
           this.numberAttemps = 0;
         });
@@ -306,7 +300,7 @@ HarmonyBase.prototype = {
       for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
         let service = myHarmonyAccessory.services[s];
         if (service.type == HOME_TYPE) {
-          let newValue = data[service.id];
+          let newValue = data[service.HomeId];
 
           if (newValue) {
             let characteristic = service.getCharacteristic(Characteristic.On);
@@ -395,6 +389,13 @@ HarmonyBase.prototype = {
       return this.harmony.getAutomationCommands();
     } else {
       var responseHome = {};
+      //DEBUG
+      /*
+      responseHome = JSON.parse(
+        ' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}'
+      );
+*/
+
       return Promise.resolve(responseHome);
     }
   },
@@ -834,9 +835,9 @@ HarmonyBase.prototype = {
                 if (
                   responseHome &&
                   responseHome.data &&
-                  responseHome.data[service.controlService.id]
+                  responseHome.data[service.HomeId]
                 )
-                  newValue = responseHome.data[service.controlService.id].on;
+                  newValue = responseHome.data[service.HomeId].on;
 
                 this.handleCharacteristicUpdate(
                   harmonyPlatform,
