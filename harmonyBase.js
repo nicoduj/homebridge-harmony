@@ -185,7 +185,7 @@ HarmonyBase.prototype = {
         'INFO - onMessage : Refreshing Home Automation Switch ' +
           JSON.stringify(message.data)
       );
-      this.refreshHomeSwitch(harmonyPlatform, JSON.stringify(message.data));
+      this.refreshHomeSwitch(harmonyPlatform, message.data);
     });
 
     this.harmony.on('stateDigest', message => {
