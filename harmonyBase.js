@@ -740,7 +740,6 @@ HarmonyBase.prototype = {
           let command = {};
           command.on = value;
           let commandToSend = {};
-          Object.assign(commandToSend, command);
           commandToSend[service.controlService.id] = command;
           this.sendAutomationCommand(harmonyPlatform, commandToSend);
         }
