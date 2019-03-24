@@ -30,11 +30,13 @@ You can discuss this plugin on [Slack](https://homebridge-slackin.glitch.me) in 
 
 ## Migration from 0.X to 1.X
 
+**You have to move your configs inn a new key : "subPlatform": [{ }]** see sample below.
+
 You have to rename `skipedIfSameStateActivities` to `skippedIfSameStateActivities` (with 2 `p` ) or `addAllActivitiesToSkipedIfSameStateActivitiesList` to `addAllActivitiesToSkippedIfSameStateActivitiesList` (also with 2 `p` ) if you were using one of those options.
 
 If you were overriding **MENU** through `remoteOverrideCommandsList` you have to use **SETUP** instead now.
 
-In case of any trouble like accessorie allready added (or missing), you can try to use the option `cleanCache` but please report in order for me to fix if possible (see Fields section).
+In case of any trouble like accessories allready added (or missing), you can try to use the option `cleanCache` but please report in order for me to fix if possible (see Fields section).
 
 ## Configuration
 
@@ -44,11 +46,14 @@ For Switch Mode :
 "platforms": [
   {
     "platform": "HarmonyHubWebSocket",
-    "name": "HubName",
-    "hubIP": "192.168.1.XX",
-    "showTurnOffActivity" : true,
-    "skippedIfSameStateActivities" : ["PowerOff","La musique"],
-    "publishActivitiesAsIndividualAccessories" : false
+    "name": "PluginName",
+    "subPlatform": [{
+      "name": "HubName",
+      "hubIP": "192.168.1.XX",
+      "showTurnOffActivity" : true,
+      "skippedIfSameStateActivities" : ["PowerOff","La musique"],
+      "publishActivitiesAsIndividualAccessories" : false
+    }]
   }
 ]
 ```
@@ -59,39 +64,67 @@ For TV platform mode with ios 12.2 and homebridge 0.0.46 :
 "platforms": [
   {
     "platform": "HarmonyHubWebSocket",
-    "name": "HubName",
-    "hubIP": "192.168.1.XX",
-    "TVPlatformMode" : true,
-    "mainActivity" : "LA TV"
+    "name": "PluginName",
+    "subPlatform": [{
+      "name": "HubName",
+      "hubIP": "192.168.1.XX",
+      "TVPlatformMode" : true,
+      "mainActivity" : "LA TV"
+      }]
   }
 ]
 ```
 
+For multiple hubs (or same hub with both TVMode and Switch Mode):
+
+````json
+"platforms": [
+  {
+    "platform": "HarmonyHubWebSocket",
+    "name": "PluginName",
+    "subPlatform": [{
+      "name": "HubName",
+      "hubIP": "192.168.1.XX",
+      "TVPlatformMode" : true,
+      "mainActivity" : "LA TV"
+      },
+      {
+      "name": "OtherHubName",
+      "hubIP": "192.168.1.YY",
+      "showTurnOffActivity" : true,
+      "skippedIfSameStateActivities" : ["PowerOff","La musique"],
+      "publishActivitiesAsIndividualAccessories" : false
+    }]
+  }
+]
+
+
 Fields:
 
 - `platform` must be "HarmonyHubWebSocket" (required).
-- `name` is the name of the published accessory (required).
-  - Use a different name for each entry if you have multiple hubs.
-- `hubIP` is the static IP address of the hub (required). A static IP address is required.
-- `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
-  - if you set to true, The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
-  - if you set to "inverted", The "switch" will be "off" if and only if there is no current activity, and toggling it while "off" does nothing.
-  - if you set to "stateless", it will always be off, but can be triggered to switch off current activity.
-- `skippedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app . For TV mode, and PowerOff feature, you can add "PowerOff" to this list if you want.
-- `addAllActivitiesToSkippedIfSameStateActivitiesList` option to add all activities automatically to skippedIfSameStateActivities behavior. (defaults : false)
-- `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
-- `devicesToPublishAsAccessoriesSwitch` array of Devices to exposes with on/off function or custom functions
-- `publishDevicesAsIndividualAccessories` option to publish devices as individual accessories. Defaults to true.
-- `sequencesToPublishAsAccessoriesSwitch` array of Sequences to exposes through a switch.
-- `publishSequencesAsIndividualAccessories` option to publish sequences as individual accessories. Defaults to true.
-- `publishHomeControlButtons` set to true if you want to publish home controls as switches
-- `publishHomeControlsAsIndividualAccessories` option to publish home controls as individual accessories. Defaults to true.
-- `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
-- `mainActivity` set the mainactivity of the TV mode
-- `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
-- `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
+- `name` is the name of the published Platform (required).
 - `cleanCache` option to clean all cached Accessory. Please use with caution, might be neeeded if you change mode / config and there is some ghost devices in Homkit. Be sure that all your icloud sync is done while launching Homebridge with this option set to true. Set it back to false after and launch again !
-- `showCommandsAtStartup` show commands and device losts at startup (defaults to false)
+- `subPlatform` is an array of hubs platform
+  - `name` is the name of the published hub (required). Use a different name for each entry if you have multiple hubs or if you had the same hub multiple times.
+  - `hubIP` is the static IP address of the hub (required). A static IP address is required.
+  - `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
+    - if you set to true, The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
+    - if you set to "inverted", The "switch" will be "off" if and only if there is no current activity, and toggling it while "off" does nothing.
+    - if you set to "stateless", it will always be off, but can be triggered to switch off current activity.
+  - `skippedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app . For TV mode, and PowerOff feature, you can add "PowerOff" to this list if you want.
+  - `addAllActivitiesToSkippedIfSameStateActivitiesList` option to add all activities automatically to skippedIfSameStateActivities behavior. (defaults : false)
+  - `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
+  - `devicesToPublishAsAccessoriesSwitch` array of Devices to exposes with on/off function or custom functions
+  - `publishDevicesAsIndividualAccessories` option to publish devices as individual accessories. Defaults to true.
+  - `sequencesToPublishAsAccessoriesSwitch` array of Sequences to exposes through a switch.
+  - `publishSequencesAsIndividualAccessories` option to publish sequences as individual accessories. Defaults to true.
+  - `publishHomeControlButtons` set to true if you want to publish home controls as switches
+  - `publishHomeControlsAsIndividualAccessories` option to publish home controls as individual accessories. Defaults to true.
+  - `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
+  - `mainActivity` set the mainactivity of the TV mode
+  - `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
+  - `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
+  - `showCommandsAtStartup` show commands and device losts at startup (defaults to false)
 
 All devices / Activites names are the one configured in harmony configuration, even if you rename them in home app.
 
@@ -105,7 +138,7 @@ As a sample :
 
 ```json
   "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up|Up|2500;Down"]
-```
+````
 
 will add
 
