@@ -160,12 +160,6 @@ HarmonyBase.prototype = {
     }
   },
 
-  _onMessage(message) {
-    if (message.type === 'automation.state?notify') {
-      this.harmony.emit('automationState', message);
-    }
-  },
-
   configureAccessories: function(harmonyPlatform, callback) {
     harmonyPlatform.log('INFO - Loading activities...');
 
@@ -173,10 +167,6 @@ HarmonyBase.prototype = {
 
     this.harmony.on('open', () => {
       harmonyPlatform.log.debug('INFO - socket opened');
-      //adding listener
-      this.harmony._client.onUnpackedMessage.addListener(
-        this._onMessage.bind(this)
-      );
     });
 
     this.harmony.on('close', () => {
@@ -217,12 +207,10 @@ HarmonyBase.prototype = {
       }
     });
 
+    this.harmony.sendTimeout = HarmonyConst.HUB_SEND_TIMEOUT;
+    this.harmony.connectTimeout = HarmonyConst.HUB_CONNECT_TIMEOUT;
     this.harmony
-      .connect(
-        harmonyPlatform.hubIP,
-        HarmonyConst.HUB_CONNECT_TIMEOUT,
-        HarmonyConst.HUB_SEND_TIMEOUT
-      )
+      .connect(harmonyPlatform.hubIP)
       .then(() => this.harmony.getConfig())
       .then(response => {
         harmonyPlatform.log.debug(
@@ -230,6 +218,13 @@ HarmonyBase.prototype = {
         );
 
         this.getHomeControlsAccessories(harmonyPlatform).then(responseHome => {
+          //DEBUG
+          /*
+       responseHome = JSON.parse(
+        ' {"cmd":"harmony.automation?getstate","code":200,"id":"0.11199321450018873","msg":"OK","data":{"hue-light.harmony_virtual_button_3":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0},"hue-light.harmony_virtual_button_4":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_1":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0},"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":false,"status":0}}}'
+      );
+*/
+
           harmonyPlatform.readAccessories(response, responseHome, callback);
           this.numberAttemps = 0;
         });
@@ -618,22 +613,7 @@ HarmonyBase.prototype = {
   getHomeControlsAccessories: function(harmonyPlatform) {
     if (harmonyPlatform.publishHomeControlButtons) {
       harmonyPlatform.log.debug('INFO - getting home controls ...');
-      var payload = {
-        hubId: this.harmony._remoteId,
-        timeout: 30,
-        hbus: {
-          cmd: 'harmony.automation?getstate',
-          id: 0,
-          params: {
-            verb: 'get',
-            format: 'json',
-          },
-        },
-      };
-
-      return this.harmony._client
-        .open()
-        .then(() => this.harmony._client.sendRequest(payload));
+      return this.harmony.getAutomationCommands();
     } else {
       var responseHome = {};
       //DEBUG
@@ -739,8 +719,12 @@ HarmonyBase.prototype = {
 
   refreshHomeAccessory(harmonyPlatform) {
     this.getHomeControlsAccessories(harmonyPlatform).then(responseHome => {
-      if (responseHome && responseHome.data)
+      if (responseHome && responseHome.data) {
+        harmonyPlatform.log.debug(
+          'INFO - got home controls : ' + JSON.stringify(responseHome)
+        );
         this.refreshHomeSwitch(harmonyPlatform, responseHome.data);
+      }
     });
   },
 
@@ -823,7 +807,7 @@ HarmonyBase.prototype = {
     harmonyPlatform.log.debug('INFO - sendingCommand' + commandToSend);
 
     return this.harmony
-      .sendCommands(commandToSend)
+      .sendCommand(commandToSend)
       .then(data => {
         harmonyPlatform.log.debug(
           'INFO - sendCommand done' + JSON.stringify(data)
@@ -845,23 +829,8 @@ HarmonyBase.prototype = {
       'INFO - sendingAutomationCommand' + JSON.stringify(commandToSend)
     );
 
-    var payload = {
-      hubId: this.harmony._remoteId,
-      timeout: 30,
-      hbus: {
-        cmd: 'harmony.automation?setstate',
-        id: 0,
-        params: {
-          state: {},
-        },
-      },
-    };
-
-    Object.assign(payload.hbus.params.state, commandToSend);
-
-    return this.harmony._client
-      .open()
-      .then(() => this.harmony._client.sendRequest(payload))
+    return this.harmony
+      .sendAutomationCommand(commandToSend)
       .then(data => {
         harmonyPlatform.log.debug(
           'INFO - sendingAutomationCommand done' + JSON.stringify(data)
