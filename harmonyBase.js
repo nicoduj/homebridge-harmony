@@ -194,9 +194,31 @@ HarmonyBase.prototype = {
       });
   },
 
-  setupFoundAccessories(harmonyPlatform, accessoriesToAdd, data, homedata) {
+  setupFoundAccessories(
+    harmonyPlatform,
+    accessoriesToAdd,
+    data,
+    homedata,
+    isTv
+  ) {
     //creating accessories
-    this.addAccesories(harmonyPlatform, accessoriesToAdd);
+
+    if (isTv && harmonyPlatform.mainPlatform._oneTVAdded) {
+      try {
+        harmonyPlatform.api.publishExternalAccessories(
+          'homebridge-harmonyHub',
+          accessoriesToAdd
+        );
+      } catch (err) {
+        harmonyPlatform.log(
+          "ERROR - readAccessories - Can't publish TV Acccessory as external device, need Homebridge 0.0.48 at least : " +
+            err
+        );
+      }
+    } else {
+      if (isTv) harmonyPlatform.mainPlatform._oneTVAdded = true;
+      this.addAccessories(harmonyPlatform, accessoriesToAdd);
+    }
 
     this.getDevicesAccessories(harmonyPlatform, data);
     this.getSequencesAccessories(harmonyPlatform, data);
@@ -345,7 +367,7 @@ HarmonyBase.prototype = {
     }
 
     //creating accessories
-    this.addAccesories(harmonyPlatform, accessoriesToAdd);
+    this.addAccessories(harmonyPlatform, accessoriesToAdd);
   },
 
   getHomeControlsAccessories: function(harmonyPlatform) {
@@ -432,7 +454,7 @@ HarmonyBase.prototype = {
       }
 
       //creating accessories
-      this.addAccesories(harmonyPlatform, accessoriesToAdd);
+      this.addAccessories(harmonyPlatform, accessoriesToAdd);
     }
   },
 
@@ -700,7 +722,7 @@ HarmonyBase.prototype = {
       }
 
       //creating accessories
-      this.addAccesories(harmonyPlatform, accessoriesToAdd);
+      this.addAccessories(harmonyPlatform, accessoriesToAdd);
     }
   },
 
@@ -737,7 +759,7 @@ HarmonyBase.prototype = {
     return myHarmonyAccessory;
   },
 
-  addAccesories(harmonyPlatform, accessoriesToAdd) {
+  addAccessories(harmonyPlatform, accessoriesToAdd) {
     harmonyPlatform._foundAccessories.push.apply(
       harmonyPlatform._foundAccessories,
       accessoriesToAdd

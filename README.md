@@ -38,6 +38,8 @@ If you were overriding **MENU** through `remoteOverrideCommandsList` you have to
 
 In case of any trouble like accessories allready added (or missing), you can try to use the option `cleanCache` but please report in order for me to fix if possible (see Fields section).
 
+To setup mutliple tv platorm, you will have to add other one manually in homekit . Other ones (than the first one) won't be cached.
+
 ## Configuration
 
 For Switch Mode :

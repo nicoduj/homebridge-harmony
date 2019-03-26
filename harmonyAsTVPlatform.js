@@ -11,11 +11,12 @@ module.exports = {
   HarmonyPlatformAsTVPlatform: HarmonyPlatformAsTVPlatform,
 };
 
-function HarmonyPlatformAsTVPlatform(log, config, api) {
+function HarmonyPlatformAsTVPlatform(log, config, api, mainPlatform) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
 
   this.api = api;
+  this.mainPlatform = mainPlatform;
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, this);
 
@@ -38,9 +39,17 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
   }
 
   this.savedNamesFile =
-    this.prefsDir + 'harmonyPluginNames_' + this.hubIP.split('.').join('');
+    this.prefsDir +
+    'harmonyPluginNames_' +
+    this.name +
+    '_' +
+    this.hubIP.split('.').join('');
   this.savedVisibilityFile =
-    this.prefsDir + 'harmonyPluginVisibility_' + this.hubIP.split('.').join('');
+    this.prefsDir +
+    'harmonyPluginVisibility_' +
+    this.name +
+    '_' +
+    this.hubIP.split('.').join('');
 
   this.savedNames = {};
   try {
@@ -258,7 +267,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this,
       accessoriesToAdd,
       data,
-      homedata
+      homedata,
+      true
     );
   },
 

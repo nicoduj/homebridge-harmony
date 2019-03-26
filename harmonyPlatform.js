@@ -22,7 +22,7 @@ function HarmonyPlatform(log, config, api) {
 
     if (TVPlatformMode) {
       this.platforms.push(
-        new HarmonyPlatformAsTVPlatform(log, platformConfig, api)
+        new HarmonyPlatformAsTVPlatform(log, platformConfig, api, this)
       );
     } else {
       this.platforms.push(

@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 - [NEW] Act as a dynamic platform
 - [BREAKING] skipedIfSameStateActivities -> skippedIfSameStateActivities / addAllActivitiesToSkipedIfSameStateActivitiesList -> addAllActivitiesToSkippedIfSameStateActivitiesList
 - [BREAKING] MENU command (inside properties of TV Service) renamed to SETUP and will be mapped to setup function if avaliable (can be ovewridden)
+- [BREAKING] complete subplatofrm logic / config change - see README
 
 ## 0.6.1
 
