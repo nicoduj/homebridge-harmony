@@ -42,8 +42,8 @@ HarmonyBase.prototype = {
       true
     );
 
-    harmonyPlatform.publishHomeControlButtons =
-      config['publishHomeControlButtons'];
+    harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch =
+      config['homeControlsToPublishAsAccessoriesSwitch'];
     harmonyPlatform.publishHomeControlsAsIndividualAccessories = HarmonyTools.checkParameter(
       config['publishHomeControlsAsIndividualAccessories'],
       true
@@ -608,7 +608,10 @@ HarmonyBase.prototype = {
   },
 
   getHomeControlsAccessories: function(harmonyPlatform) {
-    if (harmonyPlatform.publishHomeControlButtons) {
+    if (
+      harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch &&
+      harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch.length > 0
+    ) {
       harmonyPlatform.log.debug('INFO - getting home controls ...');
       return this.harmony.getAutomationCommands();
     } else {
@@ -637,26 +640,33 @@ HarmonyBase.prototype = {
 
     for (var key in homeControls) {
       let switchName = key;
-      let accessoryName = harmonyPlatform.name + '-' + switchName;
 
-      if (harmonyPlatform.devMode) {
-        switchName = 'DEV' + switchName;
-      }
+      if (
+        harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch.includes(
+          switchName
+        )
+      ) {
+        let accessoryName = harmonyPlatform.name + '-' + switchName;
 
-      harmonyPlatform.log('INFO - Discovered Home Control : ' + switchName);
+        if (harmonyPlatform.devMode) {
+          switchName = 'DEV' + switchName;
+        }
 
-      let service = {
-        controlService: new Service.Switch(switchName),
-        characteristics: [Characteristic.On],
-      };
-      service.controlService.subtype = switchName;
-      service.controlService.id = key;
-      service.type = HarmonyConst.HOME_TYPE;
-      services.push(service);
+        harmonyPlatform.log('INFO - Discovered Home Control : ' + switchName);
 
-      if (harmonyPlatform.publishHomeControlsAsIndividualAccessories) {
-        this.publishAccessory(harmonyPlatform, services, accessoryName);
-        services = [];
+        let service = {
+          controlService: new Service.Switch(switchName),
+          characteristics: [Characteristic.On],
+        };
+        service.controlService.subtype = switchName;
+        service.controlService.id = key;
+        service.type = HarmonyConst.HOME_TYPE;
+        services.push(service);
+
+        if (harmonyPlatform.publishHomeControlsAsIndividualAccessories) {
+          this.publishAccessory(harmonyPlatform, services, accessoryName);
+          services = [];
+        }
       }
     }
 
