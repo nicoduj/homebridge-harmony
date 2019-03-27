@@ -446,7 +446,7 @@ HarmonyBase.prototype = {
             }
           }
 
-          let subType = switchName + '-' + sequence;
+          let subType = switchName + '-Sequence';
           let service = this.getSwitchService(
             harmonyPlatform,
             myHarmonyAccessory,

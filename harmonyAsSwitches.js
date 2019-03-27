@@ -19,6 +19,9 @@ function HarmonyPlatformAsSwitches(log, config, api) {
     config['publishActivitiesAsIndividualAccessories'],
     true
   );
+
+  this.activitiesToPublishAsAccessoriesSwitch =
+    config['activitiesToPublishAsAccessoriesSwitch'];
 }
 
 HarmonyPlatformAsSwitches.prototype = {
@@ -28,7 +31,13 @@ HarmonyPlatformAsSwitches.prototype = {
   },
 
   showActivity: function(activity) {
-    return activity.id != -1 || this.showTurnOffActivity;
+    if (
+      activity.id != -1 &&
+      this.activitiesToPublishAsAccessoriesSwitch &&
+      !this.activitiesToPublishAsAccessoriesSwitch.includes(activity.label)
+    )
+      return false;
+    else return activity.id != -1 || this.showTurnOffActivity;
   },
 
   readAccessories: function(data, homedata) {

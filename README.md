@@ -110,6 +110,7 @@ Fields:
 - `subPlatform` is an array of hubs platform
   - `name` is the name of the published hub (required). Use a different name for each entry if you have multiple hubs or if you had the same hub multiple times.
   - `hubIP` is the static IP address of the hub (required). A static IP address is required.
+  - `activitiesToPublishAsAccessoriesSwitch` array of Activities you want to expose as switches (all by default)
   - `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
     - if you set to true, The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
     - if you set to "inverted", The "switch" will be "off" if and only if there is no current activity, and toggling it while "off" does nothing.
@@ -127,6 +128,8 @@ Fields:
   - `mainActivity` set the mainactivity of the TV mode
   - `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
   - `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
+  - `activitiesToPublishAsInputForTVMode` array of Activities you want to expose as inputs (all by default)
+  - `numberOfCommandsSentForVolumeControl` option to set the nnumber of commands to send for each volum (up or down) press. Defaults to 1
   - `showCommandsAtStartup` show commands and device losts at startup (defaults to false)
 
 All devices / Activites names are the one configured in harmony configuration, even if you rename them in home app.

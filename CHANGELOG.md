@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 - [BREAKING] MENU command (inside properties of TV Service) renamed to SETUP and will be mapped to setup function if avaliable (can be ovewridden)
 - [BREAKING] complete subplatofrm logic / config change - see README
 
+## 0.7.0
+
+- [NEW] option for list of activities as switches / inputs #116 - SEE README activitiesToPublishAsInputForTVMode & activitiesToPublishAsAccessoriesSwitch
+- [NEW] option for Control volume in tv mode with a given number of IR commands #115 - SEE README numberOfCommandsSentForVolumeControl
+
 ## 0.6.1
 
 - [NEW] swithcing to @lopelex 1.0.9

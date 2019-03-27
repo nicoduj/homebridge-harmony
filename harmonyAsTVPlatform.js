@@ -20,11 +20,18 @@ function HarmonyPlatformAsTVPlatform(log, config, api, mainPlatform) {
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, this);
 
-  this.mainActivity = config['mainActivity'];
+  this.mainActivity = this.devMode ? 'DEV' : '' + config['mainActivity'];
   this.playPauseBehavior = HarmonyTools.checkParameter(
     config['playPauseBehavior'],
     false
   );
+
+  this.numberOfCommandsSentForVolumeControl = HarmonyTools.checkParameter(
+    config['numberOfCommandsSentForVolumeControl'],
+    1
+  );
+  this.activitiesToPublishAsInputForTVMode =
+    config['activitiesToPublishAsInputForTVMode'];
 
   this.remoteOverrideCommandsList = config['remoteOverrideCommandsList'];
 
@@ -209,6 +216,16 @@ HarmonyPlatformAsTVPlatform.prototype = {
     return inputSourceService;
   },
 
+  showInput: function(activity) {
+    if (
+      activity.id != -1 &&
+      this.activitiesToPublishAsInputForTVMode &&
+      !this.activitiesToPublishAsInputForTVMode.includes(activity.label)
+    )
+      return false;
+    else return activity.id != -1;
+  },
+
   readAccessories: function(data, homedata) {
     let activities = data.data.activity;
     let accessoriesToAdd = [];
@@ -227,9 +244,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
     this.configureMainService(myHarmonyAccessory);
 
     let mainActivityConfigured = false;
+    let defaultActivity = undefined;
 
     for (let i = 0, len = activities.length; i < len; i++) {
-      if (activities[i].id != -1) {
+      if (this.showInput(activities[i])) {
         let inputName = this.devMode
           ? 'DEV' + activities[i].label
           : activities[i].label;
@@ -242,6 +260,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
         if (this.mainActivity == inputName) {
           this.configureMainActivity(myHarmonyAccessory, activities[i]);
           mainActivityConfigured = true;
+        } else if (!defaultActivity) {
+          defaultActivity = activities[i];
         }
 
         let inputSourceService = this.configureInputSourceService(
@@ -261,7 +281,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this.log(
         'WARNING - No main Activity that match config file found, default to first one'
       );
-      this.configureMainActivity(myHarmonyAccessory, activities[0]);
+      this.configureMainActivity(myHarmonyAccessory, defaultActivity);
     }
 
     this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
@@ -627,23 +647,35 @@ HarmonyPlatformAsTVPlatform.prototype = {
         if (this._currentActivity > 0) {
           this.log.debug('INFO - SET Characteristic.VolumeSelector : ' + value);
           if (value === Characteristic.VolumeSelector.DECREMENT) {
-            this.harmonyBase.sendCommand(
-              this,
-              HarmonyAsTVKeysTools.getOverrideCommand(
+            for (
+              let i = 0, len = this.numberOfCommandsSentForVolumeControl;
+              i < len;
+              i++
+            ) {
+              this.harmonyBase.sendCommand(
                 this,
-                'VOLUME_DOWN',
-                this._currentInputService.VolumeDownCommand
-              )
-            );
+                HarmonyAsTVKeysTools.getOverrideCommand(
+                  this,
+                  'VOLUME_DOWN',
+                  this._currentInputService.VolumeDownCommand
+                )
+              );
+            }
           } else {
-            this.harmonyBase.sendCommand(
-              this,
-              HarmonyAsTVKeysTools.getOverrideCommand(
+            for (
+              let i = 0, len = this.numberOfCommandsSentForVolumeControl;
+              i < len;
+              i++
+            ) {
+              this.harmonyBase.sendCommand(
                 this,
-                'VOLUME_UP',
-                this._currentInputService.VolumeUpCommand
-              )
-            );
+                HarmonyAsTVKeysTools.getOverrideCommand(
+                  this,
+                  'VOLUME_UP',
+                  this._currentInputService.VolumeUpCommand
+                )
+              );
+            }
           }
         }
         callback(null);
