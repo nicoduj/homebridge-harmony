@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.7.0
+
+- [NEW] option for list of activities as switches / inputs #116 - SEE README activitiesToPublishAsInputForTVMode & activitiesToPublishAsAccessoriesSwitch
+- [NEW] option for Control volume in tv mode with a given number of IR commands #115 - SEE README numberOfCommandsSentForVolumeControl
+
 ## 0.6.2
 
 - [BUG] TypeError #112

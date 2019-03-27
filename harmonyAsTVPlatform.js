@@ -17,11 +17,18 @@ function HarmonyPlatformAsTVPlatform(log, config, api) {
 
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, api, this);
-  this.mainActivity = config['mainActivity'];
+  this.mainActivity = this.devMode ? 'DEV' : '' + config['mainActivity'];
   this.playPauseBehavior = HarmonyTools.checkParameter(
     config['playPauseBehavior'],
     false
   );
+
+  this.numberOfCommandsSentForVolumeControl = HarmonyTools.checkParameter(
+    config['numberOfCommandsSentForVolumeControl'],
+    1
+  );
+  this.activitiesToPublishAsInputForTVMode =
+    config['activitiesToPublishAsInputForTVMode'];
 
   this.remoteOverrideCommandsList = config['remoteOverrideCommandsList'];
 
@@ -191,6 +198,15 @@ HarmonyPlatformAsTVPlatform.prototype = {
     return inputSourceService;
   },
 
+  showInput: function(activity) {
+    if (
+      this.activitiesToPublishAsInputForTVMode &&
+      !this.activitiesToPublishAsInputForTVMode.includes(activity.label)
+    )
+      return false;
+    else return activity.id != -1;
+  },
+
   readAccessories: function(data, homedata, callback) {
     let activities = data.data.activity;
     let services = [];
@@ -200,9 +216,10 @@ HarmonyPlatformAsTVPlatform.prototype = {
     this.configureMainService();
 
     let mainActivityConfigured = false;
+    let defaultActivity = undefined;
 
     for (let i = 0, len = activities.length; i < len; i++) {
-      if (activities[i].id != -1) {
+      if (this.showInput(activities[i])) {
         let inputName = this.devMode
           ? 'DEV' + activities[i].label
           : activities[i].label;
@@ -215,6 +232,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
         if (this.mainActivity == inputName) {
           this.configureMainActivity(activities[i]);
           mainActivityConfigured = true;
+        } else if (!defaultActivity) {
+          defaultActivity = activities[i];
         }
 
         this.log('INFO - Creating InputSourceService ' + inputName);
@@ -237,7 +256,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
       this.log(
         'WARNING - No main Activity that match config file found, default to first one'
       );
-      this.configureMainActivity(activities[0]);
+      this.configureMainActivity(defaultActivity);
     }
     for (let s = 0, len = this.inputServices.length; s < len; s++) {
       services.push(this.inputServices[s]);
@@ -633,23 +652,35 @@ HarmonyPlatformAsTVPlatform.prototype = {
         if (this._currentActivity > 0) {
           this.log.debug('INFO - SET Characteristic.VolumeSelector : ' + value);
           if (value === Characteristic.VolumeSelector.DECREMENT) {
-            this.harmonyBase.sendCommand(
-              this,
-              HarmonyAsTVKeysTools.getOverrideCommand(
+            for (
+              let i = 0, len = this.numberOfCommandsSentForVolumeControl;
+              i < len;
+              i++
+            ) {
+              this.harmonyBase.sendCommand(
                 this,
-                'VOLUME_DOWN',
-                this._currentInputService.VolumeDownCommand
-              )
-            );
+                HarmonyAsTVKeysTools.getOverrideCommand(
+                  this,
+                  'VOLUME_DOWN',
+                  this._currentInputService.VolumeDownCommand
+                )
+              );
+            }
           } else {
-            this.harmonyBase.sendCommand(
-              this,
-              HarmonyAsTVKeysTools.getOverrideCommand(
+            for (
+              let i = 0, len = this.numberOfCommandsSentForVolumeControl;
+              i < len;
+              i++
+            ) {
+              this.harmonyBase.sendCommand(
                 this,
-                'VOLUME_UP',
-                this._currentInputService.VolumeUpCommand
-              )
-            );
+                HarmonyAsTVKeysTools.getOverrideCommand(
+                  this,
+                  'VOLUME_UP',
+                  this._currentInputService.VolumeUpCommand
+                )
+              );
+            }
           }
         }
         callback(null);
