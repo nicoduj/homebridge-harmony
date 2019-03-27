@@ -200,6 +200,7 @@ HarmonyPlatformAsTVPlatform.prototype = {
 
   showInput: function(activity) {
     if (
+      activity.id != -1 &&
       this.activitiesToPublishAsInputForTVMode &&
       !this.activitiesToPublishAsInputForTVMode.includes(activity.label)
     )

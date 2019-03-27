@@ -305,38 +305,35 @@ HarmonyBase.prototype = {
       harmonyPlatform.log('INFO - Loading sequences...');
       let sequences = data.data.sequence;
       let services = [];
-      for (
-        let c = 0,
-          len = harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.length;
-        c < len;
-        c++
-      ) {
-        var sequence = harmonyPlatform.sequencesToPublishAsAccessoriesSwitch[c];
 
-        for (let i = 0, len = sequences.length; i < len; i++) {
-          if (sequences[i].name === sequence) {
-            let accessoryName = harmonyPlatform.name + '-' + sequence;
-            let switchName = sequence;
+      for (let i = 0, len = sequences.length; i < len; i++) {
+        let switchName = sequences[i].name;
 
-            if (harmonyPlatform.devMode) {
-              switchName = 'DEV' + switchName;
-            }
+        if (
+          harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.includes(
+            switchName
+          )
+        ) {
+          let accessoryName = harmonyPlatform.name + '-' + switchName;
 
-            harmonyPlatform.log('INFO - Discovered sequence : ' + switchName);
+          if (harmonyPlatform.devMode) {
+            switchName = 'DEV' + switchName;
+          }
 
-            let service = {
-              controlService: new Service.Switch(switchName),
-              characteristics: [Characteristic.On],
-            };
-            service.controlService.subtype = switchName + '-' + sequence;
-            service.controlService.id = sequences[i].id;
-            service.type = HarmonyConst.SEQUENCE_TYPE;
-            services.push(service);
+          harmonyPlatform.log('INFO - Discovered sequence : ' + switchName);
 
-            if (harmonyPlatform.publishSequencesAsIndividualAccessories) {
-              this.publishAccessory(harmonyPlatform, services, accessoryName);
-              services = [];
-            }
+          let service = {
+            controlService: new Service.Switch(switchName),
+            characteristics: [Characteristic.On],
+          };
+          service.controlService.subtype = switchName + '-Sequence';
+          service.controlService.id = sequences[i].id;
+          service.type = HarmonyConst.SEQUENCE_TYPE;
+          services.push(service);
+
+          if (harmonyPlatform.publishSequencesAsIndividualAccessories) {
+            this.publishAccessory(harmonyPlatform, services, accessoryName);
+            services = [];
           }
         }
       }

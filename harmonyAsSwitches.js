@@ -49,6 +49,7 @@ HarmonyPlatformAsSwitches.prototype = {
 
   showActivity: function(activity) {
     if (
+      activity.id != -1 &&
       this.activitiesToPublishAsAccessoriesSwitch &&
       !this.activitiesToPublishAsAccessoriesSwitch.includes(activity.label)
     )
