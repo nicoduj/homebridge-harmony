@@ -105,6 +105,7 @@ Fields:
 
 - `platform` must be "HarmonyHubWebSocket" (required).
 - `name` is the name of the published Platform (required).
+- `publishAsTVAsExternalAccessory` publish all TV accessory as external Accessories. This way, if another plugin on the same homebridge instance as one, the one on harmony will also be visible, but you will have to add them manually after the hub itself. Defaults to false (in that case, only second tv accessory or following will be published by this plugin as external accessories, first one will be linked to the hub).
 - `cleanCache` option to clean all cached Accessory. Please use with caution, might be needed if you change names / config of the hub and there is some ghost devices in Homekit. Be sure that all your icloud sync is done while launching Homebridge with this option set to true. Set it back to false after and launch again !
 - `subPlatform` is an array of hubs platform
   - `name` is the name of the published hub (required). Use a different name for each entry if you have multiple hubs or if you had the same hub multiple times.
@@ -120,7 +121,7 @@ Fields:
   - `publishDevicesAsIndividualAccessories` option to publish devices as individual accessories. Defaults to true.
   - `sequencesToPublishAsAccessoriesSwitch` array of Sequences to exposes through a switch.
   - `publishSequencesAsIndividualAccessories` option to publish sequences as individual accessories. Defaults to true.
-  - `publishHomeControlButtons` set to true if you want to publish home controls as switches
+  - `homeControlsToPublishAsAccessoriesSwitch` array of home controls you want to publish as switches
   - `publishHomeControlsAsIndividualAccessories` option to publish home controls as individual accessories. Defaults to true.
   - `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
   - `mainActivity` set the mainactivity of the TV mode

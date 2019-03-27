@@ -2,6 +2,7 @@ const HarmonyPlatformAsSwitches = require('./harmonyAsSwitches')
   .HarmonyPlatformAsSwitches;
 const HarmonyPlatformAsTVPlatform = require('./harmonyAsTVPlatform')
   .HarmonyPlatformAsTVPlatform;
+const HarmonyTools = require('./harmonyTools.js');
 
 module.exports = {
   HarmonyPlatform: HarmonyPlatform,
@@ -13,6 +14,12 @@ function HarmonyPlatform(log, config, api) {
   this.log = log;
   this.plaformsConfigs = config['subPlatform'];
   this.cleanCache = config['cleanCache'];
+
+  this.publishAsTVAsExternalAccessory = HarmonyTools.checkParameter(
+    config['publishAsTVAsExternalAccessory'],
+    false
+  );
+
   this.platforms = [];
   this._foundAccessories = [];
 

@@ -46,8 +46,8 @@ HarmonyBase.prototype = {
       true
     );
 
-    harmonyPlatform.publishHomeControlButtons =
-      config['publishHomeControlButtons'];
+    harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch =
+      config['homeControlsToPublishAsAccessoriesSwitch'];
     harmonyPlatform.publishHomeControlsAsIndividualAccessories = HarmonyTools.checkParameter(
       config['publishHomeControlsAsIndividualAccessories'],
       true
@@ -203,7 +203,11 @@ HarmonyBase.prototype = {
   ) {
     //creating accessories
 
-    if (isTv && harmonyPlatform.mainPlatform._oneTVAdded) {
+    if (
+      isTv &&
+      (harmonyPlatform.mainPlatform._oneTVAdded ||
+        harmonyPlatform.mainPlatform.publishAsTVAsExternalAccessory)
+    ) {
       try {
         harmonyPlatform.api.publishExternalAccessories(
           'homebridge-harmonyHub',
@@ -211,7 +215,7 @@ HarmonyBase.prototype = {
         );
       } catch (err) {
         harmonyPlatform.log(
-          "ERROR - readAccessories - Can't publish TV Acccessory as external device, need Homebridge 0.0.48 at least : " +
+          "ERROR - readAccessories - Can't publish TV Acccessory as external device, need Homebridge 0.0.47 at least : " +
             err
         );
       }
@@ -336,34 +340,40 @@ HarmonyBase.prototype = {
     for (var key in homeControls) {
       let switchName = key;
 
-      if (harmonyPlatform.devMode) {
-        switchName = 'DEV' + switchName;
-      }
-
-      harmonyPlatform.log('INFO - Discovered Home Control : ' + switchName);
-
-      if (harmonyPlatform.publishHomeControlsAsIndividualAccessories) {
-        myHarmonyAccessory = this.checkAccessory(harmonyPlatform, switchName);
-        if (!myHarmonyAccessory) {
-          myHarmonyAccessory = this.createAccessory(
-            harmonyPlatform,
-            switchName
-          );
-          accessoriesToAdd.push(myHarmonyAccessory);
+      if (
+        harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch.includes(
+          switchName
+        )
+      ) {
+        if (harmonyPlatform.devMode) {
+          switchName = 'DEV' + switchName;
         }
+
+        harmonyPlatform.log('INFO - Discovered Home Control : ' + switchName);
+
+        if (harmonyPlatform.publishHomeControlsAsIndividualAccessories) {
+          myHarmonyAccessory = this.checkAccessory(harmonyPlatform, switchName);
+          if (!myHarmonyAccessory) {
+            myHarmonyAccessory = this.createAccessory(
+              harmonyPlatform,
+              switchName
+            );
+            accessoriesToAdd.push(myHarmonyAccessory);
+          }
+        }
+
+        let subType = switchName;
+        let service = this.getSwitchService(
+          harmonyPlatform,
+          myHarmonyAccessory,
+          switchName,
+          subType
+        );
+
+        service.HomeId = key;
+        service.type = HarmonyConst.HOME_TYPE;
+        this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
       }
-
-      let subType = switchName;
-      let service = this.getSwitchService(
-        harmonyPlatform,
-        myHarmonyAccessory,
-        switchName,
-        subType
-      );
-
-      service.HomeId = key;
-      service.type = HarmonyConst.HOME_TYPE;
-      this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
     }
 
     //creating accessories
@@ -371,7 +381,10 @@ HarmonyBase.prototype = {
   },
 
   getHomeControlsAccessories: function(harmonyPlatform) {
-    if (harmonyPlatform.publishHomeControlButtons) {
+    if (
+      harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch &&
+      harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch.length > 0
+    ) {
       harmonyPlatform.log.debug('INFO - getting home controls ...');
       return this.harmony.getAutomationCommands();
     } else {
@@ -406,50 +419,44 @@ HarmonyBase.prototype = {
         }
       }
 
-      for (
-        let c = 0,
-          len = harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.length;
-        c < len;
-        c++
-      ) {
-        var sequence = harmonyPlatform.sequencesToPublishAsAccessoriesSwitch[c];
+      for (let i = 0, len = sequences.length; i < len; i++) {
+        let switchName = sequences[i].name;
+        if (
+          harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.includes(
+            switchName
+          )
+        ) {
+          if (harmonyPlatform.devMode) {
+            switchName = 'DEV' + switchName;
+          }
 
-        for (let i = 0, len = sequences.length; i < len; i++) {
-          if (sequences[i].name === sequence) {
-            let switchName = sequence;
+          harmonyPlatform.log('INFO - Discovered sequence : ' + switchName);
 
-            if (harmonyPlatform.devMode) {
-              switchName = 'DEV' + switchName;
-            }
-
-            harmonyPlatform.log('INFO - Discovered sequence : ' + switchName);
-
-            if (harmonyPlatform.publishSequencesAsIndividualAccessories) {
-              myHarmonyAccessory = this.checkAccessory(
+          if (harmonyPlatform.publishSequencesAsIndividualAccessories) {
+            myHarmonyAccessory = this.checkAccessory(
+              harmonyPlatform,
+              switchName
+            );
+            if (!myHarmonyAccessory) {
+              myHarmonyAccessory = this.createAccessory(
                 harmonyPlatform,
                 switchName
               );
-              if (!myHarmonyAccessory) {
-                myHarmonyAccessory = this.createAccessory(
-                  harmonyPlatform,
-                  switchName
-                );
-                accessoriesToAdd.push(myHarmonyAccessory);
-              }
+              accessoriesToAdd.push(myHarmonyAccessory);
             }
-
-            let subType = switchName + '-' + sequence;
-            let service = this.getSwitchService(
-              harmonyPlatform,
-              myHarmonyAccessory,
-              switchName,
-              subType
-            );
-
-            service.SequenceId = sequences[i].id;
-            service.type = HarmonyConst.SEQUENCE_TYPE;
-            this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
           }
+
+          let subType = switchName + '-' + sequence;
+          let service = this.getSwitchService(
+            harmonyPlatform,
+            myHarmonyAccessory,
+            switchName,
+            subType
+          );
+
+          service.SequenceId = sequences[i].id;
+          service.type = HarmonyConst.SEQUENCE_TYPE;
+          this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
         }
       }
 

@@ -1,4 +1,4 @@
-var Service, Characteristic;
+var Service, Characteristic, Accessory;
 
 const HarmonyBase = require('./harmonyBase').HarmonyBase;
 const HarmonyConst = require('./harmonyConst');
@@ -14,7 +14,7 @@ module.exports = {
 function HarmonyPlatformAsTVPlatform(log, config, api, mainPlatform) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
-
+  Accessory = api.hap.Accessory;
   this.api = api;
   this.mainPlatform = mainPlatform;
   this.harmonyBase = new HarmonyBase(api);
@@ -215,10 +215,13 @@ HarmonyPlatformAsTVPlatform.prototype = {
     let name = this.devMode ? 'DEV' : '';
 
     myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
+
     if (!myHarmonyAccessory) {
       myHarmonyAccessory = this.harmonyBase.createAccessory(this, name);
       accessoriesToAdd.push(myHarmonyAccessory);
     }
+
+    myHarmonyAccessory.category = Accessory.Categories.TELEVISION;
 
     this.log('INFO - configuring Main TV Service');
     this.configureMainService(myHarmonyAccessory);

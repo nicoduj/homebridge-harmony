@@ -1,6 +1,6 @@
 {
   "name": "homebridge-harmony",
-  "version": "1.0.0-beta8",
+  "version": "1.0.0-beta9",
   "author": "Nicolas Dujardin",
   "description": "Publish your harmony activities as homekit accessories",
   "main": "index.js",
