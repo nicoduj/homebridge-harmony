@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - [NEW] option for list of activities as switches / inputs #116 - SEE README activitiesToPublishAsInputForTVMode & activitiesToPublishAsAccessoriesSwitch
 - [NEW] option for Control volume in tv mode with a given number of IR commands #115 - SEE README numberOfCommandsSentForVolumeControl
+- [NEW] home controls is now a list where you have to specify which one to add , see readme and homeControlsToPublishAsAccessoriesSwitch option (names can be retrieved from log if you had at least one in that array)
 
 ## 0.6.2
 
