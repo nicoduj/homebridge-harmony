@@ -116,6 +116,8 @@ HarmonyBase.prototype = {
   },
 
   configureAccessories: function(harmonyPlatform) {
+    if (HarmonyTools.isPlatformEmpty(harmonyPlatform)) return;
+
     harmonyPlatform.log('INFO - Loading activities...');
 
     this.harmony.removeAllListeners();
@@ -206,7 +208,7 @@ HarmonyBase.prototype = {
     if (
       isTv &&
       (harmonyPlatform.mainPlatform._oneTVAdded ||
-        harmonyPlatform.mainPlatform.publishAsTVAsExternalAccessory)
+        harmonyPlatform.mainPlatform.publishAllTVAsExternalAccessory)
     ) {
       try {
         harmonyPlatform.api.publishExternalAccessories(
@@ -224,9 +226,11 @@ HarmonyBase.prototype = {
       this.addAccessories(harmonyPlatform, accessoriesToAdd);
     }
 
-    this.getDevicesAccessories(harmonyPlatform, data);
-    this.getSequencesAccessories(harmonyPlatform, data);
-    this.handleHomeControls(harmonyPlatform, homedata);
+    if (!isTv) {
+      this.getDevicesAccessories(harmonyPlatform, data);
+      this.getSequencesAccessories(harmonyPlatform, data);
+      this.handleHomeControls(harmonyPlatform, homedata);
+    }
 
     //first refresh
     setTimeout(function() {
@@ -734,13 +738,13 @@ HarmonyBase.prototype = {
   },
 
   checkAccessory(harmonyPlatform, name) {
-    let fullName = harmonyPlatform.name + '-' + name;
+    let fullName = harmonyPlatform.name + (name ? '-' + name : '');
     let uuid = UUIDGen.generate(fullName);
     return harmonyPlatform._foundAccessories.find(x => x.UUID == uuid);
   },
 
   createAccessory(harmonyPlatform, name) {
-    let fullName = harmonyPlatform.name + '-' + name;
+    let fullName = harmonyPlatform.name + (name ? '-' + name : '');
     harmonyPlatform.log('INFO - Adding Accessory : ' + fullName);
     let uuid = UUIDGen.generate(fullName);
     let myHarmonyAccessory = new Accessory(fullName, uuid);

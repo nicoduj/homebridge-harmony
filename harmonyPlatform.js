@@ -17,11 +17,21 @@ function HarmonyPlatform(log, config, api) {
   }
 
   this.log = log;
-  this.plaformsConfigs = config['subPlatform'];
+
+  this.plaformsConfigs = [];
+  this.plaformsConfigs.push(config);
+
+  if (config['otherPlatforms']) {
+    this.plaformsConfigs.push.apply(
+      this.plaformsConfigs,
+      config['otherPlatforms']
+    );
+  }
+
   this.cleanCache = config['cleanCache'];
 
-  this.publishAsTVAsExternalAccessory = HarmonyTools.checkParameter(
-    config['publishAsTVAsExternalAccessory'],
+  this.publishAllTVAsExternalAccessory = HarmonyTools.checkParameter(
+    config['publishAllTVAsExternalAccessory'],
     false
   );
 
@@ -30,17 +40,20 @@ function HarmonyPlatform(log, config, api) {
 
   for (let i = 0, len = this.plaformsConfigs.length; i < len; i++) {
     let platformConfig = this.plaformsConfigs[i];
-    let TVPlatformMode = platformConfig['TVPlatformMode'];
 
-    if (TVPlatformMode) {
+    let TVAccessory = HarmonyTools.checkParameter(
+      platformConfig['TVAccessory'],
+      true
+    );
+    if (TVAccessory) {
       this.platforms.push(
         new HarmonyPlatformAsTVPlatform(log, platformConfig, api, this)
       );
-    } else {
-      this.platforms.push(
-        new HarmonyPlatformAsSwitches(log, platformConfig, api)
-      );
     }
+
+    this.platforms.push(
+      new HarmonyPlatformAsSwitches(log, platformConfig, api)
+    );
   }
 
   if (api) {

@@ -19,6 +19,7 @@ function HarmonyPlatformAsTVPlatform(log, config, api, mainPlatform) {
   this.mainPlatform = mainPlatform;
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, this);
+  this.TVAccessory = true;
 
   this.mainActivity = this.devMode ? 'DEV' : '' + config['mainActivity'];
   this.playPauseBehavior = HarmonyTools.checkParameter(
@@ -34,6 +35,13 @@ function HarmonyPlatformAsTVPlatform(log, config, api, mainPlatform) {
     config['activitiesToPublishAsInputForTVMode'];
 
   this.remoteOverrideCommandsList = config['remoteOverrideCommandsList'];
+
+  if (
+    !this.addAllActivitiesToSkippedIfSameStateActivitiesList &&
+    !this.skippedIfSameStateActivities
+  ) {
+    this.skippedIfSameStateActivities = ['PowerOff'];
+  }
 
   this.log.debug('INFO - playPause option set to ' + this.playPauseBehavior);
   this.playStatus = {};
