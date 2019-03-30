@@ -14,13 +14,17 @@
 
 [Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/nfarina/homebridge) using WebSockets.
 
-> ## Work In Progress For TV MODE
+> ---
 >
-> - IOS 12.2 TV MODE is still beta. This mode will focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
-
+> ## TV MODE
+>
+> This mode focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
+>
+> ---
+>
 > ## Work In Progress For Dynamic Plugin Mode
 >
-> - This plugin is not a dynamic platform : hub configured MUST be available at homebridge startup, however it will crash homebridge start process. Work in Progress on this, but be warned and thus thnik of having a separate homebridge instance for it
+> - This plugin is not a dynamic platform : hub configured MUST be available at homebridge startup, however it will crash homebridge start process. Work in Progress on this, but be warned and thus think of having a separate homebridge instance for it
 >
 > If you want to try Dynamic Platform mode I have published a beta version. It should not be visible in homebridge-config-ui-x update pannel, so you have to install it through terminal if you want :
 >
@@ -29,7 +33,10 @@
 > ```
 >
 > Also refer to [README](https://github.com/nicoduj/homebridge-harmony/tree/Dynamic-Platform) in the corresponfing branch for more information
+>
 > Feel free to report bugs there, or on [Slack](https://homebridge-slackin.glitch.me) in #homebridge-harmony channel
+>
+> ---
 
 ## Installation
 
