@@ -11,6 +11,11 @@ module.exports = {
 function HarmonyPlatform(log, config, api) {
   log('HarmonyPlatform Init');
 
+  if (!config) {
+    log('No configuration found for homebridge-harmonyHub');
+    return;
+  }
+
   this.log = log;
   this.plaformsConfigs = config['subPlatform'];
   this.cleanCache = config['cleanCache'];

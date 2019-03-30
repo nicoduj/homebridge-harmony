@@ -713,7 +713,8 @@ HarmonyPlatformAsTVPlatform.prototype = {
       function(value, callback) {
         this.log.debug('INFO - SET Characteristic.ConfiguredName : ' + value);
         let idConf = 0;
-        if (service instanceof Service.InputSource) idConf = service.activityId;
+        if (service.UUID == Service.InputSource.UUID)
+          idConf = service.activityId;
 
         this.savedNames[idConf] = value;
         fs.writeFile(
