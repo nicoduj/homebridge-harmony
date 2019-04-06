@@ -202,7 +202,7 @@ HarmonyBase.prototype = {
 
     //first refresh
     setTimeout(function() {
-      harmonyPlatform.refreshAccessory();
+      harmonyPlatform.refreshPlatform();
     }, HarmonyConst.DELAY_LAUNCH_REFRESH);
   },
 
