@@ -157,35 +157,38 @@ HarmonyBase.prototype = {
   setupFoundAccessories(harmonyPlatform, accessoriesToAdd, data, homedata) {
     //creating accessories
 
-    isTv = accessoriesToAdd.some(x => x.category == AccessoryType.TELEVISION);
-    if (
-      isTv &&
-      (harmonyPlatform.mainPlatform._oneTVAdded ||
-        harmonyPlatform.mainPlatform.publishAllTVAsExternalAccessory)
-    ) {
-      try {
-        harmonyPlatform.api.publishExternalAccessories(
-          'homebridge-harmonyHub',
-          accessoriesToAdd
-        );
-        harmonyPlatform.log(
-          'INFO - setupFoundAccessories - TV accessory added as external accessory'
-        );
-      } catch (err) {
-        harmonyPlatform.log(
-          "ERROR - readAccessories - Can't publish TV Acccessory as external device, need Homebridge 0.0.47 at least : " +
-            err
-        );
-      }
-    } else {
-      if (isTv) {
-        harmonyPlatform.mainPlatform._oneTVAdded = true;
-        harmonyPlatform.log(
-          'WARNING - setupFoundAccessories - TV accessory added in your bridge, if another plugin is exposing a TV accessory this one might not be visible in your remote widget'
-        );
-      }
+    for (const accessory of accessoriesToAdd) {
+      let isTv = accessory.category == AccessoryType.TELEVISION;
 
-      this.addAccessories(harmonyPlatform, accessoriesToAdd);
+      if (
+        isTv &&
+        (harmonyPlatform.mainPlatform._oneTVAdded ||
+          harmonyPlatform.mainPlatform.publishAllTVAsExternalAccessory)
+      ) {
+        try {
+          harmonyPlatform.api.publishExternalAccessories(
+            'homebridge-harmonyHub',
+            [accessory]
+          );
+          harmonyPlatform.log(
+            'INFO - setupFoundAccessories - TV accessory added as external accessory'
+          );
+        } catch (err) {
+          harmonyPlatform.log(
+            "ERROR - readAccessories - Can't publish TV Acccessory as external device, need Homebridge 0.0.47 at least : " +
+              err
+          );
+        }
+      } else {
+        if (isTv) {
+          harmonyPlatform.mainPlatform._oneTVAdded = true;
+          harmonyPlatform.log(
+            'WARNING - setupFoundAccessories - TV accessory added in your bridge, if another plugin is exposing a TV accessory this one might not be visible in your remote widget'
+          );
+        }
+
+        this.addAccessories(harmonyPlatform, [accessory]);
+      }
     }
 
     this.getDevicesAccessories(harmonyPlatform, data);

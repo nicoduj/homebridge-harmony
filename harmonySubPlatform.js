@@ -46,7 +46,16 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
       this.skippedIfSameStateActivities = ['PowerOff'];
     }
 
-    this.log.debug('INFO - playPause option set to ' + this.playPauseBehavior);
+    this.log.debug(
+      '(' +
+        this.name +
+        ')' +
+        '(' +
+        this.name +
+        ')' +
+        'INFO - playPause option set to ' +
+        this.playPauseBehavior
+    );
     this.playStatus = {};
     this.volumesLevel = {};
 
@@ -73,7 +82,9 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
     try {
       this.savedNames = JSON.parse(fs.readFileSync(this.savedNamesFile));
     } catch (err) {
-      this.log.debug('INFO - input names file does not exist');
+      this.log.debug(
+        '(' + this.name + ')' + 'INFO - input names file does not exist'
+      );
     }
 
     this.savedVisibility = {};
@@ -82,7 +93,9 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
         fs.readFileSync(this.savedVisibilityFile)
       );
     } catch (err) {
-      this.log.debug('INFO - input visibility file does not exist');
+      this.log.debug(
+        '(' + this.name + ')' + 'INFO - input visibility file does not exist'
+      );
     }
   }
 
@@ -144,11 +157,12 @@ HarmonySubPlatform.prototype = {
 
     let accessoriesToAdd = [];
     var myHarmonyAccessory;
+    let name = this.devMode ? 'DEV' : 'Switch';
 
     if (!this.publishSwitchActivitiesAsIndividualAccessories) {
-      myHarmonyAccessory = this.harmonyBase.checkAccessory(this, '');
+      myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
       if (!myHarmonyAccessory) {
-        myHarmonyAccessory = this.harmonyBase.createAccessory(this, '');
+        myHarmonyAccessory = this.harmonyBase.createAccessory(this, name);
         accessoriesToAdd.push(myHarmonyAccessory);
       }
       myHarmonyAccessory.category = Accessory.Categories.SWITCH;
@@ -175,7 +189,9 @@ HarmonySubPlatform.prototype = {
           myHarmonyAccessory.category = Accessory.Categories.SWITCH;
         }
 
-        this.log('INFO - Discovered Activity : ' + switchName);
+        this.log(
+          '(' + this.name + ')' + 'INFO - Discovered Activity : ' + switchName
+        );
         let subType = switchName;
         let service = this.harmonyBase.getSwitchService(
           this,
@@ -197,7 +213,7 @@ HarmonySubPlatform.prototype = {
   readTVAccessories: function(data, homedata) {
     let activities = data.data.activity;
     let accessoriesToAdd = [];
-    let name = this.devMode ? 'DEV' : '';
+    let name = this.devMode ? 'DEV' : 'TV';
 
     myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
 
@@ -208,7 +224,7 @@ HarmonySubPlatform.prototype = {
 
     myHarmonyAccessory.category = Accessory.Categories.TELEVISION;
 
-    this.log('INFO - configuring Main TV Service');
+    this.log('(' + this.name + ')' + 'INFO - configuring Main TV Service');
     this.configureMainService(myHarmonyAccessory);
 
     let mainActivityConfigured = false;
@@ -222,7 +238,11 @@ HarmonySubPlatform.prototype = {
         let inputId = activities[i].id;
 
         this.log.debug(
-          'INFO - accessories : activity to configure : ' + inputName
+          '(' +
+            this.name +
+            ')' +
+            'INFO - accessories : activity to configure : ' +
+            inputName
         );
 
         if (this.mainActivity == inputName) {
@@ -247,7 +267,10 @@ HarmonySubPlatform.prototype = {
 
     if (!mainActivityConfigured) {
       this.log(
-        'WARNING - No main Activity that match config file found, default to first one'
+        '(' +
+          this.name +
+          ')' +
+          'WARNING - No main Activity that match config file found, default to first one'
       );
       this.configureMainActivity(myHarmonyAccessory, defaultActivity);
     }
@@ -264,7 +287,7 @@ HarmonySubPlatform.prototype = {
     this.mainService = accessory.getServiceByUUIDAndSubType(this.name, subType);
 
     if (!this.mainService) {
-      this.log('INFO - Creating TV Service');
+      this.log('(' + this.name + ')' + 'INFO - Creating TV Service');
       this.mainService = new Service.Television(
         this.name,
         'tvService' + this.name
@@ -293,7 +316,11 @@ HarmonySubPlatform.prototype = {
 
     this.inputServices = [];
     this.log.debug(
-      'INFO - accessories : main activity name : ' + this.mainActivity
+      '(' +
+        this.name +
+        ')' +
+        'INFO - accessories : main activity name : ' +
+        this.mainActivity
     );
   },
 
@@ -302,7 +329,9 @@ HarmonySubPlatform.prototype = {
     if (this.devMode) {
       inputName = 'DEV' + inputName;
     }
-    this.log('INFO - Configuring Main Activity ' + inputName);
+    this.log(
+      '(' + this.name + ')' + 'INFO - Configuring Main Activity ' + inputName
+    );
 
     this.mainActivityId = activity.id;
     this.mainService.activityName = inputName;
@@ -315,7 +344,7 @@ HarmonySubPlatform.prototype = {
     );
 
     if (!this.tvSpeakerService) {
-      this.log('INFO - Creating TV Speaker Service');
+      this.log('(' + this.name + ')' + 'INFO - Creating TV Speaker Service');
       this.tvSpeakerService = new Service.TelevisionSpeaker(
         this.name,
         'TVSpeaker' + this.name
@@ -350,7 +379,9 @@ HarmonySubPlatform.prototype = {
     );
 
     if (!inputSourceService) {
-      this.log('INFO - Creating Input Service - ' + inputName);
+      this.log(
+        '(' + this.name + ')' + 'INFO - Creating Input Service - ' + inputName
+      );
       inputSourceService = new Service.InputSource(
         this.name,
         'Input' + this.name + inputName
@@ -434,7 +465,10 @@ HarmonySubPlatform.prototype = {
       if (this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
         if (characteristic.UUID == Characteristic.Active.UUID) {
           this.log.debug(
-            'INFO - refreshCharacteristic : updating Characteristic.Active to ' +
+            '(' +
+              this.name +
+              ')' +
+              'INFO - refreshCharacteristic : updating Characteristic.Active to ' +
               (this._currentActivity != -1)
           );
           this.harmonyBase.handleCharacteristicUpdate(
@@ -447,7 +481,10 @@ HarmonySubPlatform.prototype = {
           characteristic.UUID == Characteristic.ActiveIdentifier.UUID
         ) {
           this.log.debug(
-            'INFO - refreshCharacteristic : updating Characteristic.ActiveIdentifier to ' +
+            '(' +
+              this.name +
+              ')' +
+              'INFO - refreshCharacteristic : updating Characteristic.ActiveIdentifier to ' +
               this._currentActivity
           );
           this.harmonyBase.handleCharacteristicUpdate(
@@ -458,7 +495,12 @@ HarmonySubPlatform.prototype = {
           );
         }
       } else {
-        this.log.debug('WARNING - refreshCharacteristic : no current Activity');
+        this.log.debug(
+          '(' +
+            this.name +
+            ')' +
+            'WARNING - refreshCharacteristic : no current Activity'
+        );
         if (characteristic.UUID == Characteristic.Active.UUID) {
           this.harmonyBase.handleCharacteristicUpdate(
             this,
@@ -531,11 +573,19 @@ HarmonySubPlatform.prototype = {
 
     if (doCommand) {
       this.log.debug(
-        'INFO - sendInputCommand : Activty ' + inputName + ' will be activated '
+        '(' +
+          this.name +
+          ')' +
+          'INFO - sendInputCommand : Activty ' +
+          inputName +
+          ' will be activated '
       );
     } else {
       this.log.debug(
-        'INFO - sendInputCommand : Activty ' +
+        '(' +
+          this.name +
+          ')' +
+          'INFO - sendInputCommand : Activty ' +
           inputName +
           ' will not be activated '
       );
@@ -556,13 +606,18 @@ HarmonySubPlatform.prototype = {
       if (HarmonyTools.isCommandOk(data)) {
         this._currentSetAttemps = 0;
 
-        this.log.debug('INFO - activityCommand : command sent');
+        this.log.debug(
+          '(' + this.name + ')' + 'INFO - activityCommand : command sent'
+        );
         this.handleRefreshOfCharacteristic(commandToSend);
       } else if (HarmonyTools.isCommandInProgress(data)) {
         this._currentSetAttemps = this._currentSetAttemps + 1;
         //get characteristic
         this.log.debug(
-          'WARNING - activityCommand : could not SET status : ' +
+          '(' +
+            this.name +
+            ')' +
+            'WARNING - activityCommand : could not SET status : ' +
             JSON.stringify(data)
         );
 
@@ -573,12 +628,19 @@ HarmonySubPlatform.prototype = {
             that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
           ) {
             that.log.debug(
-              'INFO - activityCommand : RETRY to send command ' + commandToSend
+              '(' +
+                this.name +
+                ')' +
+                'INFO - activityCommand : RETRY to send command ' +
+                commandToSend
             );
             that.activityCommand(homebridgeAccessory, commandToSend);
           } else {
             that.log(
-              'ERROR - activityCommand : could not SET status, no more RETRY : ' +
+              '(' +
+                this.name +
+                ')' +
+                'ERROR - activityCommand : could not SET status, no more RETRY : ' +
                 commandToSend
             );
             that.refreshAccessory();
@@ -590,13 +652,19 @@ HarmonySubPlatform.prototype = {
 
   handlePlayPause: function() {
     this.log.debug(
-      'INFO - current play status is : ' +
+      '(' +
+        this.name +
+        ')' +
+        'INFO - current play status is : ' +
         this.playStatus[this._currentActivity] +
         ' with playPause option set to :' +
         this.playPauseBehavior
     );
     this.log.debug(
-      'INFO - pauseCommand defined for  : ' +
+      '(' +
+        this.name +
+        ')' +
+        'INFO - pauseCommand defined for  : ' +
         this._currentActivity +
         ' is ' +
         this._currentInputService.PauseCommand
@@ -608,14 +676,18 @@ HarmonySubPlatform.prototype = {
       this.playStatus[this._currentActivity] === undefined ||
       this.playStatus[this._currentActivity] === 'PAUSED'
     ) {
-      this.log.debug('INFO - sending PlayCommand for PLAY_PAUSE');
+      this.log.debug(
+        '(' + this.name + ')' + 'INFO - sending PlayCommand for PLAY_PAUSE'
+      );
       this.harmonyBase.sendCommand(
         this,
         this.keysMap[Characteristic.RemoteKey.PLAY_PAUSE]
       );
       this.playStatus[this._currentActivity] = '';
     } else {
-      this.log.debug('INFO - sending PauseCommand for PLAY_PAUSE');
+      this.log.debug(
+        '(' + this.name + ')' + 'INFO - sending PauseCommand for PLAY_PAUSE'
+      );
       this.harmonyBase.sendCommand(
         this,
         HarmonyAsTVKeysTools.getOverrideCommand(
@@ -635,10 +707,12 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'set',
       function(value, callback) {
-        this.log.debug('INFO - SET Characteristic.Active ' + value);
+        this.log.debug(
+          '(' + this.name + ')' + 'INFO - SET Characteristic.Active ' + value
+        );
 
         if (value == 0) {
-          this.log.debug('INFO - switching off');
+          this.log.debug('(' + this.name + ')' + 'INFO - switching off');
           this.sendInputCommand(homebridgeAccessory, '-1');
 
           callback(null);
@@ -649,7 +723,11 @@ HarmonySubPlatform.prototype = {
                 Characteristic.ActiveIdentifier
               ).value;
               this.log.debug(
-                'INFO - current Activity to launch - ' + activityToLaunch
+                '(' +
+                  this.name +
+                  ')' +
+                  'INFO - current Activity to launch - ' +
+                  activityToLaunch
               );
               if (!activityToLaunch) {
                 activityToLaunch = this.mainActivityId;
@@ -665,7 +743,9 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'get',
       function(callback) {
-        this.log.debug('INFO - GET Characteristic.Active ');
+        this.log.debug(
+          '(' + this.name + ')' + 'INFO - GET Characteristic.Active '
+        );
         this.refreshCharacteristic(characteristic, callback);
       }.bind(this)
     );
@@ -679,7 +759,13 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'set',
       function(value, callback) {
-        this.log.debug('INFO - SET Characteristic.ActiveIdentifier ' + value);
+        this.log.debug(
+          '(' +
+            this.name +
+            ')' +
+            'INFO - SET Characteristic.ActiveIdentifier ' +
+            value
+        );
         this.sendInputCommand(homebridgeAccessory, '' + value);
         callback(null);
       }.bind(this)
@@ -687,7 +773,9 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'get',
       function(callback) {
-        this.log.debug('INFO - GET Characteristic.ActiveIdentifier');
+        this.log.debug(
+          '(' + this.name + ')' + 'INFO - GET Characteristic.ActiveIdentifier'
+        );
         this.refreshCharacteristic(characteristic, callback);
       }.bind(this)
     );
@@ -698,7 +786,10 @@ HarmonySubPlatform.prototype = {
       'set',
       function(newValue, callback) {
         this.log.debug(
-          'INFO - SET Characteristic.RemoteKey : ' +
+          '(' +
+            this.name +
+            ')' +
+            'INFO - SET Characteristic.RemoteKey : ' +
             newValue +
             ' with currentActivity ' +
             this._currentActivity
@@ -708,10 +799,18 @@ HarmonySubPlatform.prototype = {
           if (newValue === Characteristic.RemoteKey.PLAY_PAUSE) {
             this.handlePlayPause();
           } else if (this.keysMap[newValue]) {
-            this.log.debug('INFO - sending command for ' + newValue);
+            this.log.debug(
+              '(' + this.name + ')' + 'INFO - sending command for ' + newValue
+            );
             this.harmonyBase.sendCommand(this, this.keysMap[newValue]);
           } else {
-            this.log.debug('INFO - no command to send for ' + newValue);
+            this.log.debug(
+              '(' +
+                this.name +
+                ')' +
+                'INFO - no command to send for ' +
+                newValue
+            );
           }
         }
         callback(null);
@@ -724,7 +823,9 @@ HarmonySubPlatform.prototype = {
       'set',
       function(value, callback) {
         if (this._currentActivity > 0) {
-          this.log.debug('INFO - SET Characteristic.Mute : ' + value);
+          this.log.debug(
+            '(' + this.name + ')' + 'INFO - SET Characteristic.Mute : ' + value
+          );
           this.harmonyBase.sendCommand(
             this,
             HarmonyAsTVKeysTools.getOverrideCommand(
@@ -741,7 +842,9 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'get',
       function(callback) {
-        this.log.debug('INFO - GET Characteristic.Mute');
+        this.log.debug(
+          '(' + this.name + ')' + 'INFO - GET Characteristic.Mute'
+        );
         callback(null, false);
       }.bind(this)
     );
@@ -752,7 +855,13 @@ HarmonySubPlatform.prototype = {
       'set',
       function(value, callback) {
         if (this._currentActivity > 0) {
-          this.log.debug('INFO - SET Characteristic.VolumeSelector : ' + value);
+          this.log.debug(
+            '(' +
+              this.name +
+              ')' +
+              'INFO - SET Characteristic.VolumeSelector : ' +
+              value
+          );
           if (value === Characteristic.VolumeSelector.DECREMENT) {
             for (
               let i = 0, len = this.numberOfCommandsSentForVolumeControl;
@@ -795,7 +904,13 @@ HarmonySubPlatform.prototype = {
       'set',
       function(value, callback) {
         if (this._currentActivity > 0) {
-          this.log.debug('INFO - SET Characteristic.Volume : ' + value);
+          this.log.debug(
+            '(' +
+              this.name +
+              ')' +
+              'INFO - SET Characteristic.Volume : ' +
+              value
+          );
           this.volumesLevel[this._currentActivity] = value;
         }
         callback(null);
@@ -805,7 +920,9 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'get',
       function(callback) {
-        this.log.debug('INFO - GET Characteristic.Volume');
+        this.log.debug(
+          '(' + this.name + ')' + 'INFO - GET Characteristic.Volume'
+        );
 
         if (this.volumesLevel[this._currentActivity])
           callback(null, this.volumesLevel[this._currentActivity]);
@@ -818,7 +935,13 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'set',
       function(value, callback) {
-        this.log.debug('INFO - SET Characteristic.ConfiguredName : ' + value);
+        this.log.debug(
+          '(' +
+            this.name +
+            ')' +
+            'INFO - SET Characteristic.ConfiguredName : ' +
+            value
+        );
         let idConf = 0;
         if (service.UUID == Service.InputSource.UUID)
           idConf = service.activityId;
@@ -830,12 +953,18 @@ HarmonySubPlatform.prototype = {
           err => {
             if (err) {
               this.log(
-                'ERROR - error occured could not write configured name %s',
+                '(' +
+                  this.name +
+                  ')' +
+                  'ERROR - error occured could not write configured name %s',
                 err
               );
             } else {
               this.log.debug(
-                'INFO - configured name successfully saved! New name: %s ID: %s',
+                '(' +
+                  this.name +
+                  ')' +
+                  'INFO - configured name successfully saved! New name: %s ID: %s',
                 value,
                 idConf
               );
@@ -854,7 +983,10 @@ HarmonySubPlatform.prototype = {
       function(callback) {
         let idConf = service.activityId;
         this.log.debug(
-          'INFO - GET Characteristic.CurrentVisibilityState : ' +
+          '(' +
+            this.name +
+            ')' +
+            'INFO - GET Characteristic.CurrentVisibilityState : ' +
             (this.savedVisibility[idConf]
               ? this.savedVisibility[idConf]
               : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN)
@@ -872,7 +1004,10 @@ HarmonySubPlatform.prototype = {
       function(callback) {
         let idConf = service.activityId;
         this.log.debug(
-          'INFO - GET Characteristic.TargetVisibilityState : ' +
+          '(' +
+            this.name +
+            ')' +
+            'INFO - GET Characteristic.TargetVisibilityState : ' +
             (this.savedVisibility[idConf]
               ? this.savedVisibility[idConf]
               : 'DEFAULT - ' + Characteristic.TargetVisibilityState.SHOWN)
@@ -887,7 +1022,11 @@ HarmonySubPlatform.prototype = {
       'set',
       function(value, callback) {
         this.log.debug(
-          'INFO - SET Characteristic.TargetVisibilityState : ' + value
+          '(' +
+            this.name +
+            ')' +
+            'INFO - SET Characteristic.TargetVisibilityState : ' +
+            value
         );
 
         let idConf = service.activityId;
@@ -903,12 +1042,18 @@ HarmonySubPlatform.prototype = {
             if (err) {
               this.savedVisibility[idConf] = oldValue;
               this.log(
-                'ERROR - error occured could not write visibility state %s',
+                '(' +
+                  this.name +
+                  ')' +
+                  'ERROR - error occured could not write visibility state %s',
                 err
               );
             } else {
               this.log.debug(
-                'INFO - configured visibility successfully saved! New visibility: %s ID: %s',
+                '(' +
+                  this.name +
+                  ')' +
+                  'INFO - configured visibility successfully saved! New visibility: %s ID: %s',
                 value,
                 idConf
               );
@@ -930,7 +1075,11 @@ HarmonySubPlatform.prototype = {
       'set',
       function(value, callback) {
         this.log.debug(
-          'INFO - SET Characteristic.PowerModeSelection : ' + value
+          '(' +
+            this.name +
+            ')' +
+            'INFO - SET Characteristic.PowerModeSelection : ' +
+            value
         );
         this.harmonyBase.sendCommand(
           this,
@@ -1025,7 +1174,10 @@ HarmonySubPlatform.prototype = {
 
   checkOn(service) {
     this.log.debug(
-      'checkOn : ' +
+      '(' +
+        this.name +
+        ')' +
+        'checkOn : ' +
         this._currentActivity +
         '/' +
         service.activityId +
@@ -1061,7 +1213,10 @@ HarmonySubPlatform.prototype = {
         let characteristicIsOn = this.checkOn(service);
 
         this.log.debug(
-          'Got status for ' +
+          '(' +
+            this.name +
+            ')' +
+            'Got status for ' +
             service.displayName +
             ' - was ' +
             characteristic.value +
@@ -1075,7 +1230,7 @@ HarmonySubPlatform.prototype = {
           callback
         );
       } else {
-        this.log.debug('WARNING : no current Activity');
+        this.log.debug('(' + this.name + ')' + 'WARNING : no current Activity');
         this.harmonyBase.handleCharacteristicUpdate(
           this,
           characteristic,
@@ -1136,7 +1291,9 @@ HarmonySubPlatform.prototype = {
     for (let a = 0; a < homebridgeAccessory.services.length; a++) {
       if (homebridgeAccessory.services[a].ActivityId == idToFind) {
         service = homebridgeAccessory.services[a];
-        this.log.debug('INFO - ' + service.displayName + ' activated');
+        this.log.debug(
+          '(' + this.name + ')' + 'INFO - ' + service.displayName + ' activated'
+        );
         break;
       }
     }
@@ -1155,13 +1312,19 @@ HarmonySubPlatform.prototype = {
     setTimeout(function() {
       if (that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE) {
         that.log.debug(
-          'INFO - activityCommand : RETRY to send command ' +
+          '(' +
+            this.name +
+            ')' +
+            'INFO - activityCommand : RETRY to send command ' +
             service.displayName
         );
         that.activityCommand(homebridgeAccessory, commandToSend);
       } else {
         that.log(
-          'ERROR - activityCommand : could not SET status, no more RETRY : ' +
+          '(' +
+            this.name +
+            ')' +
+            'ERROR - activityCommand : could not SET status, no more RETRY : ' +
             service.displayName
         );
         charactToSet.updateValue(false);
@@ -1174,23 +1337,35 @@ HarmonySubPlatform.prototype = {
       .startActivity(commandToSend)
       .then(data => {
         this.log.debug(
-          'INFO - activityCommand : Returned from hub ' + JSON.stringify(data)
+          '(' +
+            this.name +
+            ')' +
+            'INFO - activityCommand : Returned from hub ' +
+            JSON.stringify(data)
         );
 
         if (HarmonyTools.isCommandOk(data)) {
           this.handleActivityOk(commandToSend);
         } else if (HarmonyTools.isCommandInProgress(data)) {
           this.log.debug(
-            'WARNING - activityCommand : could not SET status : ' +
+            '(' +
+              this.name +
+              ')' +
+              'WARNING - activityCommand : could not SET status : ' +
               JSON.stringify(data)
           );
           this.handleActivityInProgress(homebridgeAccessory, commandToSend);
         } else {
-          this.log('ERROR - activityCommand : could not SET status, no data');
+          this.log(
+            '(' +
+              this.name +
+              ')' +
+              'ERROR - activityCommand : could not SET status, no data'
+          );
         }
       })
       .catch(e => {
-        this.log('ERROR - activityCommand : ' + e);
+        this.log('(' + this.name + ')' + 'ERROR - activityCommand : ' + e);
       });
   },
 
@@ -1208,11 +1383,18 @@ HarmonySubPlatform.prototype = {
     //Actitiy in skippedIfSameState
     if (HarmonyTools.isActivtyToBeSkipped(this, service.subtype)) {
       this.log.debug(
-        'INFO : SET on an activty in skippedIfsameState list ' + service.subtype
+        '(' +
+          this.name +
+          ')' +
+          'INFO : SET on an activty in skippedIfsameState list ' +
+          service.subtype
       );
 
       this.log.debug(
-        'INFO : Activty ' +
+        '(' +
+          this.name +
+          ')' +
+          'INFO : Activty ' +
           service.subtype +
           ' is ' +
           currentValue +
@@ -1231,13 +1413,20 @@ HarmonySubPlatform.prototype = {
           : currentValue !== value;
     } else {
       this.log.debug(
-        'INFO : SET on an activty not in pIfsameState list ' + service.subtype
+        '(' +
+          this.name +
+          ')' +
+          'INFO : SET on an activty not in pIfsameState list ' +
+          service.subtype
       );
     }
 
     if (doCommand) {
       this.log.debug(
-        'INFO : Activty ' +
+        '(' +
+          this.name +
+          ')' +
+          'INFO : Activty ' +
           service.subtype +
           ' will be sent command ' +
           commandToSend
@@ -1246,7 +1435,12 @@ HarmonySubPlatform.prototype = {
       callback();
     } else {
       this.log.debug(
-        'INFO : Activty ' + service.subtype + ' will not be sent any command '
+        '(' +
+          this.name +
+          ')' +
+          'INFO : Activty ' +
+          service.subtype +
+          ' will not be sent any command '
       );
       callback();
       setTimeout(function() {

@@ -5,9 +5,8 @@ All notable changes to this project will be documented in this file.
 ## NOT RELEASED PLANED 1.0.0
 
 - [NEW] Act as a dynamic platform
-- [BREAKING] skipedIfSameStateActivities -> skippedIfSameStateActivities / addAllActivitiesToSkipedIfSameStateActivitiesList -> addAllActivitiesToSkippedIfSameStateActivitiesList
-- [BREAKING] MENU command (inside properties of TV Service) renamed to SETUP and will be mapped to setup function if avaliable (can be ovewridden)
-- [BREAKING] complete subplatofrm logic / config change - see README
+- [NEW] Option to set custom default name for device switches
+- [BREAKING] complete subplatofrm logic / config change and renaming of some parameters - see README MIGRATION for details
 
 ## 0.7.0
 
