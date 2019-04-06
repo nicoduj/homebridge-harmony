@@ -30,21 +30,21 @@ You can discuss this plugin on [Slack](https://homebridge-slackin.glitch.me) in 
 
 ## Migration from 0.X to 1.X
 
-**You have to move your other platforms if you have more than one in a new key : "otherPlatforms": [{ }]** see sample below.
+**You have to move your other platforms if you have more than one in a new key : "otherPlatforms": [{ }] , see sample below. The plugin MUST be adde donly One time in your config**
 
-You have to rename `skipedIfSameStateActivities` to `skippedIfSameStateActivities` (with 2 `p` ) or `addAllActivitiesToSkipedIfSameStateActivitiesList` to `addAllActivitiesToSkippedIfSameStateActivitiesList` (also with 2 `p` ) if you were using one of those options.
-
-You have to modify `devicesToPublishAsAccessoriesSwitch` option if you were using it, see below
-
-If you were overriding **MENU** through `remoteOverrideCommandsList` you have to use **SETUP** instead now.
+1. TV mode is now the default. If you want switches, use option `switchAccessories` (or `activitiesToPublishAsAccessoriesSwitch` )
+2. You have to rename `skipedIfSameStateActivities` to `skippedIfSameStateActivities` (with 2 `p` ) or `addAllActivitiesToSkipedIfSameStateActivitiesList` to `addAllActivitiesToSkippedIfSameStateActivitiesList` (also with 2 `p` ) if you were using one of those options.
+3. You have to rename `publishActivitiesAsIndividualAccessories` to `publishSwitchActivitiesAsIndividualAccessories`
+4. You have to modify `devicesToPublishAsAccessoriesSwitch` option if you were using it, see details below
+5. If you were overriding **MENU** through `remoteOverrideCommandsList` you have to use **SETUP** instead now (since it is in the settings of the remote).
 
 In case of any trouble like accessories allready added (or missing), you can try to use the option `cleanCache` but please report in order for me to fix if possible (see Fields section).
 
-To setup mutliple tv platorm, you will have to add other one manually in homekit . Other ones (than the first one) won't be cached. See `publishAllTVAsExternalAccessory`
+To setup mutliple tv platorm, you will have to add others manually in homekit. Other ones (than the first one) won't be cached. See `publishAllTVAsExternalAccessory` for details.
 
-## Configuration
+## Configuration samples
 
-Simple Config (only TV Accessory) :
+**Simple Config (only TV Accessory)**
 
 ```json
 "platforms": [
@@ -56,7 +56,20 @@ Simple Config (only TV Accessory) :
 ]
 ```
 
-Only switch mode
+**Simple Config (only TV Accessory, but with another plugin exposing a TV accessory)**
+
+```json
+"platforms": [
+  {
+    "platform": "HarmonyHubWebSocket",
+    "name": "HubName",
+    "hubIP": "192.168.1.XX",
+    "publishAllTVAsExternalAccessory" : true
+  }
+]
+```
+
+**Only switch mode**
 
 ```json
 "platforms": [
@@ -70,7 +83,7 @@ Only switch mode
 ]
 ```
 
-Mutliple hubs :
+**Mutliple hubs**
 
 ```json
 "platforms": [
@@ -102,7 +115,7 @@ Fields:
   - if you set to "stateless", it will always be off, but can be triggered to switch off current activity.
 - `skippedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app. For TV mode, and PowerOff feature, "PowerOff" is added by default, but you have to add it manually to this list if this list is set.
 - `addAllActivitiesToSkippedIfSameStateActivitiesList` option to add all activities automatically to skippedIfSameStateActivities behavior. (defaults : false)
-- `publishActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
+- `publishSwitchActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
 - `devicesToPublishAsAccessoriesSwitch` array of Devices to exposes with on/off function or custom functions
 - `publishDevicesAsIndividualAccessories` option to publish devices as individual accessories. Defaults to true.
 - `sequencesToPublishAsAccessoriesSwitch` array of Sequences to exposes through a switch.
@@ -128,18 +141,18 @@ All devices / Activites names are the one configured in harmony configuration, e
 As a sample :
 
 ```json
-  "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up;Up|2500;Down"]
+  "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4|Button1;Play","Apple TV Gen 4;DirectionDown","Caisson","Sony PS4","MyDevice;Up;Up|2500;Down"]
 ```
 
 will add
 
-- a switch for "Apple TV Gen 4" "Play" command,
+- a switch for "Apple TV Gen 4" "Play" command, named Button1,
 - a switch for "Apple TV Gen 4" "DirectionDown" command,
 - a powerToggle switch for the device named "Caisson",
 - a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it)
-- a switch that will send Up , then Up, then wait 2.5S, then send Down to MyDevice
+- a switch that will send Up , then Up, then wait 2.5 seconds, then send Down to MyDevice
 
-All commands available are displayed at startup
+All commands available are displayed at startup. If no name is specified, it will be added with a generated name.
 
 **Option** `sequencesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 

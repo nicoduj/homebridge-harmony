@@ -91,8 +91,8 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
   if (this.isPlatformWithSwitch) {
     this.showTurnOffActivity = config['showTurnOffActivity'];
 
-    this.publishActivitiesAsIndividualAccessories = HarmonyTools.checkParameter(
-      config['publishActivitiesAsIndividualAccessories'],
+    this.publishSwitchActivitiesAsIndividualAccessories = HarmonyTools.checkParameter(
+      config['publishSwitchActivitiesAsIndividualAccessories'],
       true
     );
 
@@ -145,7 +145,7 @@ HarmonySubPlatform.prototype = {
     let accessoriesToAdd = [];
     var myHarmonyAccessory;
 
-    if (!this.publishActivitiesAsIndividualAccessories) {
+    if (!this.publishSwitchActivitiesAsIndividualAccessories) {
       myHarmonyAccessory = this.harmonyBase.checkAccessory(this, '');
       if (!myHarmonyAccessory) {
         myHarmonyAccessory = this.harmonyBase.createAccessory(this, '');
@@ -160,7 +160,7 @@ HarmonySubPlatform.prototype = {
           ? 'DEV' + activities[i].label
           : activities[i].label;
 
-        if (this.publishActivitiesAsIndividualAccessories) {
+        if (this.publishSwitchActivitiesAsIndividualAccessories) {
           myHarmonyAccessory = this.harmonyBase.checkAccessory(
             this,
             switchName

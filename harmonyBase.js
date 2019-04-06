@@ -19,6 +19,7 @@ function HarmonyBase(api) {
 }
 
 HarmonyBase.prototype = {
+  //SETUP
   configCommonProperties: function(log, config, harmonyPlatform) {
     harmonyPlatform.log = log;
     harmonyPlatform.hubIP = config['hubIP'];
@@ -70,50 +71,6 @@ HarmonyBase.prototype = {
           ? harmonyPlatform.skippedIfSameStateActivities
           : 'NONE')
     );
-  },
-
-  handleCharacteristicUpdate: function(
-    harmonyPlatform,
-    characteristic,
-    value,
-    callback
-  ) {
-    if (
-      harmonyPlatform._currentActivity ==
-      HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
-    ) {
-      this.updateCharacteristicToErr(characteristic, callback);
-    } else {
-      this.updateCharacteristic(characteristic, value, callback);
-    }
-  },
-
-  updateCharacteristicToErr: function(characteristic, callback) {
-    try {
-      if (callback) {
-        callback(1);
-      } else {
-        characteristic.updateValue(undefined);
-      }
-    } catch (error) {
-      characteristic.updateValue(undefined);
-    }
-  },
-
-  updateCharacteristic: function(
-    characteristic,
-    characteristicValue,
-    callback
-  ) {
-    try {
-      if (callback) {
-        callback(undefined, characteristicValue);
-      } else {
-        characteristic.updateValue(characteristicValue);
-      }
-    } catch (error) {
-      characteristic.updateValue(characteristicValue);
-    }
   },
 
   configureAccessories: function(harmonyPlatform) {
@@ -241,6 +198,8 @@ HarmonyBase.prototype = {
     }, HarmonyConst.DELAY_LAUNCH_REFRESH);
   },
 
+  //REFRESH
+
   refreshCurrentActivity: function(harmonyPlatform, callback) {
     if (
       harmonyPlatform._currentActivity >
@@ -285,6 +244,7 @@ HarmonyBase.prototype = {
     }
   },
 
+  //HOME SWITCHES
   refreshHomeAccessory(harmonyPlatform) {
     this.getHomeControlsAccessories(harmonyPlatform).then(responseHome => {
       if (responseHome && responseHome.data) {
@@ -406,6 +366,7 @@ HarmonyBase.prototype = {
     }
   },
 
+  //SEQUENCES SWITCHES
   getSequencesAccessories: function(harmonyPlatform, data) {
     if (
       harmonyPlatform.sequencesToPublishAsAccessoriesSwitch &&
@@ -472,6 +433,7 @@ HarmonyBase.prototype = {
     }
   },
 
+  //DEVICES SWITCHES
   printAndStoreCommands: function(harmonyPlatform, devices) {
     this.deviceCommands = {};
     for (let i = 0, len = devices.length; i < len; i++) {
@@ -537,13 +499,12 @@ HarmonyBase.prototype = {
     myHarmonyAccessory,
     harmonyPlatform,
     controlGroup,
-    device
+    device,
+    customSwitchName
   ) {
     let accessoriesToAdd = [];
 
-    let switchName = harmonyPlatform.devMode
-      ? 'DEV' + device.label
-      : device.label;
+    switchName = harmonyPlatform.devMode ? 'DEV' + device.label : device.label;
 
     harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
 
@@ -579,7 +540,7 @@ HarmonyBase.prototype = {
           let service = this.getSwitchService(
             harmonyPlatform,
             myHarmonyAccessory,
-            switchName,
+            customSwitchName ? customSwitchName : switchName,
             subType
           );
 
@@ -599,7 +560,8 @@ HarmonyBase.prototype = {
     harmonyPlatform,
     commands,
     controlGroup,
-    device
+    device,
+    customSwitchName
   ) {
     let accessoriesToAdd = [];
 
@@ -653,7 +615,7 @@ HarmonyBase.prototype = {
       let service = this.getSwitchService(
         harmonyPlatform,
         myHarmonyAccessory,
-        switchName,
+        customSwitchName ? customSwitchName : switchName,
         subType
       );
 
@@ -701,7 +663,11 @@ HarmonyBase.prototype = {
         ].split(';');
 
         for (let i = 0, len = devices.length; i < len; i++) {
-          if (devices[i].label === commands[0]) {
+          let nameSwitchArray = commands[0].split('|');
+          let ServiceName = nameSwitchArray[0];
+          let customSwitchName =
+            nameSwitchArray.length > 1 ? nameSwitchArray[1] : undefined;
+          if (devices[i].label === ServiceName) {
             //check  functions
 
             let controlGroup = devices[i].controlGroup;
@@ -714,7 +680,8 @@ HarmonyBase.prototype = {
                   myHarmonyAccessory,
                   harmonyPlatform,
                   controlGroup,
-                  devices[i]
+                  devices[i],
+                  customSwitchName
                 )
               );
             }
@@ -727,7 +694,8 @@ HarmonyBase.prototype = {
                   harmonyPlatform,
                   commands,
                   controlGroup,
-                  devices[i]
+                  devices[i],
+                  customSwitchName
                 )
               );
             }
@@ -737,6 +705,51 @@ HarmonyBase.prototype = {
 
       //creating accessories
       this.addAccessories(harmonyPlatform, accessoriesToAdd);
+    }
+  },
+
+  //ACCESSORIES, SERVICES AND CHARACERISTICS
+  handleCharacteristicUpdate: function(
+    harmonyPlatform,
+    characteristic,
+    value,
+    callback
+  ) {
+    if (
+      harmonyPlatform._currentActivity ==
+      HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
+    ) {
+      this.updateCharacteristicToErr(characteristic, callback);
+    } else {
+      this.updateCharacteristic(characteristic, value, callback);
+    }
+  },
+
+  updateCharacteristicToErr: function(characteristic, callback) {
+    try {
+      if (callback) {
+        callback(1);
+      } else {
+        characteristic.updateValue(undefined);
+      }
+    } catch (error) {
+      characteristic.updateValue(undefined);
+    }
+  },
+
+  updateCharacteristic: function(
+    characteristic,
+    characteristicValue,
+    callback
+  ) {
+    try {
+      if (callback) {
+        callback(undefined, characteristicValue);
+      } else {
+        characteristic.updateValue(characteristicValue);
+      }
+    } catch (error) {
+      characteristic.updateValue(characteristicValue);
     }
   },
 
@@ -872,6 +885,7 @@ HarmonyBase.prototype = {
       );
   },
 
+  //COMMAND
   sendCommand: function(harmonyPlatform, commandToSend) {
     if (!commandToSend) {
       harmonyPlatform.log.debug('INFO - sendCommand : Command not available ');
