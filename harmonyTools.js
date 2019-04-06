@@ -21,19 +21,7 @@ module.exports = {
   },
 
   isPlatformEmpty(platform) {
-    if (
-      platform.TVAccessory ||
-      platform.showTurnOffActivity ||
-      platform.switchAccessories ||
-      (platform.activitiesToPublishAsAccessoriesSwitch &&
-        platform.activitiesToPublishAsAccessoriesSwitch.length > 0) ||
-      (platform.sequencesToPublishAsAccessoriesSwitch &&
-        platform.sequencesToPublishAsAccessoriesSwitch.length > 0) ||
-      (platform.devicesToPublishAsAccessoriesSwitch &&
-        platform.devicesToPublishAsAccessoriesSwitch.length > 0) ||
-      (platform.homeControlsToPublishAsAccessoriesSwitch &&
-        platform.homeControlsToPublishAsAccessoriesSwitch.length > 0)
-    ) {
+    if (platform.TVAccessory || this.isPlatformWithSwitch(platform)) {
       return false;
     } else {
       return true;

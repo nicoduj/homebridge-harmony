@@ -74,7 +74,12 @@ HarmonyBase.prototype = {
   },
 
   configureAccessories: function(harmonyPlatform) {
-    if (HarmonyTools.isPlatformEmpty(harmonyPlatform)) return;
+    if (HarmonyTools.isPlatformEmpty(harmonyPlatform)) {
+      harmonyPlatform.log(
+        'WARNING - platform ' + harmonyPlatform.name + ' is empty'
+      );
+      return;
+    }
 
     harmonyPlatform.log('INFO - Loading activities...');
 

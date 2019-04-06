@@ -126,8 +126,6 @@ HarmonySubPlatform.prototype = {
   //MAIN METHODS
 
   onMessage(newActivity) {
-    if (this.TVAccessory) this.handleRefreshOfCharacteristic(newActivity);
-    if (this.isPlatformWithSwitch) this.refreshCurrentActivity(newActivity);
     this.refreshAccessory();
   },
 
@@ -136,12 +134,12 @@ HarmonySubPlatform.prototype = {
     if (this.TVAccessory)
       accessoriesToAdd.push.apply(
         accessoriesToAdd,
-        this.readTVAccessories(data, homedata)
+        this.readTVAccessories(data)
       );
     if (this.isPlatformWithSwitch)
       accessoriesToAdd.push.apply(
         accessoriesToAdd,
-        this.readSwitchAccessories(data, homedata)
+        this.readSwitchAccessories(data)
       );
 
     this.harmonyBase.setupFoundAccessories(
@@ -152,7 +150,7 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  readSwitchAccessories: function(data, homedata) {
+  readSwitchAccessories: function(data) {
     let activities = data.data.activity;
 
     let accessoriesToAdd = [];
@@ -210,7 +208,7 @@ HarmonySubPlatform.prototype = {
     return accessoriesToAdd;
   },
 
-  readTVAccessories: function(data, homedata) {
+  readTVAccessories: function(data) {
     let activities = data.data.activity;
     let accessoriesToAdd = [];
     let name = this.devMode ? 'DEV' : 'TV';
@@ -455,8 +453,23 @@ HarmonySubPlatform.prototype = {
 
   refreshAccessory: function() {
     this.harmonyBase.refreshCurrentActivity(this, () => {
-      this.handleRefreshOfCharacteristic(this._currentActivity);
+      //TV
+      if (this.TVAccessory)
+        this.handleRefreshOfCharacteristic(this._currentActivity);
+
+      //SWITCH ACTIVITIEs
+      if (this.isPlatformWithSwitch) {
+        for (let a = 0; a < this._foundAccessories.length; a++) {
+          let myHarmonyAccessory = this._foundAccessories[a];
+          for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
+            let service = myHarmonyAccessory.services[s];
+            if (service.type == HarmonyConst.ACTIVITY_TYPE)
+              this.refreshService(service, undefined);
+          }
+        }
+      }
     });
+
     this.harmonyBase.refreshHomeAccessory(this);
   },
 
@@ -522,16 +535,7 @@ HarmonySubPlatform.prototype = {
     });
   },
 
-  refreshCurrentActivity: function(response) {
-    this.updateCurrentInputService(response);
-  },
-
   updateCurrentInputService: function(newActivity) {
-    if (!newActivity) return;
-
-    this._currentActivity = newActivity;
-    this._currentActivityLastUpdate = Date.now();
-
     if (this._currentActivity > 0) {
       for (let i = 0, len = this.inputServices.length; i < len; i++) {
         if (this.inputServices[i].activityId == this._currentActivity) {
@@ -599,55 +603,6 @@ HarmonySubPlatform.prototype = {
         that.refreshAccessory();
       }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
     }
-  },
-
-  activityCommand: function(homebridgeAccessory, commandToSend) {
-    this.harmonyBase.harmony.startActivity(commandToSend).then(data => {
-      if (HarmonyTools.isCommandOk(data)) {
-        this._currentSetAttemps = 0;
-
-        this.log.debug(
-          '(' + this.name + ')' + 'INFO - activityCommand : command sent'
-        );
-        this.handleRefreshOfCharacteristic(commandToSend);
-      } else if (HarmonyTools.isCommandInProgress(data)) {
-        this._currentSetAttemps = this._currentSetAttemps + 1;
-        //get characteristic
-        this.log.debug(
-          '(' +
-            this.name +
-            ')' +
-            'WARNING - activityCommand : could not SET status : ' +
-            JSON.stringify(data)
-        );
-
-        //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
-        var that = this;
-        setTimeout(function() {
-          if (
-            that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE
-          ) {
-            that.log.debug(
-              '(' +
-                this.name +
-                ')' +
-                'INFO - activityCommand : RETRY to send command ' +
-                commandToSend
-            );
-            that.activityCommand(homebridgeAccessory, commandToSend);
-          } else {
-            that.log(
-              '(' +
-                this.name +
-                ')' +
-                'ERROR - activityCommand : could not SET status, no more RETRY : ' +
-                commandToSend
-            );
-            that.refreshAccessory();
-          }
-        }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
-      }
-    });
   },
 
   handlePlayPause: function() {
@@ -1168,8 +1123,11 @@ HarmonySubPlatform.prototype = {
   },
 
   refreshCurrentActivity: function(response) {
+    if (!response) return;
+
     this._currentActivity = response;
     this._currentActivityLastUpdate = Date.now();
+    this.updateCurrentInputService(response);
   },
 
   checkOn(service) {
@@ -1241,18 +1199,6 @@ HarmonySubPlatform.prototype = {
     });
   },
 
-  refreshAccessory: function() {
-    for (let a = 0; a < this._foundAccessories.length; a++) {
-      let myHarmonyAccessory = this._foundAccessories[a];
-      for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
-        let service = myHarmonyAccessory.services[s];
-        if (service.type == HarmonyConst.ACTIVITY_TYPE)
-          this.refreshService(service, undefined);
-      }
-    }
-    this.harmonyBase.refreshHomeAccessory(this);
-  },
-
   handleActivityOk: function(commandToSend) {
     this._currentSetAttemps = 0;
 
@@ -1303,10 +1249,6 @@ HarmonySubPlatform.prototype = {
   handleActivityInProgress: function(homebridgeAccessory, commandToSend) {
     this._currentSetAttemps = this._currentSetAttemps + 1;
 
-    //get characteristic
-    var service = this.getService(homebridgeAccessory, commandToSend);
-    var charactToSet = service.getCharacteristic(Characteristic.On);
-
     //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
     var that = this;
     setTimeout(function() {
@@ -1316,7 +1258,7 @@ HarmonySubPlatform.prototype = {
             this.name +
             ')' +
             'INFO - activityCommand : RETRY to send command ' +
-            service.displayName
+            commandToSend
         );
         that.activityCommand(homebridgeAccessory, commandToSend);
       } else {
@@ -1325,9 +1267,9 @@ HarmonySubPlatform.prototype = {
             this.name +
             ')' +
             'ERROR - activityCommand : could not SET status, no more RETRY : ' +
-            service.displayName
+            commandToSend
         );
-        charactToSet.updateValue(false);
+        that.refreshAccessory();
       }
     }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
   },
@@ -1346,6 +1288,8 @@ HarmonySubPlatform.prototype = {
 
         if (HarmonyTools.isCommandOk(data)) {
           this.handleActivityOk(commandToSend);
+          if (this.TVAccessory)
+            this.handleRefreshOfCharacteristic(commandToSend);
         } else if (HarmonyTools.isCommandInProgress(data)) {
           this.log.debug(
             '(' +
@@ -1416,7 +1360,7 @@ HarmonySubPlatform.prototype = {
         '(' +
           this.name +
           ')' +
-          'INFO : SET on an activty not in pIfsameState list ' +
+          'INFO : SET on an activty not in skippedIfSameStateActivities list ' +
           service.subtype
       );
     }
