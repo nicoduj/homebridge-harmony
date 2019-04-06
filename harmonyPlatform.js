@@ -1,6 +1,6 @@
 var AccessoryType;
 
-const HarmonySubPlatform = require('./HarmonySubPlatform').HarmonySubPlatform;
+const HarmonySubPlatform = require('./harmonySubPlatform').HarmonySubPlatform;
 const HarmonyTools = require('./harmonyTools.js');
 
 module.exports = {
