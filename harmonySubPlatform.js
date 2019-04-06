@@ -434,8 +434,8 @@ HarmonySubPlatform.prototype = {
 
   ///REFRESHING TOOLS
 
-  handleRefreshOfCharacteristic(activity) {
-    this.updateCurrentInputService(activity);
+  handleRefreshOfCharacteristic() {
+    this.updateCurrentInputService();
 
     this.harmonyBase.handleCharacteristicUpdate(
       this,
@@ -453,8 +453,7 @@ HarmonySubPlatform.prototype = {
 
   localRefresh: function() {
     //TV
-    if (this.TVAccessory)
-      this.handleRefreshOfCharacteristic(this._currentActivity);
+    if (this.TVAccessory) this.handleRefreshOfCharacteristic();
 
     //SWITCH ACTIVITIEs
     if (this.isPlatformWithSwitch) {
@@ -475,7 +474,7 @@ HarmonySubPlatform.prototype = {
     });
   },
 
-  updateCurrentInputService: function(newActivity) {
+  updateCurrentInputService: function() {
     if (this._currentActivity > 0) {
       for (let i = 0, len = this.inputServices.length; i < len; i++) {
         if (this.inputServices[i].activityId == this._currentActivity) {
@@ -1291,8 +1290,7 @@ HarmonySubPlatform.prototype = {
 
         if (HarmonyTools.isCommandOk(data)) {
           this.handleActivityOk(commandToSend);
-          if (this.TVAccessory)
-            this.handleRefreshOfCharacteristic(commandToSend);
+          if (this.TVAccessory) this.handleRefreshOfCharacteristic();
         } else if (HarmonyTools.isCommandInProgress(data)) {
           this.log.debug(
             '(' +
