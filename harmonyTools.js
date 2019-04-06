@@ -1,6 +1,25 @@
 const HarmonyConst = require('./harmonyConst');
 
 module.exports = {
+  isPlatformWithSwitch(platform) {
+    if (
+      platform.showTurnOffActivity ||
+      platform.switchAccessories ||
+      (platform.activitiesToPublishAsAccessoriesSwitch &&
+        platform.activitiesToPublishAsAccessoriesSwitch.length > 0) ||
+      (platform.sequencesToPublishAsAccessoriesSwitch &&
+        platform.sequencesToPublishAsAccessoriesSwitch.length > 0) ||
+      (platform.devicesToPublishAsAccessoriesSwitch &&
+        platform.devicesToPublishAsAccessoriesSwitch.length > 0) ||
+      (platform.homeControlsToPublishAsAccessoriesSwitch &&
+        platform.homeControlsToPublishAsAccessoriesSwitch.length > 0)
+    ) {
+      return true;
+    } else {
+      return false;
+    }
+  },
+
   isPlatformEmpty(platform) {
     if (
       platform.TVAccessory ||

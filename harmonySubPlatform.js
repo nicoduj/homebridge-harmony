@@ -8,87 +8,256 @@ const HarmonyAsTVKeysTools = require('./harmonyAsTVKeysTools.js');
 const fs = require('fs');
 
 module.exports = {
-  HarmonyPlatformAsTVPlatform: HarmonyPlatformAsTVPlatform,
+  HarmonySubPlatform: HarmonySubPlatform,
 };
 
-function HarmonyPlatformAsTVPlatform(log, config, api, mainPlatform) {
+function HarmonySubPlatform(log, config, api, mainPlatform) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
   Accessory = api.hap.Accessory;
+
   this.api = api;
   this.mainPlatform = mainPlatform;
   this.harmonyBase = new HarmonyBase(api);
   this.harmonyBase.configCommonProperties(log, config, this);
-  this.TVAccessory = true;
 
-  this.mainActivity = this.devMode ? 'DEV' : '' + config['mainActivity'];
-  this.playPauseBehavior = HarmonyTools.checkParameter(
-    config['playPauseBehavior'],
-    false
-  );
+  this.TVAccessory = HarmonyTools.checkParameter(config['TVAccessory'], true);
 
-  this.numberOfCommandsSentForVolumeControl = HarmonyTools.checkParameter(
-    config['numberOfCommandsSentForVolumeControl'],
-    1
-  );
-  this.activitiesToPublishAsInputForTVMode =
-    config['activitiesToPublishAsInputForTVMode'];
-
-  this.remoteOverrideCommandsList = config['remoteOverrideCommandsList'];
-
-  if (
-    !this.addAllActivitiesToSkippedIfSameStateActivitiesList &&
-    !this.skippedIfSameStateActivities
-  ) {
-    this.skippedIfSameStateActivities = ['PowerOff'];
-  }
-
-  this.log.debug('INFO - playPause option set to ' + this.playPauseBehavior);
-  this.playStatus = {};
-  this.volumesLevel = {};
-
-  this.prefsDir = api.user.storagePath();
-  // check if prefs directory ends with a /, if not then add it
-  if (this.prefsDir.endsWith('/') === false) {
-    this.prefsDir = this.prefsDir + '/';
-  }
-
-  this.savedNamesFile =
-    this.prefsDir +
-    'harmonyPluginNames_' +
-    this.name +
-    '_' +
-    this.hubIP.split('.').join('');
-  this.savedVisibilityFile =
-    this.prefsDir +
-    'harmonyPluginVisibility_' +
-    this.name +
-    '_' +
-    this.hubIP.split('.').join('');
-
-  this.savedNames = {};
-  try {
-    this.savedNames = JSON.parse(fs.readFileSync(this.savedNamesFile));
-  } catch (err) {
-    this.log.debug('INFO - input names file does not exist');
-  }
-
-  this.savedVisibility = {};
-  try {
-    this.savedVisibility = JSON.parse(
-      fs.readFileSync(this.savedVisibilityFile)
+  if (this.TVAccessory) {
+    this.mainActivity = this.devMode ? 'DEV' : '' + config['mainActivity'];
+    this.playPauseBehavior = HarmonyTools.checkParameter(
+      config['playPauseBehavior'],
+      false
     );
-  } catch (err) {
-    this.log.debug('INFO - input visibility file does not exist');
+
+    this.numberOfCommandsSentForVolumeControl = HarmonyTools.checkParameter(
+      config['numberOfCommandsSentForVolumeControl'],
+      1
+    );
+    this.activitiesToPublishAsInputForTVMode =
+      config['activitiesToPublishAsInputForTVMode'];
+
+    this.remoteOverrideCommandsList = config['remoteOverrideCommandsList'];
+
+    if (
+      !this.addAllActivitiesToSkippedIfSameStateActivitiesList &&
+      !this.skippedIfSameStateActivities
+    ) {
+      this.skippedIfSameStateActivities = ['PowerOff'];
+    }
+
+    this.log.debug('INFO - playPause option set to ' + this.playPauseBehavior);
+    this.playStatus = {};
+    this.volumesLevel = {};
+
+    this.prefsDir = api.user.storagePath();
+    // check if prefs directory ends with a /, if not then add it
+    if (this.prefsDir.endsWith('/') === false) {
+      this.prefsDir = this.prefsDir + '/';
+    }
+
+    this.savedNamesFile =
+      this.prefsDir +
+      'harmonyPluginNames_' +
+      this.name +
+      '_' +
+      this.hubIP.split('.').join('');
+    this.savedVisibilityFile =
+      this.prefsDir +
+      'harmonyPluginVisibility_' +
+      this.name +
+      '_' +
+      this.hubIP.split('.').join('');
+
+    this.savedNames = {};
+    try {
+      this.savedNames = JSON.parse(fs.readFileSync(this.savedNamesFile));
+    } catch (err) {
+      this.log.debug('INFO - input names file does not exist');
+    }
+
+    this.savedVisibility = {};
+    try {
+      this.savedVisibility = JSON.parse(
+        fs.readFileSync(this.savedVisibilityFile)
+      );
+    } catch (err) {
+      this.log.debug('INFO - input visibility file does not exist');
+    }
+  }
+
+  this.isPlatformWithSwitch = HarmonyTools.isPlatformWithSwitch(config);
+
+  if (this.isPlatformWithSwitch) {
+    this.showTurnOffActivity = config['showTurnOffActivity'];
+
+    this.publishActivitiesAsIndividualAccessories = HarmonyTools.checkParameter(
+      config['publishActivitiesAsIndividualAccessories'],
+      true
+    );
+
+    this.activitiesToPublishAsAccessoriesSwitch =
+      config['activitiesToPublishAsAccessoriesSwitch'];
+
+    this.switchAccessories = config['switchAccessories'];
+    if (
+      !this.switchAccessories &&
+      !this.activitiesToPublishAsAccessoriesSwitch
+    ) {
+      this.activitiesToPublishAsAccessoriesSwitch = [];
+    }
   }
 }
 
-HarmonyPlatformAsTVPlatform.prototype = {
+HarmonySubPlatform.prototype = {
+  //MAIN METHODS
+
   onMessage(newActivity) {
-    this.handleRefreshOfCharacteristic(newActivity);
+    if (this.TVAccessory) this.handleRefreshOfCharacteristic(newActivity);
+    if (this.isPlatformWithSwitch) this.refreshCurrentActivity(newActivity);
+    this.refreshAccessory();
   },
 
-  ///CREATION / STARTUP
+  readAccessories: function(data, homedata) {
+    let accessoriesToAdd = [];
+    if (this.TVAccessory)
+      accessoriesToAdd.push.apply(
+        accessoriesToAdd,
+        this.readTVAccessories(data, homedata)
+      );
+    if (this.isPlatformWithSwitch)
+      accessoriesToAdd.push.apply(
+        accessoriesToAdd,
+        this.readSwitchAccessories(data, homedata)
+      );
+
+    this.harmonyBase.setupFoundAccessories(
+      this,
+      accessoriesToAdd,
+      data,
+      homedata
+    );
+  },
+
+  readSwitchAccessories: function(data, homedata) {
+    let activities = data.data.activity;
+
+    let accessoriesToAdd = [];
+    var myHarmonyAccessory;
+
+    if (!this.publishActivitiesAsIndividualAccessories) {
+      myHarmonyAccessory = this.harmonyBase.checkAccessory(this, '');
+      if (!myHarmonyAccessory) {
+        myHarmonyAccessory = this.harmonyBase.createAccessory(this, '');
+        accessoriesToAdd.push(myHarmonyAccessory);
+      }
+      myHarmonyAccessory.category = Accessory.Categories.SWITCH;
+    }
+
+    for (let i = 0, len = activities.length; i < len; i++) {
+      if (this.showActivity(activities[i])) {
+        let switchName = this.devMode
+          ? 'DEV' + activities[i].label
+          : activities[i].label;
+
+        if (this.publishActivitiesAsIndividualAccessories) {
+          myHarmonyAccessory = this.harmonyBase.checkAccessory(
+            this,
+            switchName
+          );
+          if (!myHarmonyAccessory) {
+            myHarmonyAccessory = this.harmonyBase.createAccessory(
+              this,
+              switchName
+            );
+            accessoriesToAdd.push(myHarmonyAccessory);
+          }
+          myHarmonyAccessory.category = Accessory.Categories.SWITCH;
+        }
+
+        this.log('INFO - Discovered Activity : ' + switchName);
+        let subType = switchName;
+        let service = this.harmonyBase.getSwitchService(
+          this,
+          myHarmonyAccessory,
+          switchName,
+          subType
+        );
+
+        service.activityId = activities[i].id;
+        service.type = HarmonyConst.ACTIVITY_TYPE;
+
+        this.bindCharacteristicEventsForSwitch(myHarmonyAccessory, service);
+      }
+    }
+
+    return accessoriesToAdd;
+  },
+
+  readTVAccessories: function(data, homedata) {
+    let activities = data.data.activity;
+    let accessoriesToAdd = [];
+    let name = this.devMode ? 'DEV' : '';
+
+    myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
+
+    if (!myHarmonyAccessory) {
+      myHarmonyAccessory = this.harmonyBase.createAccessory(this, name);
+      accessoriesToAdd.push(myHarmonyAccessory);
+    }
+
+    myHarmonyAccessory.category = Accessory.Categories.TELEVISION;
+
+    this.log('INFO - configuring Main TV Service');
+    this.configureMainService(myHarmonyAccessory);
+
+    let mainActivityConfigured = false;
+    let defaultActivity = undefined;
+
+    for (let i = 0, len = activities.length; i < len; i++) {
+      if (this.showInput(activities[i])) {
+        let inputName = this.devMode
+          ? 'DEV' + activities[i].label
+          : activities[i].label;
+        let inputId = activities[i].id;
+
+        this.log.debug(
+          'INFO - accessories : activity to configure : ' + inputName
+        );
+
+        if (this.mainActivity == inputName) {
+          this.configureMainActivity(myHarmonyAccessory, activities[i]);
+          mainActivityConfigured = true;
+        } else if (!defaultActivity) {
+          defaultActivity = activities[i];
+        }
+
+        let inputSourceService = this.configureInputSourceService(
+          myHarmonyAccessory,
+          inputName,
+          inputId,
+          activities[i]
+        );
+
+        this.mainService.addLinkedService(inputSourceService);
+
+        this.inputServices.push(inputSourceService);
+      }
+    }
+
+    if (!mainActivityConfigured) {
+      this.log(
+        'WARNING - No main Activity that match config file found, default to first one'
+      );
+      this.configureMainActivity(myHarmonyAccessory, defaultActivity);
+    }
+
+    this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
+
+    return accessoriesToAdd;
+  },
+
+  //TV METHODS
 
   configureMainService: function(accessory) {
     let subType = this.name + ' TV';
@@ -232,75 +401,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
     )
       return false;
     else return activity.id != -1;
-  },
-
-  readAccessories: function(data, homedata) {
-    let activities = data.data.activity;
-    let accessoriesToAdd = [];
-    let name = this.devMode ? 'DEV' : '';
-
-    myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
-
-    if (!myHarmonyAccessory) {
-      myHarmonyAccessory = this.harmonyBase.createAccessory(this, name);
-      accessoriesToAdd.push(myHarmonyAccessory);
-    }
-
-    myHarmonyAccessory.category = Accessory.Categories.TELEVISION;
-
-    this.log('INFO - configuring Main TV Service');
-    this.configureMainService(myHarmonyAccessory);
-
-    let mainActivityConfigured = false;
-    let defaultActivity = undefined;
-
-    for (let i = 0, len = activities.length; i < len; i++) {
-      if (this.showInput(activities[i])) {
-        let inputName = this.devMode
-          ? 'DEV' + activities[i].label
-          : activities[i].label;
-        let inputId = activities[i].id;
-
-        this.log.debug(
-          'INFO - accessories : activity to configure : ' + inputName
-        );
-
-        if (this.mainActivity == inputName) {
-          this.configureMainActivity(myHarmonyAccessory, activities[i]);
-          mainActivityConfigured = true;
-        } else if (!defaultActivity) {
-          defaultActivity = activities[i];
-        }
-
-        let inputSourceService = this.configureInputSourceService(
-          myHarmonyAccessory,
-          inputName,
-          inputId,
-          activities[i]
-        );
-
-        this.mainService.addLinkedService(inputSourceService);
-
-        this.inputServices.push(inputSourceService);
-      }
-    }
-
-    if (!mainActivityConfigured) {
-      this.log(
-        'WARNING - No main Activity that match config file found, default to first one'
-      );
-      this.configureMainActivity(myHarmonyAccessory, defaultActivity);
-    }
-
-    this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
-
-    this.harmonyBase.setupFoundAccessories(
-      this,
-      accessoriesToAdd,
-      data,
-      homedata,
-      true
-    );
   },
 
   ///REFRESHING TOOLS
@@ -529,7 +629,6 @@ HarmonyPlatformAsTVPlatform.prototype = {
   },
 
   //HOMEKIT CHARACTERISTICS EVENTS
-
   bindActiveCharacteristic(characteristic, service, homebridgeAccessory) {
     //set to main activity / activeIdentifier or off
 
@@ -905,5 +1004,277 @@ HarmonyPlatformAsTVPlatform.prototype = {
         this.inputServices[i]
       );
     }
+  },
+
+  //SWITCHES METHODS
+
+  showActivity: function(activity) {
+    if (
+      activity.id != -1 &&
+      this.activitiesToPublishAsAccessoriesSwitch &&
+      !this.activitiesToPublishAsAccessoriesSwitch.includes(activity.label)
+    )
+      return false;
+    else return activity.id != -1 || this.showTurnOffActivity;
+  },
+
+  refreshCurrentActivity: function(response) {
+    this._currentActivity = response;
+    this._currentActivityLastUpdate = Date.now();
+  },
+
+  checkOn(service) {
+    this.log.debug(
+      'checkOn : ' +
+        this._currentActivity +
+        '/' +
+        service.activityId +
+        '/' +
+        (this.showTurnOffActivity == 'inverted') +
+        '/' +
+        (this.showTurnOffActivity == 'stateless')
+    );
+    if (service.activityId == -1) {
+      if (
+        this._currentActivity == -1 &&
+        (this.showTurnOffActivity == 'inverted' ||
+          this.showTurnOffActivity == 'stateless')
+      ) {
+        return false;
+      }
+      if (
+        this._currentActivity != -1 &&
+        this.showTurnOffActivity == 'inverted'
+      ) {
+        return true;
+      }
+    }
+
+    return this._currentActivity == service.activityId;
+  },
+
+  refreshService: function(service, callback) {
+    var characteristic = service.getCharacteristic(Characteristic.On);
+
+    this.harmonyBase.refreshCurrentActivity(this, () => {
+      if (this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
+        let characteristicIsOn = this.checkOn(service);
+
+        this.log.debug(
+          'Got status for ' +
+            service.displayName +
+            ' - was ' +
+            characteristic.value +
+            ' set to ' +
+            characteristicIsOn
+        );
+        this.harmonyBase.handleCharacteristicUpdate(
+          this,
+          characteristic,
+          characteristicIsOn,
+          callback
+        );
+      } else {
+        this.log.debug('WARNING : no current Activity');
+        this.harmonyBase.handleCharacteristicUpdate(
+          this,
+          characteristic,
+          characteristic.value,
+          callback
+        );
+      }
+    });
+  },
+
+  refreshAccessory: function() {
+    for (let a = 0; a < this._foundAccessories.length; a++) {
+      let myHarmonyAccessory = this._foundAccessories[a];
+      for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
+        let service = myHarmonyAccessory.services[s];
+        if (service.type == HarmonyConst.ACTIVITY_TYPE)
+          this.refreshService(service, undefined);
+      }
+    }
+    this.harmonyBase.refreshHomeAccessory(this);
+  },
+
+  handleActivityOk: function(commandToSend) {
+    this._currentSetAttemps = 0;
+
+    for (let a = 0; a < this._foundAccessories.length; a++) {
+      let foundHarmonyAccessory = this._foundAccessories[a];
+      for (let s = 0; s < foundHarmonyAccessory.services.length; s++) {
+        let otherService = foundHarmonyAccessory.services[s];
+
+        if (otherService.type == HarmonyConst.ACTIVITY_TYPE) {
+          let characteristic = otherService.getCharacteristic(
+            Characteristic.On
+          );
+
+          HarmonyTools.disablePreviousActivity(
+            this,
+            characteristic,
+            otherService,
+            commandToSend,
+            characteristic.value
+          );
+          HarmonyTools.handleOffActivity(
+            this,
+            characteristic,
+            otherService,
+            commandToSend
+          );
+        }
+      }
+    }
+
+    this._currentActivity = commandToSend;
+  },
+
+  getService: function(homebridgeAccessory, idToFind) {
+    var service;
+    for (let a = 0; a < homebridgeAccessory.services.length; a++) {
+      if (homebridgeAccessory.services[a].ActivityId == idToFind) {
+        service = homebridgeAccessory.services[a];
+        this.log.debug('INFO - ' + service.displayName + ' activated');
+        break;
+      }
+    }
+    return service;
+  },
+
+  handleActivityInProgress: function(homebridgeAccessory, commandToSend) {
+    this._currentSetAttemps = this._currentSetAttemps + 1;
+
+    //get characteristic
+    var service = this.getService(homebridgeAccessory, commandToSend);
+    var charactToSet = service.getCharacteristic(Characteristic.On);
+
+    //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
+    var that = this;
+    setTimeout(function() {
+      if (that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE) {
+        that.log.debug(
+          'INFO - activityCommand : RETRY to send command ' +
+            service.displayName
+        );
+        that.activityCommand(homebridgeAccessory, commandToSend);
+      } else {
+        that.log(
+          'ERROR - activityCommand : could not SET status, no more RETRY : ' +
+            service.displayName
+        );
+        charactToSet.updateValue(false);
+      }
+    }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
+  },
+
+  activityCommand: function(homebridgeAccessory, commandToSend) {
+    this.harmonyBase.harmony
+      .startActivity(commandToSend)
+      .then(data => {
+        this.log.debug(
+          'INFO - activityCommand : Returned from hub ' + JSON.stringify(data)
+        );
+
+        if (HarmonyTools.isCommandOk(data)) {
+          this.handleActivityOk(commandToSend);
+        } else if (HarmonyTools.isCommandInProgress(data)) {
+          this.log.debug(
+            'WARNING - activityCommand : could not SET status : ' +
+              JSON.stringify(data)
+          );
+          this.handleActivityInProgress(homebridgeAccessory, commandToSend);
+        } else {
+          this.log('ERROR - activityCommand : could not SET status, no data');
+        }
+      })
+      .catch(e => {
+        this.log('ERROR - activityCommand : ' + e);
+      });
+  },
+
+  setSwitchOnCharacteristic: function(
+    homebridgeAccessory,
+    characteristic,
+    service,
+    value,
+    callback
+  ) {
+    let doCommand = true;
+    let commandToSend = value ? service.activityId : '-1';
+    let currentValue = characteristic.value;
+
+    //Actitiy in skippedIfSameState
+    if (HarmonyTools.isActivtyToBeSkipped(this, service.subtype)) {
+      this.log.debug(
+        'INFO : SET on an activty in skippedIfsameState list ' + service.subtype
+      );
+
+      this.log.debug(
+        'INFO : Activty ' +
+          service.subtype +
+          ' is ' +
+          currentValue +
+          ', wants to set to ' +
+          value
+      );
+
+      //GLOBAL OFF SWITCH : do command only if it is off and we want to set it on since on state can't be reversed
+      //ELSE, we do the command only if state is different.
+      doCommand =
+        service.activityId == -1
+          ? (this.showTurnOffActivity == 'inverted' &&
+              currentValue &&
+              !value) ||
+            (this.showTurnOffActivity != 'inverted' && !currentValue && value)
+          : currentValue !== value;
+    } else {
+      this.log.debug(
+        'INFO : SET on an activty not in pIfsameState list ' + service.subtype
+      );
+    }
+
+    if (doCommand) {
+      this.log.debug(
+        'INFO : Activty ' +
+          service.subtype +
+          ' will be sent command ' +
+          commandToSend
+      );
+      this.activityCommand(homebridgeAccessory, commandToSend);
+      callback();
+    } else {
+      this.log.debug(
+        'INFO : Activty ' + service.subtype + ' will not be sent any command '
+      );
+      callback();
+      setTimeout(function() {
+        characteristic.updateValue(currentValue);
+      }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
+    }
+  },
+
+  bindCharacteristicEventsForSwitch: function(homebridgeAccessory, service) {
+    service
+      .getCharacteristic(Characteristic.On)
+      .on(
+        'set',
+        function(value, callback) {
+          this.setSwitchOnCharacteristic(
+            homebridgeAccessory,
+            service.getCharacteristic(Characteristic.On),
+            service,
+            value,
+            callback
+          );
+        }.bind(this)
+      )
+      .on(
+        'get',
+        function(callback) {
+          this.refreshService(service, callback);
+        }.bind(this)
+      );
   },
 };

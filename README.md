@@ -80,7 +80,7 @@ Mutliple hubs :
     "hubIP": "192.168.1.XX",
     "otherPlatforms": [{
       "name": "OtherHubName",
-      "hubIP": "192.168.1.XX"
+      "hubIP": "192.168.1.YY"
       }]
   }
 ]

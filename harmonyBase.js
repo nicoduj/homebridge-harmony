@@ -1,4 +1,4 @@
-var Service, Characteristic, Accessory, UUIDGen;
+var Service, Characteristic, Accessory, AccessoryType, UUIDGen;
 const HarmonyConst = require('./harmonyConst');
 
 const Harmony = require('harmony-websocket');
@@ -14,6 +14,7 @@ function HarmonyBase(api) {
   this.harmony = new Harmony();
   this.numberAttemps = 0;
   Accessory = api.platformAccessory;
+  AccessoryType = api.hap.Accessory.Categories;
   UUIDGen = api.hap.uuid;
 }
 
@@ -196,15 +197,10 @@ HarmonyBase.prototype = {
       });
   },
 
-  setupFoundAccessories(
-    harmonyPlatform,
-    accessoriesToAdd,
-    data,
-    homedata,
-    isTv
-  ) {
+  setupFoundAccessories(harmonyPlatform, accessoriesToAdd, data, homedata) {
     //creating accessories
 
+    isTv = accessoriesToAdd.some(x => x.category == AccessoryType.TELEVISION);
     if (
       isTv &&
       (harmonyPlatform.mainPlatform._oneTVAdded ||
@@ -215,6 +211,9 @@ HarmonyBase.prototype = {
           'homebridge-harmonyHub',
           accessoriesToAdd
         );
+        harmonyPlatform.log(
+          'INFO - setupFoundAccessories - TV accessory added as external accessory'
+        );
       } catch (err) {
         harmonyPlatform.log(
           "ERROR - readAccessories - Can't publish TV Acccessory as external device, need Homebridge 0.0.47 at least : " +
@@ -222,15 +221,19 @@ HarmonyBase.prototype = {
         );
       }
     } else {
-      if (isTv) harmonyPlatform.mainPlatform._oneTVAdded = true;
+      if (isTv) {
+        harmonyPlatform.mainPlatform._oneTVAdded = true;
+        harmonyPlatform.log(
+          'WARNING - setupFoundAccessories - TV accessory added in your bridge, if another plugin is exposing a TV accessory this one might not be visible in your remote widget'
+        );
+      }
+
       this.addAccessories(harmonyPlatform, accessoriesToAdd);
     }
 
-    if (!isTv) {
-      this.getDevicesAccessories(harmonyPlatform, data);
-      this.getSequencesAccessories(harmonyPlatform, data);
-      this.handleHomeControls(harmonyPlatform, homedata);
-    }
+    this.getDevicesAccessories(harmonyPlatform, data);
+    this.getSequencesAccessories(harmonyPlatform, data);
+    this.handleHomeControls(harmonyPlatform, homedata);
 
     //first refresh
     setTimeout(function() {

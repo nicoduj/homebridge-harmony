@@ -1,7 +1,6 @@
-const HarmonyPlatformAsSwitches = require('./harmonyAsSwitches')
-  .HarmonyPlatformAsSwitches;
-const HarmonyPlatformAsTVPlatform = require('./harmonyAsTVPlatform')
-  .HarmonyPlatformAsTVPlatform;
+var AccessoryType;
+
+const HarmonySubPlatform = require('./HarmonySubPlatform').HarmonySubPlatform;
 const HarmonyTools = require('./harmonyTools.js');
 
 module.exports = {
@@ -10,6 +9,8 @@ module.exports = {
 
 function HarmonyPlatform(log, config, api) {
   log('HarmonyPlatform Init');
+
+  AccessoryType = api.hap.Accessory.Categories;
 
   if (!config) {
     log('No configuration found for homebridge-harmonyHub');
@@ -41,19 +42,7 @@ function HarmonyPlatform(log, config, api) {
   for (let i = 0, len = this.plaformsConfigs.length; i < len; i++) {
     let platformConfig = this.plaformsConfigs[i];
 
-    let TVAccessory = HarmonyTools.checkParameter(
-      platformConfig['TVAccessory'],
-      true
-    );
-    if (TVAccessory) {
-      this.platforms.push(
-        new HarmonyPlatformAsTVPlatform(log, platformConfig, api, this)
-      );
-    }
-
-    this.platforms.push(
-      new HarmonyPlatformAsSwitches(log, platformConfig, api)
-    );
+    this.platforms.push(new HarmonySubPlatform(log, platformConfig, api, this));
   }
 
   if (api) {
@@ -102,6 +91,7 @@ function HarmonyPlatform(log, config, api) {
 }
 
 HarmonyPlatform.prototype = {
+  //Restore from cache
   configureAccessory: function(accessory) {
     let platformName = accessory.context.subPlatformName;
     let platform = this.platforms.find(x => x.name == platformName);
@@ -112,5 +102,12 @@ HarmonyPlatform.prototype = {
     );
     this._foundAccessories.push(accessory);
     platform._foundAccessories.push(accessory);
+
+    if (accessory.category == AccessoryType.TELEVISION) {
+      this._oneTVAdded = true;
+      this.log(
+        'WARNING - configureAccessory - TV accessory added in your bridge from cache, if another plugin is exposing a TV accessory this one might not be visible in your remote widget'
+      );
+    }
   },
 };
