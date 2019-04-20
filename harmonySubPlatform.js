@@ -155,7 +155,7 @@ HarmonySubPlatform.prototype = {
 
     let accessoriesToAdd = [];
     var myHarmonyAccessory;
-    let name = this.devMode ? 'DEV' : 'Switch';
+    let name = this.devMode ? 'DEV' : '' + 'Switch';
 
     if (!this.publishSwitchActivitiesAsIndividualAccessories) {
       myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
@@ -211,7 +211,7 @@ HarmonySubPlatform.prototype = {
   readTVAccessories: function(data) {
     let activities = data.data.activity;
     let accessoriesToAdd = [];
-    let name = this.devMode ? 'DEV' : 'TV';
+    let name = this.devMode ? 'DEV' : '' + 'TV';
 
     myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
 
