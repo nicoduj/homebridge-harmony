@@ -14,18 +14,16 @@
 
 [Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/nfarina/homebridge) using WebSockets.
 
-> ## Work In Progress For TV MODE
->
-> - IOS 12.2 TV MODE is still beta. This mode will focus on harmony hub activities : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
-
 You can discuss this plugin on [Slack](https://homebridge-slackin.glitch.me) in #homebridge-harmony channel
 
 [![Slack Status](https://homebridge-slackin.glitch.me/badge.svg)](https://homebridge-slackin.glitch.me)
 
+This plugin is publishing harmony hub activities and devices as switches, with some advanced option (see below) for custom needs like macros, seuqences, and much more. The TV mode is focused on harmony hub activities only at the moment : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
+
 ## Installation
 
 1. Install Homebridge using: `npm install -g homebridge`
-2. Install this plugin using: `npm install -g homebridge-harmony`
+2. Install this plugin using: `npm install -g homebridge-harmony@rc`
 3. Update your Homebridge `config.json` using the sample below.
 
 ## Migration from 0.X to 1.X
