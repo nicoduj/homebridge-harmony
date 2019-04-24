@@ -1203,6 +1203,8 @@ HarmonySubPlatform.prototype = {
 
   handleActivityOk: function(commandToSend) {
     this._currentSetAttemps = 0;
+    this._currentActivity = commandToSend;
+    this._currentActivityLastUpdate = Date.now();
 
     for (let a = 0; a < this._foundAccessories.length; a++) {
       let foundHarmonyAccessory = this._foundAccessories[a];
@@ -1230,8 +1232,6 @@ HarmonySubPlatform.prototype = {
         }
       }
     }
-
-    this._currentActivity = commandToSend;
   },
 
   getService: function(homebridgeAccessory, idToFind) {
