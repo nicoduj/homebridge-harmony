@@ -35,7 +35,7 @@
   "homepage": "https://github.com/nicoduj/homebridge-harmony#readme",
   "devDependencies": {
     "husky": "^2.0.0",
-    "prettier": "1.16.4",
+    "prettier": "1.17.0",
     "pretty-quick": "^1.10.0"
   },
   "prettier": {
