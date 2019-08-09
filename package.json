@@ -27,7 +27,7 @@
     "harmony-websocket": "^1.0.9",
     "request": "^2.65.0",
     "websocket": "^1.0.28",
-    "websocket-as-promised": "^0.9.0"
+    "websocket-as-promised": "^0.10.1"
   },
   "bugs": {
     "url": "https://github.com/nicoduj/homebridge-harmony/issues"
@@ -35,7 +35,7 @@
   "homepage": "https://github.com/nicoduj/homebridge-harmony#readme",
   "devDependencies": {
     "husky": "^3.0.3",
-    "prettier": "1.17.0",
+    "prettier": "1.18.2",
     "pretty-quick": "^1.10.0"
   },
   "prettier": {

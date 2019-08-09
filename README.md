@@ -29,7 +29,7 @@
 > If you want to try Dynamic Platform mode I have published a beta version. It should not be visible in homebridge-config-ui-x update pannel, so you have to install it through terminal if you want :
 >
 > ```bash
-> npm install -g homebridge-harmony@beta
+> npm install -g homebridge-harmony@rc
 > ```
 >
 > Also refer to [README](https://github.com/nicoduj/homebridge-harmony/tree/Dynamic-Platform) in the corresponfing branch for more information
@@ -74,6 +74,8 @@ For TV platform mode with ios 12.2 and homebridge 0.0.46 :
   }
 ]
 ```
+
+**If you want both modes, please add 2 platforms with different names (and same IP) or switch to 1.0.0 version of the plugin (Dynamic Branch)**
 
 Fields:
 
