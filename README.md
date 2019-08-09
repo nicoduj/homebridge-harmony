@@ -97,7 +97,7 @@ Fields:
 - `publishSequencesAsIndividualAccessories` option to publish sequences as individual accessories. Defaults to true.
 - `homeControlsToPublishAsAccessoriesSwitch` array of home controls you want to publish as switches
 - `publishHomeControlsAsIndividualAccessories` option to publish home controls as individual accessories. Defaults to true.
-- `TVPlatformMode` option to try TV mode . STILL WORK IN PROGRESS - NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
+- `TVPlatformMode` option to try TV mode . NEEDS IOS 12.2 / HOMEBRIDGE 0.0.46
 - `mainActivity` set the mainactivity of the TV mode
 - `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
 - `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
