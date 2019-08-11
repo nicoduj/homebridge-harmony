@@ -29,7 +29,7 @@
 > If you want to try Dynamic Platform mode I have published a beta version. It should not be visible in homebridge-config-ui-x update pannel, so you have to install it through terminal if you want :
 >
 > ```bash
-> npm install -g homebridge-harmony@rc
+> npm install -g homebridge-harmony@beta
 > ```
 >
 > Also refer to [README](https://github.com/nicoduj/homebridge-harmony/tree/Dynamic-Platform) in the corresponfing branch for more information
