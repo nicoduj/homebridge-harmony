@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## NOT RELEASED PLANED 1.0.0
+## 1.0.0
 
 - [NEW] Act as a dynamic platform
 - [NEW] Option to set custom default name for device switches

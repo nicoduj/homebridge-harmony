@@ -23,7 +23,7 @@ This plugin is publishing harmony hub activities and devices as switches, with s
 ## Installation
 
 1. Install Homebridge using: `npm install -g homebridge`
-2. Install this plugin using: `npm install -g homebridge-harmony@beta`
+2. Install this plugin using: `npm install -g homebridge-harmony`
 3. Update your Homebridge `config.json` using the sample below.
 
 ## Migration from 0.X to 1.X
