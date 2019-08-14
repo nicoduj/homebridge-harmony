@@ -24,7 +24,7 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
   this.TVAccessory = HarmonyTools.checkParameter(config['TVAccessory'], true);
 
   if (this.TVAccessory) {
-    this.mainActivity = this.devMode ? 'DEV' : '' + config['mainActivity'];
+    this.mainActivity = (this.devMode ? 'DEV' : '') + config['mainActivity'];
     this.playPauseBehavior = HarmonyTools.checkParameter(
       config['playPauseBehavior'],
       false
@@ -155,7 +155,7 @@ HarmonySubPlatform.prototype = {
 
     let accessoriesToAdd = [];
     var myHarmonyAccessory;
-    let name = this.devMode ? 'DEV' : '' + 'Switch';
+    let name = (this.devMode ? 'DEV' : '') + 'Switch';
 
     if (!this.publishSwitchActivitiesAsIndividualAccessories) {
       myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
@@ -211,7 +211,7 @@ HarmonySubPlatform.prototype = {
   readTVAccessories: function(data) {
     let activities = data.data.activity;
     let accessoriesToAdd = [];
-    let name = this.devMode ? 'DEV' : '' + 'TV';
+    let name = (this.devMode ? 'DEV' : '') + 'TV';
 
     myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
 
@@ -711,6 +711,17 @@ HarmonySubPlatform.prototype = {
         this.log.debug(
           '(' + this.name + ')' + 'INFO - SET Characteristic.Active ' + value
         );
+        this.log.debug(
+          '(' +
+            this.name +
+            ')' +
+            'INFO - value of Characteristic.ActiveIdentifier ' +
+            service.getCharacteristic(Characteristic.ActiveIdentifier).value
+        );
+
+        var activityToLaunch = service.getCharacteristic(
+          Characteristic.ActiveIdentifier
+        ).value;
 
         if (value == 0) {
           this.log.debug('(' + this.name + ')' + 'INFO - switching off');
@@ -720,9 +731,6 @@ HarmonySubPlatform.prototype = {
         } else {
           this.harmonyBase.refreshCurrentActivity(this, () => {
             if (this._currentActivity < 0) {
-              let activityToLaunch = service.getCharacteristic(
-                Characteristic.ActiveIdentifier
-              ).value;
               this.log.debug(
                 '(' +
                   this.name +
@@ -730,7 +738,7 @@ HarmonySubPlatform.prototype = {
                   'INFO - current Activity to launch - ' +
                   activityToLaunch
               );
-              if (!activityToLaunch) {
+              if (activityToLaunch <= 0) {
                 activityToLaunch = this.mainActivityId;
               }
               this.sendInputCommand(homebridgeAccessory, '' + activityToLaunch);

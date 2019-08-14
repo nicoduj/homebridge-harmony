@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.1
+
+- [FIX] Input set in a scene is ignored, and main activity is turned on #157
+
 ## 1.0.0
 
 - [NEW] Act as a dynamic platform
