@@ -57,7 +57,7 @@ function HarmonyPlatform(log, config, api) {
           for (let i = 0, len = this.platforms.length; i < len; i++) {
             let platform = this.platforms[i];
             platform.harmonyBase.harmony.removeAllListeners();
-            platform.harmonyBase.harmony.end();
+            platform.harmonyBase.harmony.close();
           }
         }.bind(this)
       )

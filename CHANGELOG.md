@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.2
+
+- [FIX] harmony.end is not a function #161
+
 ## 1.0.1
 
 - [FIX] Input set in a scene is ignored, and main activity is turned on #157
