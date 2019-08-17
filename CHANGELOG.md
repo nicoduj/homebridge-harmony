@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.3
+
+- [FIX] changing plarform name is not supported after first launch #162
+
 ## 1.0.2
 
 - [FIX] harmony.end is not a function #161

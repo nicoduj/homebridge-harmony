@@ -96,18 +96,35 @@ HarmonyPlatform.prototype = {
     let platformName = accessory.context.subPlatformName;
     let platform = this.platforms.find(x => x.name == platformName);
 
-    this.log.debug(
-      accessory.displayName,
-      'Got cached Accessory ' + accessory.UUID + ' for ' + platform.name
-    );
-    this._foundAccessories.push(accessory);
-    platform._foundAccessories.push(accessory);
-
-    if (accessory.category == AccessoryType.TELEVISION) {
-      this._oneTVAdded = true;
+    if (platform == undefined)
+    {
       this.log(
-        'WARNING - configureAccessory - TV accessory added in your bridge from cache, if another plugin is exposing a TV accessory this one might not be visible in your remote widget'
+        'WARNING - configureAccessory - The platform ' + platformName + ' is not there anymore in your config (name property). It won\'t be loaded and will be removed from cache.'   
+      );
+
+      this.api.unregisterPlatformAccessories(
+        'homebridge-harmonyHub',
+        'HarmonyHubWebSocket',
+        [accessory]
       );
     }
+    else
+    {
+      this.log.debug(
+        accessory.displayName,
+        'Got cached Accessory ' + accessory.UUID + ' for ' + platform.name
+      );
+      this._foundAccessories.push(accessory);
+      platform._foundAccessories.push(accessory);
+  
+      if (accessory.category == AccessoryType.TELEVISION) {
+        this._oneTVAdded = true;
+        this.log(
+          'WARNING - configureAccessory - TV accessory added in your bridge from cache, if another plugin is exposing a TV accessory this one might not be visible in your remote widget'
+        );
+      }
+    }
+
+
   },
 };
