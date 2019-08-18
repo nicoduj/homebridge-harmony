@@ -430,7 +430,7 @@ HarmonyBase.prototype = {
             subType
           );
 
-          service.SequenceId = sequences[i].id;
+          service.sequenceId = sequences[i].id;
           service.type = HarmonyConst.SEQUENCE_TYPE;
           this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
         }

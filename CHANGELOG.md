@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.4
+
+- [FIX] sequencesToPublishAsAccessoriesSwitch switches don't do anything #165
+
 ## 1.0.3
 
 - [FIX] changing plarform name is not supported after first launch #162
