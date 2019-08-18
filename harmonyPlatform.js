@@ -8,16 +8,19 @@ module.exports = {
 };
 
 function HarmonyPlatform(log, config, api) {
-  log('HarmonyPlatform Init');
 
-  AccessoryType = api.hap.Accessory.Categories;
+  this.log = log;
+
+  this.log('HarmonyPlatform Init');
+
+  this.api = api;
+
+  AccessoryType = this.api.hap.Accessory.Categories;
 
   if (!config) {
     log('No configuration found for homebridge-harmonyHub');
     return;
   }
-
-  this.log = log;
 
   this.plaformsConfigs = [];
   this.plaformsConfigs.push(config);
@@ -45,56 +48,55 @@ function HarmonyPlatform(log, config, api) {
     this.platforms.push(new HarmonySubPlatform(log, platformConfig, api, this));
   }
 
-  if (api) {
-    // Save the API object as plugin needs to register new accessory via this object
-    this.api = api;
+  this.api
+    .on(
+      'shutdown',
+      function() {
+        this.log('INFO - shutdown');
+        for (let i = 0, len = this.platforms.length; i < len; i++) {
+          let platform = this.platforms[i];
+          platform.harmonyBase.harmony.removeAllListeners();
+          platform.harmonyBase.harmony.close();
+        }
+      }.bind(this)
+    )
+    .on(
+      'didFinishLaunching',
+      function() {
+        this.log('DidFinishLaunching');
 
-    this.api
-      .on(
-        'shutdown',
-        function() {
-          this.log('INFO - shutdown');
-          for (let i = 0, len = this.platforms.length; i < len; i++) {
-            let platform = this.platforms[i];
-            platform.harmonyBase.harmony.removeAllListeners();
-            platform.harmonyBase.harmony.close();
-          }
-        }.bind(this)
-      )
-      .on(
-        'didFinishLaunching',
-        function() {
-          this.log('DidFinishLaunching');
-
-          if (this.cleanCache) {
-            this.log('WARNING - Removing Accessories');
-            this.api.unregisterPlatformAccessories(
-              'homebridge-harmonyHub',
-              'HarmonyHubWebSocket',
-              this._foundAccessories
-            );
-            this._foundAccessories = [];
-
-            for (let i = 0, len = this.platforms.length; i < len; i++) {
-              let platform = this.platforms[i];
-              platform._foundAccessories = [];
-            }
-          }
+        if (this.cleanCache) {
+          this.log('WARNING - Removing Accessories');
+          this.api.unregisterPlatformAccessories(
+            'homebridge-harmonyHub',
+            'HarmonyHubWebSocket',
+            this._foundAccessories
+          );
+          this._foundAccessories = [];
 
           for (let i = 0, len = this.platforms.length; i < len; i++) {
             let platform = this.platforms[i];
-            platform.harmonyBase.configureAccessories(platform);
+            platform._foundAccessories = [];
           }
-        }.bind(this)
-      );
-  }
+        }
+
+        for (let i = 0, len = this.platforms.length; i < len; i++) {
+          let platform = this.platforms[i];
+          platform.harmonyBase.configureAccessories(platform);
+        }
+      }.bind(this)
+    );
+
 }
 
 HarmonyPlatform.prototype = {
   //Restore from cache
   configureAccessory: function(accessory) {
     let platformName = accessory.context.subPlatformName;
-    let platform = this.platforms.find(x => x.name == platformName);
+    var platform;
+    
+    if (this.platforms && this.platforms.length > 0)
+      platform = this.platforms.find(x => x.name == platformName);
 
     if (platform == undefined)
     {
