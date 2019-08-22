@@ -57,28 +57,30 @@ function HarmonyPlatform(log, config, api) {
           let platform = this.platforms[i];
           platform.harmonyBase.harmony.removeAllListeners();
           platform.harmonyBase.harmony.close();
+
+          if (this.cleanCache)
+          {
+            this.log(
+              'WARNING - shutdown - cleaning cache.'   
+            );
+      
+            this.api.unregisterPlatformAccessories(
+              'homebridge-harmonyHub',
+              'HarmonyHubWebSocket',
+              platform._foundAccessories
+            );
+          }
+
         }
+
+
+
       }.bind(this)
     )
     .on(
       'didFinishLaunching',
       function() {
         this.log('DidFinishLaunching');
-
-        if (this.cleanCache) {
-          this.log('WARNING - Removing Accessories');
-          this.api.unregisterPlatformAccessories(
-            'homebridge-harmonyHub',
-            'HarmonyHubWebSocket',
-            this._foundAccessories
-          );
-          this._foundAccessories = [];
-
-          for (let i = 0, len = this.platforms.length; i < len; i++) {
-            let platform = this.platforms[i];
-            platform._foundAccessories = [];
-          }
-        }
 
         for (let i = 0, len = this.platforms.length; i < len; i++) {
           let platform = this.platforms[i];
@@ -98,10 +100,10 @@ HarmonyPlatform.prototype = {
     if (this.platforms && this.platforms.length > 0)
       platform = this.platforms.find(x => x.name == platformName);
 
-    if (platform == undefined)
+    if (platform == undefined || this.cleanCache || this.config == undefined)
     {
       this.log(
-        'WARNING - configureAccessory - The platform ' + platformName + ' is not there anymore in your config (name property). It won\'t be loaded and will be removed from cache.'   
+        'WARNING - configureAccessory - The platform ' + platformName + ' is not there anymore in your config (name property) or cleanCached set to true. It won\'t be loaded and will be removed from cache.'   
       );
 
       this.api.unregisterPlatformAccessories(

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.5
+
+- [FIX] trying to better handle some problems with clean cache / name caching
+
 ## 1.0.4
 
 - [FIX] sequencesToPublishAsAccessoriesSwitch switches don't do anything #165
