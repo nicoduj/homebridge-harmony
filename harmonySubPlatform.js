@@ -294,7 +294,7 @@ HarmonySubPlatform.prototype = {
       accessory.addService(this.mainService);
     }
 
-    if (this.savedNames && this.savedNames[0] && this.savedNames[0] !== "" ) {
+    if (this.savedNames && this.savedNames[0]) {
       mainServiceName = this.savedNames[0];
     } else {
       mainServiceName = this.name;
@@ -400,7 +400,7 @@ HarmonySubPlatform.prototype = {
       inputSourceService
     );
 
-    if (this.savedNames && this.savedNames[inputId] && this.savedNames[inputId]!== "") {
+    if (this.savedNames && this.savedNames[inputId]) {
       inputServiceName = this.savedNames[inputId];
     } else {
       inputServiceName = inputName;

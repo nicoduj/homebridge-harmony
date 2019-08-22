@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## 1.0.6
+
+- [FIX] reverting a change
+
 ## 1.0.5
 
 - [FIX] trying to better handle some problems with clean cache / name caching
