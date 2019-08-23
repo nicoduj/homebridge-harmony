@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 
 
+## 1.0.7
+
+- [FIX] reverting to 1.0.4 code
+- 
 ## 1.0.6
 
 - [FIX] reverting a change
