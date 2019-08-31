@@ -56,6 +56,8 @@ module.exports = {
     const Characteristic = platform.api.hap.Characteristic;
     if (
       platform._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
+      &&
+      platform._currentInputService !== undefined
     ) {
       keysMap[Characteristic.RemoteKey.ARROW_UP] = this.getOverrideCommand(
         platform,

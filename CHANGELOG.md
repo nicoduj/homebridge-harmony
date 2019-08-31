@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 
+## 1.1.0
+
+- [NEW] handle config changes by removing activities / services #167
+- [NEW] handling 2 tv accessories with only one hub (by separating activities) #178
+- [NEW] general mute switch #166
+- [NEW] activities with no TV (audio use case) #181
+- [FIX] showTurnOffActivity = False not working if was set to true before #183
+
+
 ## 1.0.7
 
 - [FIX] reverting to 1.0.4 code

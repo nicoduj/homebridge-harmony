@@ -122,6 +122,7 @@ Fields:
 - `publishHomeControlsAsIndividualAccessories` option to publish home controls as individual accessories. Defaults to true.
 - `mainActivity` set the mainactivity of the TV mode
 - `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
+- `publishGeneralMuteSwitch` publish a mute switch, stateless, that will send a mute command to current activity. 
 - `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
 - `activitiesToPublishAsInputForTVMode` array of Activities you want to expose as inputs (all by default)
 - `numberOfCommandsSentForVolumeControl` option to set the nnumber of commands to send for each volum (up or down) press. Defaults to 1

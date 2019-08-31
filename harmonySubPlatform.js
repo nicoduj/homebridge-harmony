@@ -23,6 +23,8 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
 
   this.TVAccessory = HarmonyTools.checkParameter(config['TVAccessory'], true);
 
+  this.publishGeneralMuteSwitch = HarmonyTools.checkParameter(config['publishGeneralMuteSwitch'], false);
+
   if (this.TVAccessory) {
     this.mainActivity = (this.devMode ? 'DEV' : '') + config['mainActivity'];
     this.playPauseBehavior = HarmonyTools.checkParameter(
@@ -120,6 +122,10 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
       this.activitiesToPublishAsAccessoriesSwitch = [];
     }
   }
+
+  this._confirmedAccessories = [];
+  this._confirmedServices = [];
+
 }
 
 HarmonySubPlatform.prototype = {
@@ -136,6 +142,7 @@ HarmonySubPlatform.prototype = {
         accessoriesToAdd,
         this.readTVAccessories(data)
       );
+
     if (this.isPlatformWithSwitch)
       accessoriesToAdd.push.apply(
         accessoriesToAdd,
@@ -149,6 +156,9 @@ HarmonySubPlatform.prototype = {
       homedata
     );
   },
+
+
+
 
   readSwitchAccessories: function(data) {
     let activities = data.data.activity;
@@ -164,6 +174,7 @@ HarmonySubPlatform.prototype = {
         accessoriesToAdd.push(myHarmonyAccessory);
       }
       myHarmonyAccessory.category = Accessory.Categories.SWITCH;
+      this._confirmedAccessories.push(myHarmonyAccessory); 
     }
 
     for (let i = 0, len = activities.length; i < len; i++) {
@@ -185,6 +196,7 @@ HarmonySubPlatform.prototype = {
             accessoriesToAdd.push(myHarmonyAccessory);
           }
           myHarmonyAccessory.category = Accessory.Categories.SWITCH;
+          this._confirmedAccessories.push(myHarmonyAccessory); 
         }
 
         this.log(
@@ -200,6 +212,7 @@ HarmonySubPlatform.prototype = {
 
         service.activityId = activities[i].id;
         service.type = HarmonyConst.ACTIVITY_TYPE;
+        this._confirmedServices.push(service); 
 
         this.bindCharacteristicEventsForSwitch(myHarmonyAccessory, service);
       }
@@ -221,6 +234,7 @@ HarmonySubPlatform.prototype = {
     }
 
     myHarmonyAccessory.category = Accessory.Categories.TELEVISION;
+    this._confirmedAccessories.push(myHarmonyAccessory);
 
     this.log('(' + this.name + ')' + 'INFO - configuring Main TV Service');
     this.configureMainService(myHarmonyAccessory);
@@ -229,6 +243,7 @@ HarmonySubPlatform.prototype = {
     let defaultActivity = undefined;
 
     for (let i = 0, len = activities.length; i < len; i++) {
+
       if (this.showInput(activities[i])) {
         let inputName = this.devMode
           ? 'DEV' + activities[i].label
@@ -246,7 +261,7 @@ HarmonySubPlatform.prototype = {
         if (this.mainActivity == inputName) {
           this.configureMainActivity(myHarmonyAccessory, activities[i]);
           mainActivityConfigured = true;
-        } else if (!defaultActivity) {
+        } else if (defaultActivity == undefined) {
           defaultActivity = activities[i];
         }
 
@@ -258,8 +273,8 @@ HarmonySubPlatform.prototype = {
         );
 
         this.mainService.addLinkedService(inputSourceService);
-
         this.inputServices.push(inputSourceService);
+        
       }
     }
 
@@ -270,7 +285,15 @@ HarmonySubPlatform.prototype = {
           ')' +
           'WARNING - No main Activity that match config file found, default to first one'
       );
-      this.configureMainActivity(myHarmonyAccessory, defaultActivity);
+      if (defaultActivity == undefined)
+        this.log(
+          '(' +
+            this.name +
+            ')' +
+            'ERROR - No  Activity at all was found for this TV accessory'
+        );
+      else
+       this.configureMainActivity(myHarmonyAccessory, defaultActivity);
     }
 
     this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
@@ -293,6 +316,7 @@ HarmonySubPlatform.prototype = {
       this.mainService.subtype = subType;
       accessory.addService(this.mainService);
     }
+    this._confirmedServices.push(this.mainService);
 
     if (this.savedNames && this.savedNames[0]) {
       mainServiceName = this.savedNames[0];
@@ -350,6 +374,7 @@ HarmonySubPlatform.prototype = {
       this.tvSpeakerService.subtype = subType;
       accessory.addService(this.tvSpeakerService);
     }
+    this._confirmedServices.push(this.tvSpeakerService);
 
     this.tvSpeakerService
       .setCharacteristic(Characteristic.Name, this.name)
@@ -387,6 +412,8 @@ HarmonySubPlatform.prototype = {
       inputSourceService.subtype = subType;
       accessory.addService(inputSourceService);
     }
+
+    this._confirmedServices.push(inputSourceService);
 
     inputSourceService.activityName = inputName;
     inputSourceService.activityId = inputId;
@@ -440,13 +467,15 @@ HarmonySubPlatform.prototype = {
     this.harmonyBase.handleCharacteristicUpdate(
       this,
       this.mainService.getCharacteristic(Characteristic.Active),
-      this._currentActivity > 0,
+      (this._currentInputService !== undefined),
       null
     );
+
+    
     this.harmonyBase.handleCharacteristicUpdate(
       this,
       this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
-      this._currentActivity,
+      (this._currentInputService !== undefined ? this._currentInputService.activityId : -1) ,
       null
     );
   },
@@ -476,14 +505,21 @@ HarmonySubPlatform.prototype = {
 
   updateCurrentInputService: function() {
     if (this._currentActivity > 0) {
+      let inputFound = false;
       for (let i = 0, len = this.inputServices.length; i < len; i++) {
         if (this.inputServices[i].activityId == this._currentActivity) {
           this._currentInputService = this.inputServices[i];
+          inputFound = true;
           break;
         }
       }
+      if (!inputFound)
+      {
+        this._currentInputService = undefined;
+      }
+
     } else {
-      this._currentInputService = -1;
+      this._currentInputService = undefined;
     }
 
     this.keysMap = HarmonyAsTVKeysTools.mapKeysForActivity(this);
@@ -649,12 +685,12 @@ HarmonySubPlatform.prototype = {
               this.name +
               ')' +
               'INFO - refreshCharacteristic : updating Characteristic.Active to ' +
-              (this._currentActivity != -1)
+              (this._currentInputService !== undefined)
           );
           this.harmonyBase.handleCharacteristicUpdate(
             this,
             characteristic,
-            this._currentActivity > 0,
+            (this._currentInputService !== undefined),
             callback
           );
         } else if (
@@ -665,12 +701,12 @@ HarmonySubPlatform.prototype = {
               this.name +
               ')' +
               'INFO - refreshCharacteristic : updating Characteristic.ActiveIdentifier to ' +
-              this._currentActivity
+              (this._currentInputService !== undefined ? this._currentInputService.activityId : -1)
           );
           this.harmonyBase.handleCharacteristicUpdate(
             this,
             characteristic,
-            this._currentActivity,
+            (this._currentInputService !== undefined ? this._currentInputService.activityId : -1 ),
             callback
           );
         }
@@ -730,7 +766,7 @@ HarmonySubPlatform.prototype = {
           callback(null);
         } else {
           this.harmonyBase.refreshCurrentActivity(this, () => {
-            if (this._currentActivity < 0) {
+            if (this._currentInputService == undefined) {
               this.log.debug(
                 '(' +
                   this.name +
@@ -831,7 +867,7 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'set',
       function(value, callback) {
-        if (this._currentActivity > 0) {
+        if (this._currentInputService !== undefined) {
           this.log.debug(
             '(' + this.name + ')' + 'INFO - SET Characteristic.Mute : ' + value
           );
@@ -863,7 +899,7 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'set',
       function(value, callback) {
-        if (this._currentActivity > 0) {
+        if (this._currentInputService !== undefined) {
           this.log.debug(
             '(' +
               this.name +

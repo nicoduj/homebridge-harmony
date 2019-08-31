@@ -40,7 +40,6 @@ function HarmonyPlatform(log, config, api) {
   );
 
   this.platforms = [];
-  this._foundAccessories = [];
 
   for (let i = 0, len = this.plaformsConfigs.length; i < len; i++) {
     let platformConfig = this.plaformsConfigs[i];
@@ -67,15 +66,14 @@ function HarmonyPlatform(log, config, api) {
 
         if (this.cleanCache) {
           this.log('WARNING - Removing Accessories');
-          this.api.unregisterPlatformAccessories(
-            'homebridge-harmonyHub',
-            'HarmonyHubWebSocket',
-            this._foundAccessories
-          );
-          this._foundAccessories = [];
-
+          
           for (let i = 0, len = this.platforms.length; i < len; i++) {
             let platform = this.platforms[i];
+            platform.api.unregisterPlatformAccessories(
+              'homebridge-harmonyHub',
+              'HarmonyHubWebSocket',
+              platform._foundAccessories
+            );
             platform._foundAccessories = [];
           }
         }
@@ -116,7 +114,7 @@ HarmonyPlatform.prototype = {
         accessory.displayName,
         'Got cached Accessory ' + accessory.UUID + ' for ' + platform.name
       );
-      this._foundAccessories.push(accessory);
+
       platform._foundAccessories.push(accessory);
   
       if (accessory.category == AccessoryType.TELEVISION) {

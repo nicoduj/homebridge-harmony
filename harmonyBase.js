@@ -196,9 +196,54 @@ HarmonyBase.prototype = {
       }
     }
 
+
+    this.getGeneralMuteSwitchAccessory(harmonyPlatform, data);
+
     this.getDevicesAccessories(harmonyPlatform, data);
     this.getSequencesAccessories(harmonyPlatform, data);
     this.handleHomeControls(harmonyPlatform, homedata);
+
+
+    //handling removing
+    harmonyPlatform.log.debug('INFO - Accessories confirmed after retrieving hub infos : ');
+    harmonyPlatform.log.debug(harmonyPlatform._confirmedAccessories);
+    harmonyPlatform.log.debug('INFO - Services confirmed after retrieving hub infos : ');
+    harmonyPlatform.log.debug(harmonyPlatform._confirmedServices);
+
+
+    //cleaning accessories 
+    let accstoRemove = [];
+    for (let acc of harmonyPlatform._foundAccessories) {
+      if (!harmonyPlatform._confirmedAccessories.find(x => x.UUID == acc.UUID))
+      {
+        accstoRemove.push(acc);
+        harmonyPlatform.log('WARNING - Accessory will be Removed ' + acc.UUID + '/' + acc.displayName);
+      }
+    }
+    
+    if (accstoRemove.length > 0)
+    harmonyPlatform.api.unregisterPlatformAccessories(
+        'homebridge-harmonyHub',
+        'HarmonyHubWebSocket',
+        accstoRemove
+      );
+
+
+    //cleaning services
+    for (let acc of harmonyPlatform._foundAccessories) {
+      let servicestoRemove = [];
+      for (let serv of acc.services) {
+        if (serv.subtype !== undefined &&  !harmonyPlatform._confirmedServices.find(x => (x.UUID == serv.UUID && x.subtype == serv.subtype)))
+        {
+          servicestoRemove.push(serv);
+        }
+      }
+      for (let servToDel of servicestoRemove)
+      {
+        harmonyPlatform.log('WARNING - Service Removed' + servToDel.UUID + '/' + servToDel.subtype + '/' + servToDel.displayName);
+        acc.removeService(servToDel);
+      }
+    }
 
     //first refresh
     setTimeout(function() {
@@ -310,6 +355,9 @@ HarmonyBase.prototype = {
         myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
         accessoriesToAdd.push(myHarmonyAccessory);
       }
+
+      myHarmonyAccessory.category = AccessoryType.SWITCH;
+      harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
     }
 
     for (var key in homeControls) {
@@ -335,6 +383,10 @@ HarmonyBase.prototype = {
             );
             accessoriesToAdd.push(myHarmonyAccessory);
           }
+
+          myHarmonyAccessory.category = AccessoryType.SWITCH;
+          harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
+
         }
 
         let subType = switchName;
@@ -347,6 +399,7 @@ HarmonyBase.prototype = {
 
         service.HomeId = key;
         service.type = HarmonyConst.HOME_TYPE;
+        harmonyPlatform._confirmedServices.push(service);
         this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
       }
     }
@@ -374,6 +427,69 @@ HarmonyBase.prototype = {
     }
   },
 
+
+  //GENERAL Mute SWITCH
+
+  getGeneralMuteSwitchAccessory: function(harmonyPlatform, data) {
+
+  if (harmonyPlatform.publishGeneralMuteSwitch) {
+      harmonyPlatform.log('INFO - Loading geeneral mute Switch...');
+
+      var accessoriesToAdd = [];
+      var myHarmonyAccessory;
+      let name = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralMuteSwitch';
+      myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+      if (!myHarmonyAccessory) {
+        myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
+        accessoriesToAdd.push(myHarmonyAccessory);
+      }
+      myHarmonyAccessory.category = AccessoryType.SWITCH;
+      harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
+
+      let subType = name;
+      let service = this.getSwitchService(
+        harmonyPlatform,
+        myHarmonyAccessory,
+        name,
+        subType
+      );
+      service.type = HarmonyConst.GENERALMUTE_TYPE;
+
+      //array of mutes commands
+      var muteCommandsMap = new Object(); 
+      let activities = data.data.activity;
+      for (let i = 0, len = activities.length; i < len; i++) {
+        let activity = activities[i];
+        let controlGroup = activity.controlGroup;
+        for (let j = 0, len = controlGroup.length; j < len; j++) {
+          
+          if (controlGroup[j].name == 'Volume') {
+            let functions = controlGroup[j].function;
+            for (let k = 0, len = functions.length; k < len; k++) {
+              if (functions[k].name == 'Mute') {
+                muteCommandsMap[activity.id] = functions[k].action;
+                break;
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      service.commands = muteCommandsMap;
+      harmonyPlatform.log.debug('Mute commands for Global Mute Switch : ');
+      harmonyPlatform.log.debug(muteCommandsMap);
+      harmonyPlatform._confirmedServices.push(service); 
+
+      this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
+
+      //creating accessories
+      this.addAccessories(harmonyPlatform, accessoriesToAdd);
+    }
+
+  },
+
+
   //SEQUENCES SWITCHES
   getSequencesAccessories: function(harmonyPlatform, data) {
     if (
@@ -393,6 +509,10 @@ HarmonyBase.prototype = {
           myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
           accessoriesToAdd.push(myHarmonyAccessory);
         }
+
+        myHarmonyAccessory.category = AccessoryType.SWITCH;
+        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
+
       }
 
       for (let i = 0, len = sequences.length; i < len; i++) {
@@ -420,6 +540,10 @@ HarmonyBase.prototype = {
               );
               accessoriesToAdd.push(myHarmonyAccessory);
             }
+
+            myHarmonyAccessory.category = AccessoryType.SWITCH;
+            harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
+
           }
 
           let subType = switchName + '-Sequence';
@@ -432,6 +556,7 @@ HarmonyBase.prototype = {
 
           service.sequenceId = sequences[i].id;
           service.type = HarmonyConst.SEQUENCE_TYPE;
+          harmonyPlatform._confirmedServices.push(service); 
           this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
         }
       }
@@ -542,6 +667,10 @@ HarmonyBase.prototype = {
               myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
               accessoriesToAdd.push(myHarmonyAccessory);
             }
+
+            myHarmonyAccessory.category = AccessoryType.SWITCH;
+            harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
+
           }
 
           let subType = switchName + '-' + commandFunctions[j].key;
@@ -555,6 +684,7 @@ HarmonyBase.prototype = {
           service.deviceId = device.id;
           service.type = HarmonyConst.DEVICE_TYPE;
           service.command = commandFunctions[j].value;
+          harmonyPlatform._confirmedServices.push(service); 
 
           this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
         }
@@ -617,6 +747,10 @@ HarmonyBase.prototype = {
           myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
           accessoriesToAdd.push(myHarmonyAccessory);
         }
+
+        myHarmonyAccessory.category = AccessoryType.SWITCH;
+        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
+
       }
 
       let subType = switchName + '-' + functionsKey;
@@ -630,6 +764,7 @@ HarmonyBase.prototype = {
       service.deviceId = device.id;
       service.type = HarmonyConst.DEVICEMACRO_TYPE;
       service.command = JSON.stringify(functionsForSwitch);
+      harmonyPlatform._confirmedServices.push(service); 
 
       this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
     }
@@ -658,6 +793,10 @@ HarmonyBase.prototype = {
           myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
           accessoriesToAdd.push(myHarmonyAccessory);
         }
+
+        myHarmonyAccessory.category = AccessoryType.SWITCH;
+        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
+
       }
 
       for (
@@ -846,6 +985,16 @@ HarmonyBase.prototype = {
             } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
               let command = '{"sequenceId":"' + service.sequenceId + '"}';
               this.sendCommand(harmonyPlatform, command);
+            } else if (service.type === HarmonyConst.GENERALMUTE_TYPE) {
+              ///MUTE
+              harmonyPlatform.log('toto');
+              if (harmonyPlatform._currentActivity > -1)
+              {
+                let command = service.commands[harmonyPlatform._currentActivity];
+                harmonyPlatform.log(command);
+                this.sendCommand(harmonyPlatform, command);
+              }
+              
             }
 
             // In order to behave like a push button reset the status to off
