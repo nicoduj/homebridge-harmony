@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.1.1
+
+- [FIX] error if an activity is named "TV" in some circumstances #195
 
 ## 1.1.0
 

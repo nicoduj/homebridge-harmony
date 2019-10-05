@@ -67,9 +67,9 @@ HarmonyBase.prototype = {
       'INFO : following activites controls will be ignored if they are in the same state : ' +
         (harmonyPlatform.addAllActivitiesToSkippedIfSameStateActivitiesList
           ? 'ALL'
-          : harmonyPlatform.skippedIfSameStateActivities
+          : (harmonyPlatform.skippedIfSameStateActivities
           ? harmonyPlatform.skippedIfSameStateActivities
-          : 'NONE')
+          : 'NONE'))
     );
   },
 
@@ -637,7 +637,7 @@ HarmonyBase.prototype = {
   ) {
     let accessoriesToAdd = [];
 
-    switchName = harmonyPlatform.devMode ? 'DEV' + device.label : device.label;
+    switchName = harmonyPlatform.devMode ? ('DEV' + device.label) : device.label;
 
     harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
 
@@ -704,7 +704,7 @@ HarmonyBase.prototype = {
     let accessoriesToAdd = [];
 
     let switchName = harmonyPlatform.devMode
-      ? 'DEV' + device.label
+      ? ('DEV' + device.label)
       : device.label;
 
     harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
@@ -901,15 +901,16 @@ HarmonyBase.prototype = {
   },
 
   checkAccessory(harmonyPlatform, name) {
-    let fullName = harmonyPlatform.name + (name ? '-' + name : '');
+    let fullName = harmonyPlatform.name + (name ? ('-' + name) : '');
     let uuid = UUIDGen.generate(fullName);
     return harmonyPlatform._foundAccessories.find(x => x.UUID == uuid);
   },
 
   createAccessory(harmonyPlatform, name) {
-    let fullName = harmonyPlatform.name + (name ? '-' + name : '');
+    let fullName = harmonyPlatform.name + (name ? ('-' + name) : '');
     harmonyPlatform.log('INFO - Adding Accessory : ' + fullName);
     let uuid = UUIDGen.generate(fullName);
+    harmonyPlatform.log.debug('INFO - UUID for : *' + fullName + '* is : *' + uuid + '*');
     let myHarmonyAccessory = new Accessory(fullName, uuid);
 
     myHarmonyAccessory.name = fullName;

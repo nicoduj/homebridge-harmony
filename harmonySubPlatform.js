@@ -179,11 +179,17 @@ HarmonySubPlatform.prototype = {
 
     for (let i = 0, len = activities.length; i < len; i++) {
       if (this.showActivity(activities[i])) {
+
         let switchName = this.devMode
-          ? 'DEV' + activities[i].label
+          ? ('DEV' + activities[i].label)
           : activities[i].label;
 
         if (this.publishSwitchActivitiesAsIndividualAccessories) {
+
+          //Handle special case
+          if (switchName === 'TV')
+            switchName = 'TV-Switch'
+
           myHarmonyAccessory = this.harmonyBase.checkAccessory(
             this,
             switchName
@@ -246,7 +252,7 @@ HarmonySubPlatform.prototype = {
 
       if (this.showInput(activities[i])) {
         let inputName = this.devMode
-          ? 'DEV' + activities[i].label
+          ? ('DEV' + activities[i].label)
           : activities[i].label;
         let inputId = activities[i].id;
 
@@ -1399,7 +1405,7 @@ HarmonySubPlatform.prototype = {
               currentValue &&
               !value) ||
             (this.showTurnOffActivity != 'inverted' && !currentValue && value)
-          : currentValue !== value;
+          : (currentValue !== value);
     } else {
       this.log.debug(
         '(' +
