@@ -23,7 +23,10 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
 
   this.TVAccessory = HarmonyTools.checkParameter(config['TVAccessory'], true);
 
-  this.publishGeneralMuteSwitch = HarmonyTools.checkParameter(config['publishGeneralMuteSwitch'], false);
+  this.publishGeneralMuteSwitch = HarmonyTools.checkParameter(
+    config['publishGeneralMuteSwitch'],
+    false
+  );
 
   if (this.TVAccessory) {
     this.mainActivity = (this.devMode ? 'DEV' : '') + config['mainActivity'];
@@ -40,6 +43,19 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
       config['activitiesToPublishAsInputForTVMode'];
 
     this.remoteOverrideCommandsList = config['remoteOverrideCommandsList'];
+
+    if (Array.isArray(this.remoteOverrideCommandsList)) {
+      this.log('INFO - remoteOverrideCommandsList is new format');
+      const NewRemoteOverrideCommandsList = {};
+      this.remoteOverrideCommandsList.forEach(x => {
+        var commands = {};
+        x.CommandsList.forEach(y => (commands[y.CommandName] = y.NewCommand));
+        NewRemoteOverrideCommandsList[x.ActivityName] = commands;
+      });
+      this.remoteOverrideCommandsList = NewRemoteOverrideCommandsList;
+    }
+
+    this.log(JSON.stringify(this.remoteOverrideCommandsList));
 
     if (
       !this.addAllActivitiesToSkippedIfSameStateActivitiesList &&
@@ -125,7 +141,6 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
 
   this._confirmedAccessories = [];
   this._confirmedServices = [];
-
 }
 
 HarmonySubPlatform.prototype = {
@@ -157,9 +172,6 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-
-
-
   readSwitchAccessories: function(data) {
     let activities = data.data.activity;
 
@@ -174,21 +186,18 @@ HarmonySubPlatform.prototype = {
         accessoriesToAdd.push(myHarmonyAccessory);
       }
       myHarmonyAccessory.category = Accessory.Categories.SWITCH;
-      this._confirmedAccessories.push(myHarmonyAccessory); 
+      this._confirmedAccessories.push(myHarmonyAccessory);
     }
 
     for (let i = 0, len = activities.length; i < len; i++) {
       if (this.showActivity(activities[i])) {
-
         let switchName = this.devMode
-          ? ('DEV' + activities[i].label)
+          ? 'DEV' + activities[i].label
           : activities[i].label;
 
         if (this.publishSwitchActivitiesAsIndividualAccessories) {
-
           //Handle special case
-          if (switchName === 'TV')
-            switchName = 'TV-Switch'
+          if (switchName === 'TV') switchName = 'TV-Switch';
 
           myHarmonyAccessory = this.harmonyBase.checkAccessory(
             this,
@@ -202,7 +211,7 @@ HarmonySubPlatform.prototype = {
             accessoriesToAdd.push(myHarmonyAccessory);
           }
           myHarmonyAccessory.category = Accessory.Categories.SWITCH;
-          this._confirmedAccessories.push(myHarmonyAccessory); 
+          this._confirmedAccessories.push(myHarmonyAccessory);
         }
 
         this.log(
@@ -218,7 +227,7 @@ HarmonySubPlatform.prototype = {
 
         service.activityId = activities[i].id;
         service.type = HarmonyConst.ACTIVITY_TYPE;
-        this._confirmedServices.push(service); 
+        this._confirmedServices.push(service);
 
         this.bindCharacteristicEventsForSwitch(myHarmonyAccessory, service);
       }
@@ -249,10 +258,9 @@ HarmonySubPlatform.prototype = {
     let defaultActivity = undefined;
 
     for (let i = 0, len = activities.length; i < len; i++) {
-
       if (this.showInput(activities[i])) {
         let inputName = this.devMode
-          ? ('DEV' + activities[i].label)
+          ? 'DEV' + activities[i].label
           : activities[i].label;
         let inputId = activities[i].id;
 
@@ -280,7 +288,6 @@ HarmonySubPlatform.prototype = {
 
         this.mainService.addLinkedService(inputSourceService);
         this.inputServices.push(inputSourceService);
-        
       }
     }
 
@@ -298,8 +305,7 @@ HarmonySubPlatform.prototype = {
             ')' +
             'ERROR - No  Activity at all was found for this TV accessory'
         );
-      else
-       this.configureMainActivity(myHarmonyAccessory, defaultActivity);
+      else this.configureMainActivity(myHarmonyAccessory, defaultActivity);
     }
 
     this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
@@ -473,15 +479,16 @@ HarmonySubPlatform.prototype = {
     this.harmonyBase.handleCharacteristicUpdate(
       this,
       this.mainService.getCharacteristic(Characteristic.Active),
-      (this._currentInputService !== undefined),
+      this._currentInputService !== undefined,
       null
     );
 
-    
     this.harmonyBase.handleCharacteristicUpdate(
       this,
       this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
-      (this._currentInputService !== undefined ? this._currentInputService.activityId : -1) ,
+      this._currentInputService !== undefined
+        ? this._currentInputService.activityId
+        : -1,
       null
     );
   },
@@ -519,11 +526,9 @@ HarmonySubPlatform.prototype = {
           break;
         }
       }
-      if (!inputFound)
-      {
+      if (!inputFound) {
         this._currentInputService = undefined;
       }
-
     } else {
       this._currentInputService = undefined;
     }
@@ -696,7 +701,7 @@ HarmonySubPlatform.prototype = {
           this.harmonyBase.handleCharacteristicUpdate(
             this,
             characteristic,
-            (this._currentInputService !== undefined),
+            this._currentInputService !== undefined,
             callback
           );
         } else if (
@@ -707,12 +712,16 @@ HarmonySubPlatform.prototype = {
               this.name +
               ')' +
               'INFO - refreshCharacteristic : updating Characteristic.ActiveIdentifier to ' +
-              (this._currentInputService !== undefined ? this._currentInputService.activityId : -1)
+              (this._currentInputService !== undefined
+                ? this._currentInputService.activityId
+                : -1)
           );
           this.harmonyBase.handleCharacteristicUpdate(
             this,
             characteristic,
-            (this._currentInputService !== undefined ? this._currentInputService.activityId : -1 ),
+            this._currentInputService !== undefined
+              ? this._currentInputService.activityId
+              : -1,
             callback
           );
         }
@@ -1405,7 +1414,7 @@ HarmonySubPlatform.prototype = {
               currentValue &&
               !value) ||
             (this.showTurnOffActivity != 'inverted' && !currentValue && value)
-          : (currentValue !== value);
+          : currentValue !== value;
     } else {
       this.log.debug(
         '(' +

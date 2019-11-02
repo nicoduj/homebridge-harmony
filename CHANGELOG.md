@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.0
+
+- [NEW] Supports config UI X configuration interface. **Be aware that remoteOverrideCommandsList is not in the same format anymore f you edit your config through the interface.**
+
 ## 1.1.1
 
 - [FIX] error if an activity is named "TV" in some circumstances #195
@@ -14,11 +18,10 @@ All notable changes to this project will be documented in this file.
 - [NEW] activities with no TV (audio use case) #181
 - [FIX] showTurnOffActivity = False not working if was set to true before #183
 
-
 ## 1.0.7
 
 - [FIX] reverting to 1.0.4 code
-  
+
 ## 1.0.6
 
 - [FIX] reverting a change

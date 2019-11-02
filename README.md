@@ -111,7 +111,7 @@ Fields:
   - if you set to true, The "switch" will be "on" if and only if there is no current activity, and toggling it while "on" does nothing.
   - if you set to "inverted", The "switch" will be "off" if and only if there is no current activity, and toggling it while "off" does nothing.
   - if you set to "stateless", it will always be off, but can be triggered to switch off current activity.
-- `skippedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be usefull if your devices in the activity have the same on / off command and you want to automate them outside off the home app. For TV mode, and PowerOff feature, "PowerOff" is added by default, but you have to add it manually to this list if this list is set.
+- `skippedIfSameStateActivities` array of Activities name to trigger only if their state is different from the action sent. Can be useful if your devices in the activity have the same on / off command and you want to automate them outside off the home app. For TV mode, and PowerOff feature, "PowerOff" is added by default, but you have to add it manually to this list if this list is set.
 - `addAllActivitiesToSkippedIfSameStateActivitiesList` option to add all activities automatically to skippedIfSameStateActivities behavior. (defaults : false)
 - `publishSwitchActivitiesAsIndividualAccessories` option to publish activities as individual accessories. Defaults to true.
 - `devicesToPublishAsAccessoriesSwitch` array of Devices to exposes with on/off function or custom functions
@@ -122,7 +122,7 @@ Fields:
 - `publishHomeControlsAsIndividualAccessories` option to publish home controls as individual accessories. Defaults to true.
 - `mainActivity` set the mainactivity of the TV mode
 - `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
-- `publishGeneralMuteSwitch` publish a mute switch, stateless, that will send a mute command to current activity. 
+- `publishGeneralMuteSwitch` publish a mute switch, stateless, that will send a mute command to current activity.
 - `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
 - `activitiesToPublishAsInputForTVMode` array of Activities you want to expose as inputs (all by default)
 - `numberOfCommandsSentForVolumeControl` option to set the nnumber of commands to send for each volum (up or down) press. Defaults to 1
@@ -178,6 +178,8 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 
 As a sample :
 
+(before 1.2.0)
+
 ```json
     "remoteOverrideCommandsList": {
         "La TV": {
@@ -188,6 +190,35 @@ As a sample :
             "ARROW_LEFT": "TV;PreviousChannel"
         }
     }
+```
+
+(after 1.2.0)
+
+```json
+  "remoteOverrideCommandsList": [
+      {
+        "ActivityName": "La TV",
+        "CommandsList": [
+          {
+            "CommandName": "REWIND",
+            "NewCommand": "Ampli;Number0"
+          },
+          {
+            "CommandName": "BACK",
+            "NewCommand": "TV;Back"
+          }
+        ]
+      },
+      {
+        "ActivityName": "Un Film",
+        "CommandsList": [
+          {
+            "CommandName": "ARROW_LEFT",
+            "NewCommand": "TV;PreviousChannel"
+          }
+        ]
+      }
+    ]
 ```
 
 will bahaves this way :
@@ -247,7 +278,7 @@ Support this project and [others by nicoduj][nicoduj-projects] via [PayPal][payp
 
 [nicoduj-projects]: https://github.com/nicoduj/
 [paypal-button]: https://img.shields.io/badge/Donate-PayPal-green.svg
-[paypal-nicoduj]: https://www.paypal.me/nicoduj/2.50
+[paypal-nicoduj]: https://www.paypal.me/nicoduj/5.00
 
 ## License
 
