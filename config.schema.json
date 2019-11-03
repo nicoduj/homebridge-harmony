@@ -150,7 +150,8 @@
                   "NewCommand": {
                     "title": "New Command",
                     "type": "string",
-                    "required": true
+                    "required": true,
+                    "pattern": "^[A-Za-z0-9]+;[A-Za-z0-9]+$"
                   }
                 }
               }
@@ -213,8 +214,9 @@
       "devicesToPublishAsAccessoriesSwitch": {
         "type": "array",
         "items": {
-          "title": "Device name (with options)",
-          "type": "string"
+          "title": "Device",
+          "type": "string",
+          "pattern": "^([A-Za-z0-9 ]+){1}(\\|[A-Za-z0-9 ]+){0,1}(;[A-Za-z0-9]+(\\|[0-9]*)*)*"
         }
       },
       "publishDevicesAsIndividualAccessories": {
@@ -388,7 +390,8 @@
                         "NewCommand": {
                           "title": "New Command",
                           "type": "string",
-                          "required": true
+                          "required": true,
+                          "pattern": "^[A-Za-z0-9]+;[A-Za-z0-9]+$"
                         }
                       }
                     }
@@ -451,8 +454,9 @@
             "devicesToPublishAsAccessoriesSwitch": {
               "type": "array",
               "items": {
-                "title": "Device name (with options)",
-                "type": "string"
+                "title": "Device",
+                "type": "string",
+                "pattern": "^([A-Za-z0-9 ]+){1}(\\|[A-Za-z0-9 ]+){0,1}(;[A-Za-z0-9]+(\\|[0-9]*)*)*"
               }
             },
             "publishDevicesAsIndividualAccessories": {
@@ -698,7 +702,7 @@
                   "key": "devicesToPublishAsAccessoriesSwitch[]",
                   "flex": "1 1 50px",
                   "notitle": true,
-                  "placeholder": "Enter device name..."
+                  "placeholder": "Enter device name with options..."
                 }
               ]
             }
@@ -1049,7 +1053,7 @@
                               "key": "otherPlatforms[].devicesToPublishAsAccessoriesSwitch[]",
                               "flex": "1 1 50px",
                               "notitle": true,
-                              "placeholder": "Enter device name..."
+                              "placeholder": "Enter device name with options..."
                             }
                           ]
                         }
