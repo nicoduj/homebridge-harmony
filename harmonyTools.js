@@ -33,6 +33,30 @@ module.exports = {
     else return parameter;
   },
 
+  checkTurnOffActivityOption: function(str) {
+    if (str == null || str == undefined) return false;
+
+    if (typeof str === 'boolean') {
+      return str === true;
+    }
+
+    if (typeof str === 'string') {
+      switch (str.toLowerCase().trim()) {
+        case 'true':
+        case 'yes':
+        case '1':
+          return true;
+        case 'false':
+        case 'no':
+        case '0':
+        case null:
+          return false;
+        default:
+          return str;
+      }
+    }
+  },
+
   serviceIsNotTv(service) {
     return (
       service.type === HarmonyConst.DEVICE_TYPE ||

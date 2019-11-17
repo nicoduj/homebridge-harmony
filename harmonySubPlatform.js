@@ -120,7 +120,9 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
   this.isPlatformWithSwitch = HarmonyTools.isPlatformWithSwitch(config);
 
   if (this.isPlatformWithSwitch) {
-    this.showTurnOffActivity = config['showTurnOffActivity'];
+    this.showTurnOffActivity = HarmonyTools.checkTurnOffActivityOption(
+      config['showTurnOffActivity']
+    );
 
     this.publishSwitchActivitiesAsIndividualAccessories = HarmonyTools.checkParameter(
       config['publishSwitchActivitiesAsIndividualAccessories'],

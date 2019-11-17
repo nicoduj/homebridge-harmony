@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.1
+
+- [FIX] "showTurnOffActivity" wrong config via ConfigUI-X #203
+
 ## 1.2.0
 
 - [NEW] Supports config UI X configuration interface. **Be aware that remoteOverrideCommandsList is not in the same format anymore f you edit your config through the interface.**
