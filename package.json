@@ -28,7 +28,7 @@
     "npm": "^6.12.1",
     "request": "^2.65.0",
     "websocket": "^1.0.30",
-    "websocket-as-promised": "^0.10.1"
+    "websocket-as-promised": "^1.0.0"
   },
   "bugs": {
     "url": "https://github.com/nicoduj/homebridge-harmony/issues"
