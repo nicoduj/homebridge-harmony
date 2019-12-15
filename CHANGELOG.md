@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.2
+
+- [FIX] "View TV Settings" causes HomeBridge crash #207 (if no current input)
+
 ## 1.2.1
 
 - [FIX] "showTurnOffActivity" wrong config via ConfigUI-X #203

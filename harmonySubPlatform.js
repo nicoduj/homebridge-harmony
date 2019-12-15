@@ -1136,21 +1136,23 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'set',
       function(value, callback) {
-        this.log.debug(
-          '(' +
-            this.name +
-            ')' +
-            'INFO - SET Characteristic.PowerModeSelection : ' +
-            value
-        );
-        this.harmonyBase.sendCommand(
-          this,
-          HarmonyAsTVKeysTools.getOverrideCommand(
+        if (this._currentInputService !== undefined) {
+          this.log.debug(
+            '(' +
+              this.name +
+              ')' +
+              'INFO - SET Characteristic.PowerModeSelection : ' +
+              value
+          );
+          this.harmonyBase.sendCommand(
             this,
-            'SETUP',
-            this._currentInputService.SetupCommand
-          )
-        );
+            HarmonyAsTVKeysTools.getOverrideCommand(
+              this,
+              'SETUP',
+              this._currentInputService.SetupCommand
+            )
+          );
+        }
         callback(null);
       }.bind(this)
     );
@@ -1318,7 +1320,7 @@ HarmonySubPlatform.prototype = {
       if (that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE) {
         that.log.debug(
           '(' +
-            this.name +
+            that.name +
             ')' +
             'INFO - activityCommand : RETRY to send command ' +
             commandToSend
@@ -1327,7 +1329,7 @@ HarmonySubPlatform.prototype = {
       } else {
         that.log(
           '(' +
-            this.name +
+            that.name +
             ')' +
             'ERROR - activityCommand : could not SET status, no more RETRY : ' +
             commandToSend
