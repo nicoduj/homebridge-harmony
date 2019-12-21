@@ -772,32 +772,51 @@ HarmonySubPlatform.prototype = {
             service.getCharacteristic(Characteristic.ActiveIdentifier).value
         );
 
-        var activityToLaunch = service.getCharacteristic(
-          Characteristic.ActiveIdentifier
-        ).value;
-
         if (value == 0) {
           this.log.debug('(' + this.name + ')' + 'INFO - switching off');
           this.sendInputCommand(homebridgeAccessory, '-1');
 
           callback(null);
         } else {
-          this.harmonyBase.refreshCurrentActivity(this, () => {
+          //we push back the execution to let the second event be taken care of in case of switching on with a dedicated input.
+          setTimeout(() => {
             if (this._currentInputService == undefined) {
+              var currentActivity = service.getCharacteristic(
+                Characteristic.ActiveIdentifier
+              ).value;
+
+              if (currentActivity <= 0) {
+                this.log.debug(
+                  '(' +
+                    this.name +
+                    ')' +
+                    'INFO - launching with default Activity - ' +
+                    this.mainActivityId
+                );
+                this.sendInputCommand(
+                  homebridgeAccessory,
+                  '' + this.mainActivityId
+                );
+              } else {
+                this.log.debug(
+                  '(' +
+                    this.name +
+                    ')' +
+                    'INFO - not launching, an activeinput is set - ' +
+                    this.mainActivityId
+                );
+              }
+            } else {
               this.log.debug(
                 '(' +
                   this.name +
                   ')' +
-                  'INFO - current Activity to launch - ' +
-                  activityToLaunch
+                  'INFO - not launching, there is a current Activity defined -' +
+                  this.mainActivityId
               );
-              if (activityToLaunch <= 0) {
-                activityToLaunch = this.mainActivityId;
-              }
-              this.sendInputCommand(homebridgeAccessory, '' + activityToLaunch);
             }
             callback(null);
-          });
+          }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
         }
       }.bind(this)
     );
