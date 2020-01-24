@@ -23,7 +23,7 @@ jobs:
       deploy:
         provider: releases
         api_key: $GITHUB_OAUTH_TOKEN
-        skip_cleanup: true
+        cleanup: true
         name: $TRAVIS_TAG
         on:
           tags: true
