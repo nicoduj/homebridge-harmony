@@ -16,6 +16,7 @@ jobs:
         api_key: '$NPM_TOKEN'
         on:
           tags: true
+        edge: true
     - stage: GitHub Release
       if: tag IS present
       script: echo "Deploying to GitHub releases ..."
@@ -26,3 +27,4 @@ jobs:
         name: $TRAVIS_TAG
         on:
           tags: true
+        edge: true
