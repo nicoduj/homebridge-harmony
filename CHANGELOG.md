@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.3
+
+- [FIX] Trying to fix by removing unecessary dep Harmony Plugin causes Hoobs-Homebridge to crash #217
+
 ## 1.2.2
 
 - [FIX] "View TV Settings" causes HomeBridge crash #207 (if no current input)
