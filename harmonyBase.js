@@ -25,7 +25,10 @@ HarmonyBase.prototype = {
     harmonyPlatform.hubIP = config['hubIP'];
 
     harmonyPlatform.name = config['name'];
-    harmonyPlatform.devMode = config['DEVMODE'];
+    harmonyPlatform.devMode = HarmonyTools.checkParameter(
+      config['DEVMODE'],
+      false
+    );
 
     harmonyPlatform.addAllActivitiesToSkippedIfSameStateActivitiesList = HarmonyTools.checkParameter(
       config['addAllActivitiesToSkippedIfSameStateActivitiesList'],
@@ -55,7 +58,10 @@ HarmonyBase.prototype = {
       true
     );
 
-    harmonyPlatform.showCommandsAtStartup = config['showCommandsAtStartup'];
+    harmonyPlatform.showCommandsAtStartup = HarmonyTools.checkParameter(
+      config['showCommandsAtStartup'],
+      false
+    );
 
     harmonyPlatform._currentActivity = -9999;
     harmonyPlatform._currentActivityLastUpdate = undefined;
@@ -67,9 +73,9 @@ HarmonyBase.prototype = {
       'INFO : following activites controls will be ignored if they are in the same state : ' +
         (harmonyPlatform.addAllActivitiesToSkippedIfSameStateActivitiesList
           ? 'ALL'
-          : (harmonyPlatform.skippedIfSameStateActivities
+          : harmonyPlatform.skippedIfSameStateActivities
           ? harmonyPlatform.skippedIfSameStateActivities
-          : 'NONE'))
+          : 'NONE')
     );
   },
 
@@ -196,51 +202,67 @@ HarmonyBase.prototype = {
       }
     }
 
-
     this.getGeneralMuteSwitchAccessory(harmonyPlatform, data);
 
     this.getDevicesAccessories(harmonyPlatform, data);
     this.getSequencesAccessories(harmonyPlatform, data);
     this.handleHomeControls(harmonyPlatform, homedata);
 
-
     //handling removing
-    harmonyPlatform.log.debug('INFO - Accessories confirmed after retrieving hub infos : ');
+    harmonyPlatform.log.debug(
+      'INFO - Accessories confirmed after retrieving hub infos : '
+    );
     harmonyPlatform.log.debug(harmonyPlatform._confirmedAccessories);
-    harmonyPlatform.log.debug('INFO - Services confirmed after retrieving hub infos : ');
+    harmonyPlatform.log.debug(
+      'INFO - Services confirmed after retrieving hub infos : '
+    );
     harmonyPlatform.log.debug(harmonyPlatform._confirmedServices);
 
-
-    //cleaning accessories 
+    //cleaning accessories
     let accstoRemove = [];
     for (let acc of harmonyPlatform._foundAccessories) {
-      if (!harmonyPlatform._confirmedAccessories.find(x => x.UUID == acc.UUID))
-      {
+      if (
+        !harmonyPlatform._confirmedAccessories.find(x => x.UUID == acc.UUID)
+      ) {
         accstoRemove.push(acc);
-        harmonyPlatform.log('WARNING - Accessory will be Removed ' + acc.UUID + '/' + acc.displayName);
+        harmonyPlatform.log(
+          'WARNING - Accessory will be Removed ' +
+            acc.UUID +
+            '/' +
+            acc.displayName
+        );
       }
     }
-    
+
     if (accstoRemove.length > 0)
-    harmonyPlatform.api.unregisterPlatformAccessories(
+      harmonyPlatform.api.unregisterPlatformAccessories(
         'homebridge-harmonyHub',
         'HarmonyHubWebSocket',
         accstoRemove
       );
 
-
     //cleaning services
     for (let acc of harmonyPlatform._foundAccessories) {
       let servicestoRemove = [];
       for (let serv of acc.services) {
-        if (serv.subtype !== undefined &&  !harmonyPlatform._confirmedServices.find(x => (x.UUID == serv.UUID && x.subtype == serv.subtype)))
-        {
+        if (
+          serv.subtype !== undefined &&
+          !harmonyPlatform._confirmedServices.find(
+            x => x.UUID == serv.UUID && x.subtype == serv.subtype
+          )
+        ) {
           servicestoRemove.push(serv);
         }
       }
-      for (let servToDel of servicestoRemove)
-      {
-        harmonyPlatform.log('WARNING - Service Removed' + servToDel.UUID + '/' + servToDel.subtype + '/' + servToDel.displayName);
+      for (let servToDel of servicestoRemove) {
+        harmonyPlatform.log(
+          'WARNING - Service Removed' +
+            servToDel.UUID +
+            '/' +
+            servToDel.subtype +
+            '/' +
+            servToDel.displayName
+        );
         acc.removeService(servToDel);
       }
     }
@@ -357,7 +379,7 @@ HarmonyBase.prototype = {
       }
 
       myHarmonyAccessory.category = AccessoryType.SWITCH;
-      harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
+      harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
     }
 
     for (var key in homeControls) {
@@ -386,7 +408,6 @@ HarmonyBase.prototype = {
 
           myHarmonyAccessory.category = AccessoryType.SWITCH;
           harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
-
         }
 
         let subType = switchName;
@@ -427,12 +448,10 @@ HarmonyBase.prototype = {
     }
   },
 
-
   //GENERAL Mute SWITCH
 
   getGeneralMuteSwitchAccessory: function(harmonyPlatform, data) {
-
-  if (harmonyPlatform.publishGeneralMuteSwitch) {
+    if (harmonyPlatform.publishGeneralMuteSwitch) {
       harmonyPlatform.log('INFO - Loading geeneral mute Switch...');
 
       var accessoriesToAdd = [];
@@ -444,7 +463,7 @@ HarmonyBase.prototype = {
         accessoriesToAdd.push(myHarmonyAccessory);
       }
       myHarmonyAccessory.category = AccessoryType.SWITCH;
-      harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
+      harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
 
       let subType = name;
       let service = this.getSwitchService(
@@ -456,13 +475,12 @@ HarmonyBase.prototype = {
       service.type = HarmonyConst.GENERALMUTE_TYPE;
 
       //array of mutes commands
-      var muteCommandsMap = new Object(); 
+      var muteCommandsMap = new Object();
       let activities = data.data.activity;
       for (let i = 0, len = activities.length; i < len; i++) {
         let activity = activities[i];
         let controlGroup = activity.controlGroup;
         for (let j = 0, len = controlGroup.length; j < len; j++) {
-          
           if (controlGroup[j].name == 'Volume') {
             let functions = controlGroup[j].function;
             for (let k = 0, len = functions.length; k < len; k++) {
@@ -479,16 +497,14 @@ HarmonyBase.prototype = {
       service.commands = muteCommandsMap;
       harmonyPlatform.log.debug('Mute commands for Global Mute Switch : ');
       harmonyPlatform.log.debug(muteCommandsMap);
-      harmonyPlatform._confirmedServices.push(service); 
+      harmonyPlatform._confirmedServices.push(service);
 
       this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
 
       //creating accessories
       this.addAccessories(harmonyPlatform, accessoriesToAdd);
     }
-
   },
-
 
   //SEQUENCES SWITCHES
   getSequencesAccessories: function(harmonyPlatform, data) {
@@ -511,8 +527,7 @@ HarmonyBase.prototype = {
         }
 
         myHarmonyAccessory.category = AccessoryType.SWITCH;
-        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
-
+        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
       }
 
       for (let i = 0, len = sequences.length; i < len; i++) {
@@ -542,8 +557,7 @@ HarmonyBase.prototype = {
             }
 
             myHarmonyAccessory.category = AccessoryType.SWITCH;
-            harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
-
+            harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
           }
 
           let subType = switchName + '-Sequence';
@@ -556,7 +570,7 @@ HarmonyBase.prototype = {
 
           service.sequenceId = sequences[i].id;
           service.type = HarmonyConst.SEQUENCE_TYPE;
-          harmonyPlatform._confirmedServices.push(service); 
+          harmonyPlatform._confirmedServices.push(service);
           this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
         }
       }
@@ -637,7 +651,7 @@ HarmonyBase.prototype = {
   ) {
     let accessoriesToAdd = [];
 
-    switchName = harmonyPlatform.devMode ? ('DEV' + device.label) : device.label;
+    switchName = harmonyPlatform.devMode ? 'DEV' + device.label : device.label;
 
     harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
 
@@ -669,8 +683,7 @@ HarmonyBase.prototype = {
             }
 
             myHarmonyAccessory.category = AccessoryType.SWITCH;
-            harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
-
+            harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
           }
 
           let subType = switchName + '-' + commandFunctions[j].key;
@@ -684,7 +697,7 @@ HarmonyBase.prototype = {
           service.deviceId = device.id;
           service.type = HarmonyConst.DEVICE_TYPE;
           service.command = commandFunctions[j].value;
-          harmonyPlatform._confirmedServices.push(service); 
+          harmonyPlatform._confirmedServices.push(service);
 
           this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
         }
@@ -704,7 +717,7 @@ HarmonyBase.prototype = {
     let accessoriesToAdd = [];
 
     let switchName = harmonyPlatform.devMode
-      ? ('DEV' + device.label)
+      ? 'DEV' + device.label
       : device.label;
 
     harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
@@ -749,8 +762,7 @@ HarmonyBase.prototype = {
         }
 
         myHarmonyAccessory.category = AccessoryType.SWITCH;
-        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
-
+        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
       }
 
       let subType = switchName + '-' + functionsKey;
@@ -764,7 +776,7 @@ HarmonyBase.prototype = {
       service.deviceId = device.id;
       service.type = HarmonyConst.DEVICEMACRO_TYPE;
       service.command = JSON.stringify(functionsForSwitch);
-      harmonyPlatform._confirmedServices.push(service); 
+      harmonyPlatform._confirmedServices.push(service);
 
       this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
     }
@@ -795,8 +807,7 @@ HarmonyBase.prototype = {
         }
 
         myHarmonyAccessory.category = AccessoryType.SWITCH;
-        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory); 
-
+        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
       }
 
       for (
@@ -901,16 +912,18 @@ HarmonyBase.prototype = {
   },
 
   checkAccessory(harmonyPlatform, name) {
-    let fullName = harmonyPlatform.name + (name ? ('-' + name) : '');
+    let fullName = harmonyPlatform.name + (name ? '-' + name : '');
     let uuid = UUIDGen.generate(fullName);
     return harmonyPlatform._foundAccessories.find(x => x.UUID == uuid);
   },
 
   createAccessory(harmonyPlatform, name) {
-    let fullName = harmonyPlatform.name + (name ? ('-' + name) : '');
+    let fullName = harmonyPlatform.name + (name ? '-' + name : '');
     harmonyPlatform.log('INFO - Adding Accessory : ' + fullName);
     let uuid = UUIDGen.generate(fullName);
-    harmonyPlatform.log.debug('INFO - UUID for : *' + fullName + '* is : *' + uuid + '*');
+    harmonyPlatform.log.debug(
+      'INFO - UUID for : *' + fullName + '* is : *' + uuid + '*'
+    );
     let myHarmonyAccessory = new Accessory(fullName, uuid);
 
     myHarmonyAccessory.name = fullName;
@@ -988,14 +1001,11 @@ HarmonyBase.prototype = {
               this.sendCommand(harmonyPlatform, command);
             } else if (service.type === HarmonyConst.GENERALMUTE_TYPE) {
               ///MUTE
-              harmonyPlatform.log('toto');
-              if (harmonyPlatform._currentActivity > -1)
-              {
-                let command = service.commands[harmonyPlatform._currentActivity];
-                harmonyPlatform.log(command);
+              if (harmonyPlatform._currentActivity > -1) {
+                let command =
+                  service.commands[harmonyPlatform._currentActivity];
                 this.sendCommand(harmonyPlatform, command);
               }
-              
             }
 
             // In order to behave like a push button reset the status to off

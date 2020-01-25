@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.4
+
+- [NEW] Improve handling of false value in config #219
+
 ## 1.2.3
 
 - [FIX] Trying to fix by removing unecessary dep Harmony Plugin causes Hoobs-Homebridge to crash #217

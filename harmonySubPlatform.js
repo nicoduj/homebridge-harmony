@@ -55,7 +55,10 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
       this.remoteOverrideCommandsList = NewRemoteOverrideCommandsList;
     }
 
-    this.log(JSON.stringify(this.remoteOverrideCommandsList));
+    this.log.debug(
+      'INFO - remoteOverrideCommandsList is : ' +
+        JSON.stringify(this.remoteOverrideCommandsList)
+    );
 
     if (
       !this.addAllActivitiesToSkippedIfSameStateActivitiesList &&

@@ -8,7 +8,6 @@ module.exports = {
 };
 
 function HarmonyPlatform(log, config, api) {
-
   this.log = log;
 
   this.log('HarmonyPlatform Init');
@@ -32,7 +31,7 @@ function HarmonyPlatform(log, config, api) {
     );
   }
 
-  this.cleanCache = config['cleanCache'];
+  this.cleanCache = HarmonyTools.checkParameter(config['cleanCache'], false);
 
   this.publishAllTVAsExternalAccessory = HarmonyTools.checkParameter(
     config['publishAllTVAsExternalAccessory'],
@@ -66,7 +65,7 @@ function HarmonyPlatform(log, config, api) {
 
         if (this.cleanCache) {
           this.log('WARNING - Removing Accessories');
-          
+
           for (let i = 0, len = this.platforms.length; i < len; i++) {
             let platform = this.platforms[i];
             platform.api.unregisterPlatformAccessories(
@@ -84,7 +83,6 @@ function HarmonyPlatform(log, config, api) {
         }
       }.bind(this)
     );
-
 }
 
 HarmonyPlatform.prototype = {
@@ -92,14 +90,15 @@ HarmonyPlatform.prototype = {
   configureAccessory: function(accessory) {
     let platformName = accessory.context.subPlatformName;
     var platform;
-    
+
     if (this.platforms && this.platforms.length > 0)
       platform = this.platforms.find(x => x.name == platformName);
 
-    if (platform == undefined)
-    {
+    if (platform == undefined) {
       this.log(
-        'WARNING - configureAccessory - The platform ' + platformName + ' is not there anymore in your config (name property). It won\'t be loaded and will be removed from cache.'   
+        'WARNING - configureAccessory - The platform ' +
+          platformName +
+          " is not there anymore in your config (name property). It won't be loaded and will be removed from cache."
       );
 
       this.api.unregisterPlatformAccessories(
@@ -107,16 +106,14 @@ HarmonyPlatform.prototype = {
         'HarmonyHubWebSocket',
         [accessory]
       );
-    }
-    else
-    {
+    } else {
       this.log.debug(
         accessory.displayName,
         'Got cached Accessory ' + accessory.UUID + ' for ' + platform.name
       );
 
       platform._foundAccessories.push(accessory);
-  
+
       if (accessory.category == AccessoryType.TELEVISION) {
         this._oneTVAdded = true;
         this.log(
@@ -124,7 +121,5 @@ HarmonyPlatform.prototype = {
         );
       }
     }
-
-
   },
 };

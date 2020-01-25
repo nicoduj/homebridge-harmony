@@ -29,8 +29,25 @@ module.exports = {
   },
 
   checkParameter: function(parameter, def) {
-    if (parameter == undefined) return def;
-    else return parameter;
+    if (parameter == undefined) {
+      return def;
+    } else {
+      if (typeof parameter === 'string') {
+        switch (parameter.toLowerCase().trim()) {
+          case 'true':
+          case 'yes':
+            return true;
+          case 'false':
+          case 'no':
+          case null:
+            return false;
+          default:
+            return parameter;
+        }
+      } else {
+        return parameter;
+      }
+    }
   },
 
   checkTurnOffActivityOption: function(str) {
@@ -80,8 +97,6 @@ module.exports = {
       let timeToWait = HarmonyConst.DELAY_FOR_MACRO;
       if (commandTosend.length === 2) timeToWait = commandTosend[1];
       else timeToWait = HarmonyConst.DELAY_FOR_MACRO;
-      console.log(commandTosend[0]);
-      console.log(timeToWait);
       await processCommand(hb, platform, commandTosend[0], timeToWait);
     }
   },
