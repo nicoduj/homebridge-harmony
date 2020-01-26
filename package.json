@@ -21,7 +21,8 @@
     "harmony",
     "websocket",
     "harmonyhub",
-    "homekit"
+    "homekit",
+    "category-media"
   ],
   "dependencies": {
     "harmony-websocket": "^1.5.0",

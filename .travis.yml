@@ -23,7 +23,9 @@ jobs:
       deploy:
         provider: releases
         api_key: $GITHUB_OAUTH_TOKEN
+        file: {}
         cleanup: true
+        release_notes_file: CHANGELOG.md
         name: $TRAVIS_TAG
         on:
           tags: true
