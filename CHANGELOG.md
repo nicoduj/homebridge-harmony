@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.5
+
+- [FIX] Limiting number of sockets event in case of multiple refresh with no response from the hub or slight delay (network problems)
+
 ## 1.2.4
 
 - [NEW] Improve handling of false value in config #219

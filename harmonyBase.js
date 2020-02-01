@@ -298,15 +298,25 @@ HarmonyBase.prototype = {
 
       //if we dont have an activity set, we callback immediately
       var callbackDone = false;
-      if (harmonyPlatform._currentActivity == CURRENT_ACTIVITY_NOT_SET_VALUE) {
+      if (
+        harmonyPlatform._currentActivity == CURRENT_ACTIVITY_NOT_SET_VALUE ||
+        harmonyPlatform.refreshInprogress
+      ) {
+        harmonyPlatform.log.debug(
+          'INFO - refreshCurrentActivity : Cancelling refresh since activity is not set or a refresh is allready in progress ' +
+            harmonyPlatform._currentActivity
+        );
+
         callback();
         callbackDone = true;
       }
 
+      harmonyPlatform.refreshInprogress = true;
       this.harmony
         .getCurrentActivity()
         .then(response => {
           harmonyPlatform.refreshCurrentActivity(response);
+          harmonyPlatform.refreshInprogress = undefined;
           if (!callbackDone) callback();
         })
         .catch(e => {
@@ -314,6 +324,7 @@ HarmonyBase.prototype = {
           harmonyPlatform.refreshCurrentActivity(
             HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
           );
+          harmonyPlatform.refreshInprogress = undefined;
           if (!callbackDone) callback();
         });
     }
