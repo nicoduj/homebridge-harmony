@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.6
+
+- [FIX] Still trying to solve Harmony Plugin causes Hoobs-Homebridge to crash #217
+
 ## 1.2.5
 
 - [FIX] Limiting number of sockets event in case of multiple refresh with no response from the hub or slight delay (network problems)

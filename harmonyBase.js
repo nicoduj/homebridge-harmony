@@ -13,6 +13,8 @@ function HarmonyBase(api) {
   Characteristic = api.hap.Characteristic;
   this.harmony = new Harmony();
   this.numberAttemps = 0;
+  this.numberOfErrors = 0;
+  this.generalErrorTimer = undefined;
   Accessory = api.platformAccessory;
   AccessoryType = api.hap.Accessory.Categories;
   UUIDGen = api.hap.uuid;
@@ -96,10 +98,10 @@ HarmonyBase.prototype = {
     });
 
     this.harmony.on('close', () => {
-      harmonyPlatform.log.debug('WARNING - socket closed');
-      var that = this;
-      setTimeout(function() {
-        that.refreshCurrentActivity(harmonyPlatform, () => {});
+      harmonyPlatform.log('WARNING - socket closed');
+
+      setTimeout(() => {
+        this.refreshCurrentActivity(harmonyPlatform, () => {});
       }, HarmonyConst.DELAY_BEFORE_RECONNECT);
     });
 
@@ -148,7 +150,6 @@ HarmonyBase.prototype = {
         });
       })
       .catch(e => {
-        var that = this;
         this.numberAttemps = this.numberAttemps + 1;
 
         harmonyPlatform.log(
@@ -159,8 +160,8 @@ HarmonyBase.prototype = {
             ')'
         );
 
-        setTimeout(function() {
-          that.configureAccessories(harmonyPlatform);
+        setTimeout(() => {
+          this.configureAccessories(harmonyPlatform);
         }, HarmonyConst.DELAY_BEFORE_RECONNECT);
       });
   },
@@ -268,7 +269,7 @@ HarmonyBase.prototype = {
     }
 
     //first refresh
-    setTimeout(function() {
+    setTimeout(() => {
       harmonyPlatform.refreshPlatform();
     }, HarmonyConst.DELAY_LAUNCH_REFRESH);
   },
@@ -276,57 +277,89 @@ HarmonyBase.prototype = {
   //REFRESH
 
   refreshCurrentActivity: function(harmonyPlatform, callback) {
-    if (
-      harmonyPlatform._currentActivity >
-        HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE &&
-      harmonyPlatform._currentActivityLastUpdate &&
-      Date.now() - harmonyPlatform._currentActivityLastUpdate <
-        HarmonyConst.TIMEOUT_REFRESH_CURRENT_ACTIVITY
-    ) {
-      // we don't refresh since status was retrieved not so far away
-      harmonyPlatform.log.debug(
-        'INFO - refreshCurrentActivity : NO refresh needed since last update was on :' +
-          harmonyPlatform._currentActivity +
-          ' and current Activity is set'
+    //Infinite llop handling on errors / network loss ?
+
+    if (this.numberOfErrors >= HarmonyConst.MAX_SOCKET_ERROR) {
+      harmonyPlatform.log(
+        'WARNING - refreshCurrentActivity : NO refresh done since too much socket errors - will retry later'
       );
       callback();
-    } else {
-      harmonyPlatform.log.debug(
-        'INFO - refreshCurrentActivity : Refresh needed since last update is too old or current Activity is not set : ' +
-          harmonyPlatform._currentActivity
-      );
 
-      //if we dont have an activity set, we callback immediately
-      var callbackDone = false;
+      //we reset the errors only after the delay
+      if (this.generalErrorTimer) clearTimeout(this.generalErrorTimer);
+
+      this.generalErrorTimer = setTimeout(() => {
+        harmonyPlatform.log(
+          'WARNING - refreshCurrentActivity : Resetting counter after network loss, trying to refresh'
+        );
+        this.numberOfErrors = 0;
+        this.refreshCurrentActivity(harmonyPlatform, () => {});
+      }, HarmonyConst.DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS);
+    } else {
       if (
-        harmonyPlatform._currentActivity == CURRENT_ACTIVITY_NOT_SET_VALUE ||
-        harmonyPlatform.refreshInprogress
+        harmonyPlatform._currentActivity >
+          HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE &&
+        harmonyPlatform._currentActivityLastUpdate &&
+        Date.now() - harmonyPlatform._currentActivityLastUpdate <
+          HarmonyConst.TIMEOUT_REFRESH_CURRENT_ACTIVITY
       ) {
+        // we don't refresh since status was retrieved not so far away
         harmonyPlatform.log.debug(
-          'INFO - refreshCurrentActivity : Cancelling refresh since activity is not set or a refresh is allready in progress ' +
+          'INFO - refreshCurrentActivity : NO refresh needed since last update was on :' +
+            harmonyPlatform._currentActivity +
+            ' and current Activity is set'
+        );
+        callback();
+      } else {
+        harmonyPlatform.log.debug(
+          'INFO - refreshCurrentActivity : Refresh needed since last update is too old or current Activity is not set : ' +
             harmonyPlatform._currentActivity
         );
 
-        callback();
-        callbackDone = true;
-      }
-
-      harmonyPlatform.refreshInprogress = true;
-      this.harmony
-        .getCurrentActivity()
-        .then(response => {
-          harmonyPlatform.refreshCurrentActivity(response);
-          harmonyPlatform.refreshInprogress = undefined;
-          if (!callbackDone) callback();
-        })
-        .catch(e => {
-          harmonyPlatform.log('ERROR - refreshCurrentActivity ' + e);
-          harmonyPlatform.refreshCurrentActivity(
-            HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
+        //if we dont have an activity set, we callback immediately
+        var callbackDone = false;
+        if (this.refreshInprogress) {
+          harmonyPlatform.log(
+            'WARNING - refreshCurrentActivity : Cancelling refresh since a refresh is allready in progress ' +
+              harmonyPlatform._currentActivity
           );
-          harmonyPlatform.refreshInprogress = undefined;
-          if (!callbackDone) callback();
-        });
+
+          callback();
+          callbackDone = true;
+        } else {
+          this.refreshInprogress = true;
+          this.harmony
+            .getCurrentActivity()
+            .then(response => {
+              this.numberOfErrors = 0;
+              if (this.generalErrorTimer) {
+                clearTimeout(this.generalErrorTimer);
+                this.generalErrorTimer = undefined;
+              }
+
+              harmonyPlatform.refreshCurrentActivityOnSubPlatform(response);
+              this.refreshInprogress = false;
+              if (!callbackDone) callback();
+            })
+            .catch(e => {
+              this.numberOfErrors = this.numberOfErrors + 1;
+
+              harmonyPlatform.log(
+                'ERROR (' +
+                  this.numberOfErrors +
+                  ')- refreshCurrentActivity ' +
+                  e +
+                  ' - Stack : ' +
+                  e.stack
+              );
+              harmonyPlatform.refreshCurrentActivityOnSubPlatform(
+                HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
+              );
+              this.refreshInprogress = false;
+              if (!callbackDone) callback();
+            });
+        }
+      }
     }
   },
 
@@ -1020,7 +1053,7 @@ HarmonyBase.prototype = {
             }
 
             // In order to behave like a push button reset the status to off
-            setTimeout(function() {
+            setTimeout(() => {
               service
                 .getCharacteristic(Characteristic.On)
                 .updateValue(false, undefined);

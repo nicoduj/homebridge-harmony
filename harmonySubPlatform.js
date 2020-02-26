@@ -152,7 +152,7 @@ HarmonySubPlatform.prototype = {
   //MAIN METHODS
 
   onMessage(newActivity) {
-    this.refreshCurrentActivity(newActivity);
+    this.refreshCurrentActivityOnSubPlatform(newActivity);
   },
 
   readAccessories: function(data, homedata) {
@@ -541,11 +541,12 @@ HarmonySubPlatform.prototype = {
     this.keysMap = HarmonyAsTVKeysTools.mapKeysForActivity(this);
   },
 
-  refreshCurrentActivity: function(response) {
-    if (!response) return;
-
-    this._currentActivity = response;
+  refreshCurrentActivityOnSubPlatform: function(response) {
     this._currentActivityLastUpdate = Date.now();
+
+    if (response == undefined) return;
+    this._currentActivity = response;
+
     this.localRefresh();
   },
 
@@ -633,9 +634,8 @@ HarmonySubPlatform.prototype = {
     if (doCommand) {
       this.activityCommand(homebridgeAccessory, commandToSend);
     } else {
-      var that = this;
-      setTimeout(function() {
-        that.refreshPlatform();
+      setTimeout(() => {
+        this.refreshPlatform();
       }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
     }
   },
@@ -818,8 +818,8 @@ HarmonySubPlatform.prototype = {
                   this.mainActivityId
               );
             }
-            callback(null);
           }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
+          callback(null);
         }
       }.bind(this)
     );
@@ -1337,26 +1337,25 @@ HarmonySubPlatform.prototype = {
     this._currentSetAttemps = this._currentSetAttemps + 1;
 
     //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
-    var that = this;
-    setTimeout(function() {
-      if (that._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE) {
-        that.log.debug(
+    setTimeout(() => {
+      if (this._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE) {
+        this.log.debug(
           '(' +
-            that.name +
+            this.name +
             ')' +
             'INFO - activityCommand : RETRY to send command ' +
             commandToSend
         );
-        that.activityCommand(homebridgeAccessory, commandToSend);
+        this.activityCommand(homebridgeAccessory, commandToSend);
       } else {
-        that.log(
+        this.log(
           '(' +
-            that.name +
+            this.name +
             ')' +
             'ERROR - activityCommand : could not SET status, no more RETRY : ' +
             commandToSend
         );
-        that.refreshPlatform();
+        this.refreshPlatform();
       }
     }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
   },
@@ -1473,7 +1472,7 @@ HarmonySubPlatform.prototype = {
           ' will not be sent any command '
       );
       callback();
-      setTimeout(function() {
+      setTimeout(() => {
         characteristic.updateValue(currentValue);
       }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
     }
