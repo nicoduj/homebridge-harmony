@@ -25,7 +25,8 @@
     "category-media"
   ],
   "dependencies": {
-    "harmony-websocket": "^1.5.0"
+    "harmony-websocket": "^1.5.0",
+    "request": "latest"
   },
   "bugs": {
     "url": "https://github.com/nicoduj/homebridge-harmony/issues"
