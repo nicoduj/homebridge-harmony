@@ -1,8 +1,8 @@
 # homebridge-harmony
 
-[![npm](https://img.shields.io/npm/v/homebridge-harmony.svg)](https://www.npmjs.com/package/homebridge-harmony)
-[![npm](https://img.shields.io/npm/dw/homebridge-harmony.svg)](https://www.npmjs.com/package/homebridge-harmony)
-[![npm](https://img.shields.io/npm/dt/homebridge-harmony.svg)](https://www.npmjs.com/package/homebridge-harmony)
+[![npm](https://badgen.net/npm/v/homebridge-harmony)](https://www.npmjs.com/package/homebridge-harmony)
+[![npm](https://badgen.net/npm/dw/homebridge-harmony)](https://www.npmjs.com/package/homebridge-harmony)
+[![npm](https://badgen.net/npm/dt/homebridge-harmony)](https://www.npmjs.com/package/homebridge-harmony)
 
 [![Build Status](https://travis-ci.com/nicoduj/homebridge-harmony.svg?branch=master)](https://travis-ci.com/nicoduj/homebridge-harmony)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
@@ -12,11 +12,11 @@
 
 [![Support via PayPal][paypal-button]][paypal-nicoduj]
 
-[Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/nfarina/homebridge) using WebSockets.
+[Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/homebridge/homebridge) using WebSockets.
 
-You can discuss this plugin on [Slack](https://homebridge-slackin.glitch.me) in #homebridge-harmony channel
+You can discuss this plugin on [Discord](https://discord.gg/DRxjgv) in #harmony channel
 
-[![Slack Status](https://homebridge-slackin.glitch.me/badge.svg)](https://homebridge-slackin.glitch.me)
+[![Discord Status](https://img.shields.io/discord/432663330281226270.svg?label=discord)](https://discord.gg/DRxjgv)
 
 This plugin is publishing harmony hub activities and devices as switches, with some advanced option (see below) for custom needs like macros, seuqences, and much more. The TV mode is focused on harmony hub activities only at the moment : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
 
