@@ -1,5 +1,7 @@
 # homebridge-harmony
 
+[![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
+
 [![npm](https://badgen.net/npm/v/homebridge-harmony)](https://www.npmjs.com/package/homebridge-harmony)
 [![npm](https://badgen.net/npm/dw/homebridge-harmony)](https://www.npmjs.com/package/homebridge-harmony)
 [![npm](https://badgen.net/npm/dt/homebridge-harmony)](https://www.npmjs.com/package/homebridge-harmony)
