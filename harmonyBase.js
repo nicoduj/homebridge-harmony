@@ -1,7 +1,6 @@
 var Service, Characteristic, Accessory, AccessoryType, UUIDGen;
 const HarmonyConst = require('./harmonyConst');
 const HarmonyHubDiscover = require('harmonyhubjs-discover');
-const discover = new HarmonyHubDiscover(61991);
 
 const Harmony = require('harmony-websocket');
 const HarmonyTools = require('./harmonyTools.js');
@@ -123,7 +122,9 @@ HarmonyBase.prototype = {
   },
 
   discoverHub: function (harmonyPlatform, isInit = true) {
-    discover.on('online', (hub) => {
+    this.discover = new HarmonyHubDiscover(61991);
+
+    this.discover.on('online', (hub) => {
       // Triggered when a new hub was found
       harmonyPlatform.log(
         'INFO - discovered ' +
@@ -135,7 +136,7 @@ HarmonyBase.prototype = {
       );
     });
 
-    discover.on('offline', (hub) => {
+    this.discover.on('offline', (hub) => {
       // Triggered when a hub disappeared
       harmonyPlatform.log(
         'WARNING - lost hub ' +
@@ -147,7 +148,7 @@ HarmonyBase.prototype = {
       );
     });
 
-    discover.on('update', (hubs) => {
+    this.discover.on('update', (hubs) => {
       // Combines the online & update events by returning an array with all known
       // hubs for ease of use.
       const knownHubs = hubs.reduce(function (prev, hub) {
@@ -162,14 +163,12 @@ HarmonyBase.prototype = {
         );
       }, '');
 
-      console.log('known hubs: ' + knownHubs);
-
       knownHubsArray = knownHubs.split(',');
 
       if (knownHubsArray.length > 1) {
         harmonyPlatform.log(
           'ERROR - Multiple hubs found, you must use hubName or hubIP in your config : ' +
-            knownHubIps
+            knownHubsArray
         );
       } else {
         hubInfo = knownHubsArray[0].split('|');
@@ -186,7 +185,7 @@ HarmonyBase.prototype = {
               ' was found'
           );
         } else {
-          discover.stop();
+          this.discover.stop();
 
           harmonyPlatform.hubIP = hubInfo[0];
           harmonyPlatform.hubRemoteId = hubInfo[2];
@@ -196,7 +195,14 @@ HarmonyBase.prototype = {
       }
     });
 
-    discover.start();
+    try {
+      this.discover.start();
+    } catch (error) {
+      harmonyPlatform.log('ERROR - cannot discover hub - ' + error);
+      setTimeout(() => {
+        this.discoverHub(harmonyPlatform, isInit);
+      }, HarmonyConst.DELAY_BEFORE_RECONNECT);
+    }
   },
 
   //Configuration entry point
@@ -225,7 +231,6 @@ HarmonyBase.prototype = {
         } else {
           this.discoverHub(harmonyPlatform, false);
         }
-        //this.refreshCurrentActivity(harmonyPlatform, () => {});
       }, HarmonyConst.DELAY_BEFORE_RECONNECT);
     });
 
@@ -1368,9 +1373,10 @@ HarmonyBase.prototype = {
               ? service.volumeUpCommands[harmonyPlatform._currentActivity]
               : service.volumeDownCommands[harmonyPlatform._currentActivity];
 
-          command =
+          if (command) {
             command + '|' + Math.round(Math.abs(numberOfcommandstoSend));
-          this.sendCommand(harmonyPlatform, command);
+            this.sendCommand(harmonyPlatform, command);
+          }
 
           HarmonyTools.resetCharacteristic(
             service,
@@ -1421,6 +1427,10 @@ HarmonyBase.prototype = {
       numberOFcommandsToSend = commandToSendArray[1];
     } else {
       commandToSend = commandToSendArray[0];
+    }
+
+    if (commandToSend == 'undefined' || commandToSend == '') {
+      return;
     }
 
     harmonyPlatform.log.debug(
