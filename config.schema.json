@@ -151,7 +151,7 @@
                     "title": "New Command",
                     "type": "string",
                     "required": true,
-                    "pattern": "^[A-Za-z0-9]+;[A-Za-z0-9]+$"
+                    "pattern": "^[A-Za-z0-9]+;[A-Za-z0-9]+(;[0-9]+)?$"
                   }
                 }
               }
@@ -194,6 +194,10 @@
       },
       "publishGeneralMuteSwitch": {
         "title": "Publish a general mute switch",
+        "type": "boolean"
+      },
+      "publishGeneralVolumeSlider": {
+        "title": "Publish a general volume switch",
         "type": "boolean"
       },
       "addAllActivitiesToSkippedIfSameStateActivitiesList": {
@@ -391,7 +395,7 @@
                           "title": "New Command",
                           "type": "string",
                           "required": true,
-                          "pattern": "^[A-Za-z0-9]+;[A-Za-z0-9]+$"
+                          "pattern": "^[A-Za-z0-9]+;[A-Za-z0-9]+(;[0-9]+)?$"
                         }
                       }
                     }
@@ -434,6 +438,10 @@
             },
             "publishGeneralMuteSwitch": {
               "title": "publishGeneralMuteSwitch",
+              "type": "boolean"
+            },
+            "publishGeneralVolumeSlider": {
+              "title": "publishGeneralVolumeSlider",
               "type": "boolean"
             },
             "addAllActivitiesToSkippedIfSameStateActivitiesList": {
@@ -673,6 +681,10 @@
         {
           "key": "publishGeneralMuteSwitch",
           "description": "Publish a mute switch, stateless, that will send a mute command to current activity"
+        },
+        {
+          "key": "publishGeneralVolumeSlider",
+          "description": "Publish a volume slider, stateless, that will send a volume command to current activity"
         }
       ]
     },
@@ -1024,6 +1036,10 @@
                     {
                       "key": "otherPlatforms[].publishGeneralMuteSwitch",
                       "description": "Publish a mute switch, stateless, that will send a mute command to current activity"
+                    },
+                    {
+                      "key": "otherPlatforms[].publishGeneralVolumeSlider",
+                      "description": "Publish a volume slider, stateless, that will send a volume command to current activity"
                     }
                   ]
                 },

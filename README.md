@@ -125,6 +125,7 @@ Fields:
 - `mainActivity` set the mainactivity of the TV mode
 - `playPauseBehavior` play/pause behavior in TV mode : if set to true, will send pause if played was set and vice-verca. Be aware that both commands must be available, and that it might be out of sync in case of external events (defaults : false - always send play command)
 - `publishGeneralMuteSwitch` publish a mute switch, stateless, that will send a mute command to current activity.
+- `publishGeneralVolumeSlider` publish a volume slider, stateless, that will send a volume commands to current activity. Approximativley, it will send an Up / Down Volume command each 5%. It can be combined with `numberOfCommandsSentForVolumeControl` option to multiply the number of up / down commands sent.
 - `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
 - `activitiesToPublishAsInputForTVMode` array of Activities you want to expose as inputs (all by default)
 - `numberOfCommandsSentForVolumeControl` option to set the nnumber of commands to send for each volum (up or down) press. Defaults to 1
@@ -177,6 +178,7 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 - Then you should put the name of the command you want to ovverride
 - Then you should put the name of the targeted device
 - And finnaly the name of the command
+- Optionaly, number of commands to send
 
 As a sample :
 
@@ -203,7 +205,7 @@ As a sample :
         "CommandsList": [
           {
             "CommandName": "REWIND",
-            "NewCommand": "Ampli;Number0"
+            "NewCommand": "Ampli;Number0;5"
           },
           {
             "CommandName": "BACK",
@@ -226,7 +228,7 @@ As a sample :
 will bahaves this way :
 
 - for "La TV" activity :
-  - override REWIND button in the remote with Number0 command for Ampli device
+  - override REWIND button in the remote with Number0 command for Ampli device, and send it 5 times
   - override BACK button in the remote with Back Command of TV device
 - for "Un Film" activity :
   - override ARROW_LEFT in the remote with PreviousChannel of TV device

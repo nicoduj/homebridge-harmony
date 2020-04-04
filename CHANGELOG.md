@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.0
+
+- [NEW] Add capacity to send multiple commands at once with remoteOverrideCommandsList #236
+- [NEW] General volume control as a slider #239
+
 ## 1.2.7
 
 - [FIX] Removing added log for #217

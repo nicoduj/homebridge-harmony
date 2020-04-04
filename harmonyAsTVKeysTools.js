@@ -55,8 +55,7 @@ module.exports = {
 
     const Characteristic = platform.api.hap.Characteristic;
     if (
-      platform._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE
-      &&
+      platform._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE &&
       platform._currentInputService !== undefined
     ) {
       keysMap[Characteristic.RemoteKey.ARROW_UP] = this.getOverrideCommand(
@@ -143,7 +142,12 @@ module.exports = {
     return keysMap;
   },
 
-  getOverrideCommand: function(platform, command, defaultCommand) {
+  getOverrideCommand: function(
+    platform,
+    command,
+    defaultCommand,
+    defaultNumberToSend = 1
+  ) {
     if (
       platform.remoteOverrideCommandsList &&
       platform.remoteOverrideCommandsList[
@@ -157,12 +161,19 @@ module.exports = {
         platform.remoteOverrideCommandsList[
           platform._currentInputService.activityName
         ][command];
-      let device = override.split(';')[0];
-      let cmd = override.split(';')[1];
+
+      let overrideArray = override.split(';');
+      let device = overrideArray[0];
+      let cmd = overrideArray[1];
+      var numberOfCommands = defaultNumberToSend;
+      if (overrideArray.length > 2) numberOfCommands = overrideArray[2];
 
       let commandToSend = platform.harmonyBase.deviceCommands[[device, cmd]];
 
+      platform.log('INFO - TEST - ' + commandToSend + '-' + numberOfCommands);
       if (commandToSend) {
+        commandToSend = commandToSend + '|' + numberOfCommands;
+
         platform.log.debug(
           'INFO - Found Override Command for ' +
             command +

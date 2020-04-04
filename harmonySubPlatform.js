@@ -28,6 +28,16 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
     false
   );
 
+  this.publishGeneralVolumeSlider = HarmonyTools.checkParameter(
+    config['publishGeneralVolumeSlider'],
+    false
+  );
+
+  this.numberOfCommandsSentForVolumeControl = HarmonyTools.checkParameter(
+    config['numberOfCommandsSentForVolumeControl'],
+    1
+  );
+
   if (this.TVAccessory) {
     this.mainActivity = (this.devMode ? 'DEV' : '') + config['mainActivity'];
     this.playPauseBehavior = HarmonyTools.checkParameter(
@@ -35,10 +45,6 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
       false
     );
 
-    this.numberOfCommandsSentForVolumeControl = HarmonyTools.checkParameter(
-      config['numberOfCommandsSentForVolumeControl'],
-      1
-    );
     this.activitiesToPublishAsInputForTVMode =
       config['activitiesToPublishAsInputForTVMode'];
 
@@ -508,7 +514,10 @@ HarmonySubPlatform.prototype = {
         let myHarmonyAccessory = this._foundAccessories[a];
         for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
           let service = myHarmonyAccessory.services[s];
-          if (service.type == HarmonyConst.ACTIVITY_TYPE)
+          if (
+            service.type == HarmonyConst.ACTIVITY_TYPE ||
+            service.type == HarmonyConst.GENERALVOLUME_TYPE
+          )
             this.refreshService(service, undefined);
         }
       }
@@ -947,35 +956,25 @@ HarmonySubPlatform.prototype = {
               value
           );
           if (value === Characteristic.VolumeSelector.DECREMENT) {
-            for (
-              let i = 0, len = this.numberOfCommandsSentForVolumeControl;
-              i < len;
-              i++
-            ) {
-              this.harmonyBase.sendCommand(
+            this.harmonyBase.sendCommand(
+              this,
+              HarmonyAsTVKeysTools.getOverrideCommand(
                 this,
-                HarmonyAsTVKeysTools.getOverrideCommand(
-                  this,
-                  'VOLUME_DOWN',
-                  this._currentInputService.VolumeDownCommand
-                )
-              );
-            }
+                'VOLUME_DOWN',
+                this._currentInputService.VolumeDownCommand,
+                this.numberOfCommandsSentForVolumeControl
+              )
+            );
           } else {
-            for (
-              let i = 0, len = this.numberOfCommandsSentForVolumeControl;
-              i < len;
-              i++
-            ) {
-              this.harmonyBase.sendCommand(
+            this.harmonyBase.sendCommand(
+              this,
+              HarmonyAsTVKeysTools.getOverrideCommand(
                 this,
-                HarmonyAsTVKeysTools.getOverrideCommand(
-                  this,
-                  'VOLUME_UP',
-                  this._currentInputService.VolumeUpCommand
-                )
-              );
-            }
+                'VOLUME_UP',
+                this._currentInputService.VolumeUpCommand,
+                this.numberOfCommandsSentForVolumeControl
+              )
+            );
           }
         }
         callback(null);
@@ -1261,13 +1260,22 @@ HarmonySubPlatform.prototype = {
         'checkOn : ' +
         this._currentActivity +
         '/' +
+        service.type +
+        '/' +
         service.activityId +
         '/' +
         (this.showTurnOffActivity == 'inverted') +
         '/' +
         (this.showTurnOffActivity == 'stateless')
     );
-    if (service.activityId == -1) {
+
+    if (service.type == HarmonyConst.GENERALVOLUME_TYPE) {
+      return (
+        this._currentActivity > -1 &&
+        service.volumeDownCommands[this._currentActivity] !== undefined &&
+        service.volumeUpCommands[this._currentActivity] !== undefined
+      );
+    } else if (service.activityId == -1) {
       if (
         this._currentActivity == -1 &&
         (this.showTurnOffActivity == 'inverted' ||

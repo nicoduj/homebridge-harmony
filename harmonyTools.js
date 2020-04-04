@@ -4,6 +4,7 @@ module.exports = {
   isPlatformWithSwitch(platform) {
     if (
       platform.showTurnOffActivity ||
+      platform.publishGeneralVolumeSlider ||
       platform.switchAccessories ||
       (platform.activitiesToPublishAsAccessoriesSwitch &&
         platform.activitiesToPublishAsAccessoriesSwitch.length > 0) ||
@@ -151,6 +152,28 @@ module.exports = {
 
   isCommandInProgress: function(data) {
     return data && (data.code == 202 || data.code == 100);
+  },
+
+  /**
+   * Resets a characteristic of a service by using a getter callback with a
+   * specific delay
+   *
+   * @param {Service} service The service
+   * @param {Characteristic} characterisitc The characteristic of the service to reset
+   * @param {number} delay The delay when the reset takes place
+   */
+  resetCharacteristic: function(service, characteristic, delay) {
+    if (!delay) {
+      delay = 1000;
+    }
+
+    setTimeout(function() {
+      service
+        .getCharacteristic(characteristic)
+        .emit('get', function(error, newValue) {
+          service.getCharacteristic(characteristic).updateValue(newValue);
+        });
+    }, delay);
   },
 };
 

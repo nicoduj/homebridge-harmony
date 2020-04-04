@@ -205,6 +205,8 @@ HarmonyBase.prototype = {
 
     this.getGeneralMuteSwitchAccessory(harmonyPlatform, data);
 
+    this.getGeneralVolumeSliderAccessory(harmonyPlatform, data);
+
     this.getDevicesAccessories(harmonyPlatform, data);
     this.getSequencesAccessories(harmonyPlatform, data);
     this.handleHomeControls(harmonyPlatform, homedata);
@@ -491,11 +493,74 @@ HarmonyBase.prototype = {
     }
   },
 
+  //GENERAL Volume SLIDER
+
+  getGeneralVolumeSliderAccessory: function(harmonyPlatform, data) {
+    if (harmonyPlatform.publishGeneralVolumeSlider) {
+      harmonyPlatform.log('INFO - Loading general volume Slider...');
+
+      var accessoriesToAdd = [];
+      var myHarmonyAccessory;
+      let name = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeSlider';
+      myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+      if (!myHarmonyAccessory) {
+        myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
+        accessoriesToAdd.push(myHarmonyAccessory);
+      }
+      myHarmonyAccessory.category = AccessoryType;
+      harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
+
+      let subType = name;
+      let service = this.getSliderService(
+        harmonyPlatform,
+        myHarmonyAccessory,
+        name,
+        subType
+      );
+      service.type = HarmonyConst.GENERALVOLUME_TYPE;
+
+      //array of mutes commands
+      var volumeUpCommandsMap = new Object();
+      var volumeDownCommandsMap = new Object();
+      let activities = data.data.activity;
+      for (let i = 0, len = activities.length; i < len; i++) {
+        let activity = activities[i];
+        let controlGroup = activity.controlGroup;
+        for (let j = 0, len = controlGroup.length; j < len; j++) {
+          if (controlGroup[j].name == 'Volume') {
+            let functions = controlGroup[j].function;
+            for (let k = 0, len = functions.length; k < len; k++) {
+              if (functions[k].name == 'VolumeUp') {
+                volumeUpCommandsMap[activity.id] = functions[k].action;
+              }
+              if (functions[k].name == 'VolumeDown') {
+                volumeDownCommandsMap[activity.id] = functions[k].action;
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      service.volumeUpCommands = volumeUpCommandsMap;
+      service.volumeDownCommands = volumeDownCommandsMap;
+      harmonyPlatform.log.debug('Volume commands for Global Volume Slider : ');
+      harmonyPlatform.log.debug(volumeUpCommandsMap);
+      harmonyPlatform.log.debug(volumeDownCommandsMap);
+      harmonyPlatform._confirmedServices.push(service);
+
+      this.bindCharacteristicEventsForSlider(harmonyPlatform, service);
+
+      //creating accessories
+      this.addAccessories(harmonyPlatform, accessoriesToAdd);
+    }
+  },
+
   //GENERAL Mute SWITCH
 
   getGeneralMuteSwitchAccessory: function(harmonyPlatform, data) {
     if (harmonyPlatform.publishGeneralMuteSwitch) {
-      harmonyPlatform.log('INFO - Loading geeneral mute Switch...');
+      harmonyPlatform.log('INFO - Loading general mute Switch...');
 
       var accessoriesToAdd = [];
       var myHarmonyAccessory;
@@ -537,7 +602,7 @@ HarmonyBase.prototype = {
         }
       }
 
-      service.commands = muteCommandsMap;
+      service.muteCommands = muteCommandsMap;
       harmonyPlatform.log.debug('Mute commands for Global Mute Switch : ');
       harmonyPlatform.log.debug(muteCommandsMap);
       harmonyPlatform._confirmedServices.push(service);
@@ -1046,17 +1111,16 @@ HarmonyBase.prototype = {
               ///MUTE
               if (harmonyPlatform._currentActivity > -1) {
                 let command =
-                  service.commands[harmonyPlatform._currentActivity];
-                this.sendCommand(harmonyPlatform, command);
+                  service.muteCommands[harmonyPlatform._currentActivity];
+                //this.sendCommand(harmonyPlatform, command);
               }
             }
-
             // In order to behave like a push button reset the status to off
-            setTimeout(() => {
-              service
-                .getCharacteristic(Characteristic.On)
-                .updateValue(false, undefined);
-            }, HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE);
+            HarmonyTools.resetCharacteristic(
+              service,
+              Characteristic.On,
+              HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE
+            );
           }
 
           callback();
@@ -1096,24 +1160,184 @@ HarmonyBase.prototype = {
       );
   },
 
+  getSliderService(harmonyPlatform, accessory, sliderName, serviceSubType) {
+    let service = accessory.getServiceByUUIDAndSubType(
+      sliderName,
+      serviceSubType
+    );
+    if (!service) {
+      harmonyPlatform.log(
+        'INFO - Creating Slider Service ' + sliderName + '/' + serviceSubType
+      );
+      service = new Service.Lightbulb(sliderName, 'sliderService' + sliderName);
+      service.subtype = serviceSubType;
+      accessory.addService(service);
+    }
+    return service;
+  },
+
+  bindCharacteristicEventsForSlider: function(harmonyPlatform, service) {
+    service
+      .getCharacteristic(Characteristic.On)
+      .on(
+        'set',
+        function(value, callback) {
+          var isOn = false;
+          if (
+            harmonyPlatform._currentActivity > -1 &&
+            service.volumeDownCommands[harmonyPlatform._currentActivity] !==
+              undefined &&
+            service.volumeUpCommands[harmonyPlatform._currentActivity] !==
+              undefined
+          ) {
+            isOn = true;
+          }
+
+          if (isOn != value)
+            HarmonyTools.resetCharacteristic(
+              service,
+              Characteristic.On,
+              HarmonyConst.DELAY_FOR_SLIDER_UPDATE
+            );
+
+          if (isOn)
+            HarmonyTools.resetCharacteristic(
+              service,
+              Characteristic.Brightness,
+              HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE
+            );
+
+          callback();
+        }.bind(this)
+      )
+      .on(
+        'get',
+        function(callback) {
+          let isOn = false;
+          //always on if current activity set and volumes is mapped , off otherwise
+          if (
+            harmonyPlatform._currentActivity > -1 &&
+            service.volumeDownCommands[harmonyPlatform._currentActivity] !==
+              undefined &&
+            service.volumeUpCommands[harmonyPlatform._currentActivity] !==
+              undefined
+          ) {
+            isOn = true;
+          }
+
+          this.handleCharacteristicUpdate(
+            harmonyPlatform,
+            service.getCharacteristic(Characteristic.On),
+            isOn,
+            callback
+          );
+        }.bind(this)
+      );
+    service
+      .getCharacteristic(Characteristic.Brightness)
+      .on(
+        'set',
+        function(value, callback) {
+          let diff = value - 50;
+          let numberOfcommandstoSend = diff / 5;
+          if (
+            harmonyPlatform.numberOfCommandsSentForVolumeControl &&
+            harmonyPlatform.numberOfCommandsSentForVolumeControl > 0
+          )
+            numberOfcommandstoSend =
+              numberOfcommandstoSend *
+              harmonyPlatform.numberOfCommandsSentForVolumeControl;
+
+          harmonyPlatform.log.debug(
+            'INFO - updtVolume : ' +
+              value +
+              ' - ' +
+              numberOfcommandstoSend +
+              ' (' +
+              harmonyPlatform.numberOfCommandsSentForVolumeControl +
+              ')'
+          );
+
+          let command =
+            numberOfcommandstoSend > 0
+              ? service.volumeUpCommands[harmonyPlatform._currentActivity]
+              : service.volumeDownCommands[harmonyPlatform._currentActivity];
+
+          command =
+            command + '|' + Math.round(Math.abs(numberOfcommandstoSend));
+          this.sendCommand(harmonyPlatform, command);
+
+          HarmonyTools.resetCharacteristic(
+            service,
+            Characteristic.Brightness,
+            HarmonyConst.DELAY_FOR_SLIDER_UPDATE
+          );
+
+          callback();
+        }.bind(this)
+      )
+      .on(
+        'get',
+        function(callback) {
+          var newVolume = 0;
+          //always on if current activity set and volumes is mapped , off otherwise
+          if (
+            harmonyPlatform._currentActivity > -1 &&
+            service.volumeDownCommands[harmonyPlatform._currentActivity] !==
+              undefined &&
+            service.volumeUpCommands[harmonyPlatform._currentActivity] !==
+              undefined
+          ) {
+            newVolume = 50;
+          }
+
+          this.handleCharacteristicUpdate(
+            harmonyPlatform,
+            service.getCharacteristic(Characteristic.On),
+            newVolume,
+            callback
+          );
+        }.bind(this)
+      );
+  },
+
   //COMMAND
-  sendCommand: function(harmonyPlatform, commandToSend) {
-    if (!commandToSend) {
+
+  sendCommand: function(harmonyPlatform, incommingCommandToSend) {
+    if (!incommingCommandToSend) {
       harmonyPlatform.log.debug('INFO - sendCommand : Command not available ');
       return;
     }
-    harmonyPlatform.log.debug('INFO - sendingCommand' + commandToSend);
 
-    return this.harmony
-      .sendCommand(commandToSend)
-      .then(data => {
-        harmonyPlatform.log.debug(
-          'INFO - sendCommand done' + JSON.stringify(data)
-        );
-      })
-      .catch(e => {
-        harmonyPlatform.log('ERROR - sendCommand : ' + e);
-      });
+    let numberOFcommandsToSend = 1;
+    let commandToSendArray = incommingCommandToSend.split('|');
+    if (commandToSendArray.length > 1) {
+      commandToSend = commandToSendArray[0];
+      numberOFcommandsToSend = commandToSendArray[1];
+    } else {
+      commandToSend = commandToSendArray[0];
+    }
+
+    harmonyPlatform.log.debug(
+      'INFO - sendingCommand' +
+        commandToSend +
+        ' ' +
+        numberOFcommandsToSend +
+        ' times'
+    );
+
+    for (let i = 0, len = numberOFcommandsToSend; i < len; i++) {
+      this.harmony
+        .sendCommand(commandToSend)
+        .then(data => {
+          harmonyPlatform.log.debug(
+            'INFO - sendCommand done' + JSON.stringify(data)
+          );
+        })
+        .catch(e => {
+          harmonyPlatform.log('ERROR - sendCommand : ' + e);
+        });
+    }
   },
 
   sendAutomationCommand: function(harmonyPlatform, commandToSend) {
