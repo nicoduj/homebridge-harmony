@@ -47,10 +47,5 @@
     "hooks": {
       "pre-commit": "pretty-quick --staged"
     }
-  },
-  "greenkeeper": {
-    "ignore": [
-      "husky"
-    ]
   }
 }
