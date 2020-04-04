@@ -1222,7 +1222,7 @@ HarmonyBase.prototype = {
               if (harmonyPlatform._currentActivity > -1) {
                 let command =
                   service.muteCommands[harmonyPlatform._currentActivity];
-                //this.sendCommand(harmonyPlatform, command);
+                this.sendCommand(harmonyPlatform, command);
               }
             }
             // In order to behave like a push button reset the status to off

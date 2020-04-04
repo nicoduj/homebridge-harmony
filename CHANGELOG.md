@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.1
+
+- [FIX] Mute command not working (regression from 1.3.0)
+
 ## 1.3.0
 
 - [NEW] Add capacity to send multiple commands at once with remoteOverrideCommandsList #236
