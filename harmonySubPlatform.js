@@ -53,9 +53,9 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
     if (Array.isArray(this.remoteOverrideCommandsList)) {
       this.log('INFO - remoteOverrideCommandsList is new format');
       const NewRemoteOverrideCommandsList = {};
-      this.remoteOverrideCommandsList.forEach(x => {
+      this.remoteOverrideCommandsList.forEach((x) => {
         var commands = {};
-        x.CommandsList.forEach(y => (commands[y.CommandName] = y.NewCommand));
+        x.CommandsList.forEach((y) => (commands[y.CommandName] = y.NewCommand));
         NewRemoteOverrideCommandsList[x.ActivityName] = commands;
       });
       this.remoteOverrideCommandsList = NewRemoteOverrideCommandsList;
@@ -97,13 +97,13 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
       'harmonyPluginNames_' +
       this.name +
       '_' +
-      this.hubIP.split('.').join('');
+      (this.hubIP == undefined ? this.name : this.hubIP.split('.').join(''));
     this.savedVisibilityFile =
       this.prefsDir +
       'harmonyPluginVisibility_' +
       this.name +
       '_' +
-      this.hubIP.split('.').join('');
+      (this.hubIP == undefined ? this.name : this.hubIP.split('.').join(''));
 
     this.savedNames = {};
     try {
@@ -161,7 +161,7 @@ HarmonySubPlatform.prototype = {
     this.refreshCurrentActivityOnSubPlatform(newActivity);
   },
 
-  readAccessories: function(data, homedata) {
+  readAccessories: function (data, homedata) {
     let accessoriesToAdd = [];
     if (this.TVAccessory)
       accessoriesToAdd.push.apply(
@@ -183,7 +183,7 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  readSwitchAccessories: function(data) {
+  readSwitchAccessories: function (data) {
     let activities = data.data.activity;
 
     let accessoriesToAdd = [];
@@ -247,7 +247,7 @@ HarmonySubPlatform.prototype = {
     return accessoriesToAdd;
   },
 
-  readTVAccessories: function(data) {
+  readTVAccessories: function (data) {
     let activities = data.data.activity;
     let accessoriesToAdd = [];
     let name = (this.devMode ? 'DEV' : '') + 'TV';
@@ -326,7 +326,7 @@ HarmonySubPlatform.prototype = {
 
   //TV METHODS
 
-  configureMainService: function(accessory) {
+  configureMainService: function (accessory) {
     let subType = this.name + ' TV';
     this.mainService = accessory.getServiceByUUIDAndSubType(this.name, subType);
 
@@ -369,7 +369,7 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  configureMainActivity: function(accessory, activity) {
+  configureMainActivity: function (accessory, activity) {
     let inputName = activity.label;
     if (this.devMode) {
       inputName = 'DEV' + inputName;
@@ -412,7 +412,7 @@ HarmonySubPlatform.prototype = {
     this.mainService.addLinkedService(this.tvSpeakerService);
   },
 
-  configureInputSourceService: function(
+  configureInputSourceService: function (
     accessory,
     inputName,
     inputId,
@@ -472,7 +472,7 @@ HarmonySubPlatform.prototype = {
     return inputSourceService;
   },
 
-  showInput: function(activity) {
+  showInput: function (activity) {
     if (
       activity.id != -1 &&
       this.activitiesToPublishAsInputForTVMode &&
@@ -504,7 +504,7 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  localRefresh: function() {
+  localRefresh: function () {
     //TV
     if (this.TVAccessory) this.handleRefreshOfCharacteristic();
 
@@ -524,13 +524,13 @@ HarmonySubPlatform.prototype = {
     }
   },
 
-  refreshPlatform: function() {
+  refreshPlatform: function () {
     this.harmonyBase.refreshCurrentActivity(this, () => {
       this.harmonyBase.refreshHomeAccessory(this);
     });
   },
 
-  updateCurrentInputService: function() {
+  updateCurrentInputService: function () {
     if (this._currentActivity > 0) {
       let inputFound = false;
       for (let i = 0, len = this.inputServices.length; i < len; i++) {
@@ -550,7 +550,7 @@ HarmonySubPlatform.prototype = {
     this.keysMap = HarmonyAsTVKeysTools.mapKeysForActivity(this);
   },
 
-  refreshCurrentActivityOnSubPlatform: function(response) {
+  refreshCurrentActivityOnSubPlatform: function (response) {
     this._currentActivityLastUpdate = Date.now();
 
     if (response == undefined) return;
@@ -559,7 +559,7 @@ HarmonySubPlatform.prototype = {
     this.localRefresh();
   },
 
-  refreshService: function(service, callback) {
+  refreshService: function (service, callback) {
     var characteristic = service.getCharacteristic(Characteristic.On);
 
     this.harmonyBase.refreshCurrentActivity(this, () => {
@@ -596,7 +596,7 @@ HarmonySubPlatform.prototype = {
   },
 
   ///COMANDS
-  sendInputCommand: function(homebridgeAccessory, value) {
+  sendInputCommand: function (homebridgeAccessory, value) {
     let doCommand = true;
     let commandToSend = value;
 
@@ -649,7 +649,7 @@ HarmonySubPlatform.prototype = {
     }
   },
 
-  handlePlayPause: function() {
+  handlePlayPause: function () {
     this.log.debug(
       '(' +
         this.name +
@@ -701,7 +701,7 @@ HarmonySubPlatform.prototype = {
 
   //HOMEKIT CHARACTERISTICS EVENTS
 
-  refreshCharacteristic: function(characteristic, callback) {
+  refreshCharacteristic: function (characteristic, callback) {
     this.harmonyBase.refreshCurrentActivity(this, () => {
       if (this._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
         if (characteristic.UUID == Characteristic.Active.UUID) {
@@ -772,7 +772,7 @@ HarmonySubPlatform.prototype = {
 
     characteristic.on(
       'set',
-      function(value, callback) {
+      function (value, callback) {
         this.log.debug(
           '(' + this.name + ')' + 'INFO - SET Characteristic.Active ' + value
         );
@@ -835,7 +835,7 @@ HarmonySubPlatform.prototype = {
 
     characteristic.on(
       'get',
-      function(callback) {
+      function (callback) {
         this.log.debug(
           '(' + this.name + ')' + 'INFO - GET Characteristic.Active '
         );
@@ -844,14 +844,14 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  bindActiveIdentifierCharacteristic: function(
+  bindActiveIdentifierCharacteristic: function (
     characteristic,
     homebridgeAccessory
   ) {
     //set the current Activity
     characteristic.on(
       'set',
-      function(value, callback) {
+      function (value, callback) {
         this.log.debug(
           '(' +
             this.name +
@@ -865,7 +865,7 @@ HarmonySubPlatform.prototype = {
     );
     characteristic.on(
       'get',
-      function(callback) {
+      function (callback) {
         this.log.debug(
           '(' + this.name + ')' + 'INFO - GET Characteristic.ActiveIdentifier'
         );
@@ -874,10 +874,10 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  bindRemoteKeyCharacteristic: function(characteristic) {
+  bindRemoteKeyCharacteristic: function (characteristic) {
     characteristic.on(
       'set',
-      function(newValue, callback) {
+      function (newValue, callback) {
         this.log.debug(
           '(' +
             this.name +
@@ -914,7 +914,7 @@ HarmonySubPlatform.prototype = {
   bindMuteCharacteristic(characteristic) {
     characteristic.on(
       'set',
-      function(value, callback) {
+      function (value, callback) {
         if (this._currentInputService !== undefined) {
           this.log.debug(
             '(' + this.name + ')' + 'INFO - SET Characteristic.Mute : ' + value
@@ -934,7 +934,7 @@ HarmonySubPlatform.prototype = {
 
     characteristic.on(
       'get',
-      function(callback) {
+      function (callback) {
         this.log.debug(
           '(' + this.name + ')' + 'INFO - GET Characteristic.Mute'
         );
@@ -946,7 +946,7 @@ HarmonySubPlatform.prototype = {
   bindVolumeSelectorCharacteristic(characteristic) {
     characteristic.on(
       'set',
-      function(value, callback) {
+      function (value, callback) {
         if (this._currentInputService !== undefined) {
           this.log.debug(
             '(' +
@@ -985,7 +985,7 @@ HarmonySubPlatform.prototype = {
   bindVolumeCharacteristic(characteristic) {
     characteristic.on(
       'set',
-      function(value, callback) {
+      function (value, callback) {
         if (this._currentActivity > 0) {
           this.log.debug(
             '(' +
@@ -1002,7 +1002,7 @@ HarmonySubPlatform.prototype = {
 
     characteristic.on(
       'get',
-      function(callback) {
+      function (callback) {
         this.log.debug(
           '(' + this.name + ')' + 'INFO - GET Characteristic.Volume'
         );
@@ -1014,10 +1014,10 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  bindConfiguredNameCharacteristic: function(characteristic, service) {
+  bindConfiguredNameCharacteristic: function (characteristic, service) {
     characteristic.on(
       'set',
-      function(value, callback) {
+      function (value, callback) {
         this.log.debug(
           '(' +
             this.name +
@@ -1033,7 +1033,7 @@ HarmonySubPlatform.prototype = {
         fs.writeFile(
           this.savedNamesFile,
           JSON.stringify(this.savedNames),
-          err => {
+          (err) => {
             if (err) {
               this.log(
                 '(' +
@@ -1060,10 +1060,10 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  bindCurrentVisibilityStateCharacteristic: function(characteristic, service) {
+  bindCurrentVisibilityStateCharacteristic: function (characteristic, service) {
     characteristic.on(
       'get',
-      function(callback) {
+      function (callback) {
         let idConf = service.activityId;
         this.log.debug(
           '(' +
@@ -1084,7 +1084,7 @@ HarmonySubPlatform.prototype = {
   bindTargetVisibilityStateCharacteristic(characteristic, service) {
     characteristic.on(
       'get',
-      function(callback) {
+      function (callback) {
         let idConf = service.activityId;
         this.log.debug(
           '(' +
@@ -1103,7 +1103,7 @@ HarmonySubPlatform.prototype = {
 
     characteristic.on(
       'set',
-      function(value, callback) {
+      function (value, callback) {
         this.log.debug(
           '(' +
             this.name +
@@ -1121,7 +1121,7 @@ HarmonySubPlatform.prototype = {
         fs.writeFile(
           this.savedVisibilityFile,
           JSON.stringify(this.savedVisibility),
-          err => {
+          (err) => {
             if (err) {
               this.savedVisibility[idConf] = oldValue;
               this.log(
@@ -1156,7 +1156,7 @@ HarmonySubPlatform.prototype = {
   bindPowerModeSelectionCharacteristic(characteristic) {
     characteristic.on(
       'set',
-      function(value, callback) {
+      function (value, callback) {
         if (this._currentInputService !== undefined) {
           this.log.debug(
             '(' +
@@ -1179,7 +1179,7 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  bindCharacteristicEventsForTV: function(homebridgeAccessory) {
+  bindCharacteristicEventsForTV: function (homebridgeAccessory) {
     this.bindActiveCharacteristic(
       this.mainService.getCharacteristic(Characteristic.Active),
       this.mainService,
@@ -1205,7 +1205,7 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  bindCharacteristicEventsForSpeaker: function() {
+  bindCharacteristicEventsForSpeaker: function () {
     this.bindMuteCharacteristic(
       this.tvSpeakerService.getCharacteristic(Characteristic.Mute)
     );
@@ -1217,7 +1217,7 @@ HarmonySubPlatform.prototype = {
     );
   },
 
-  bindCharacteristicEventsForInputs: function() {
+  bindCharacteristicEventsForInputs: function () {
     for (let i = 0, len = this.inputServices.length; i < len; i++) {
       this.bindConfiguredNameCharacteristic(
         this.inputServices[i].getCharacteristic(Characteristic.ConfiguredName),
@@ -1242,7 +1242,7 @@ HarmonySubPlatform.prototype = {
 
   //SWITCHES METHODS
 
-  showActivity: function(activity) {
+  showActivity: function (activity) {
     if (
       activity.id != -1 &&
       this.activitiesToPublishAsAccessoriesSwitch &&
@@ -1294,7 +1294,7 @@ HarmonySubPlatform.prototype = {
     return this._currentActivity == service.activityId;
   },
 
-  handleActivityOk: function(commandToSend) {
+  handleActivityOk: function (commandToSend) {
     this._currentSetAttemps = 0;
     this._currentActivity = commandToSend;
     this._currentActivityLastUpdate = Date.now();
@@ -1327,7 +1327,7 @@ HarmonySubPlatform.prototype = {
     }
   },
 
-  getService: function(homebridgeAccessory, idToFind) {
+  getService: function (homebridgeAccessory, idToFind) {
     var service;
     for (let a = 0; a < homebridgeAccessory.services.length; a++) {
       if (homebridgeAccessory.services[a].ActivityId == idToFind) {
@@ -1341,7 +1341,7 @@ HarmonySubPlatform.prototype = {
     return service;
   },
 
-  handleActivityInProgress: function(homebridgeAccessory, commandToSend) {
+  handleActivityInProgress: function (homebridgeAccessory, commandToSend) {
     this._currentSetAttemps = this._currentSetAttemps + 1;
 
     //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
@@ -1368,10 +1368,10 @@ HarmonySubPlatform.prototype = {
     }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
   },
 
-  activityCommand: function(homebridgeAccessory, commandToSend) {
+  activityCommand: function (homebridgeAccessory, commandToSend) {
     this.harmonyBase.harmony
       .startActivity(commandToSend)
-      .then(data => {
+      .then((data) => {
         this.log.debug(
           '(' +
             this.name +
@@ -1401,12 +1401,12 @@ HarmonySubPlatform.prototype = {
           );
         }
       })
-      .catch(e => {
+      .catch((e) => {
         this.log('(' + this.name + ')' + 'ERROR - activityCommand : ' + e);
       });
   },
 
-  setSwitchOnCharacteristic: function(
+  setSwitchOnCharacteristic: function (
     homebridgeAccessory,
     characteristic,
     service,
@@ -1486,12 +1486,12 @@ HarmonySubPlatform.prototype = {
     }
   },
 
-  bindCharacteristicEventsForSwitch: function(homebridgeAccessory, service) {
+  bindCharacteristicEventsForSwitch: function (homebridgeAccessory, service) {
     service
       .getCharacteristic(Characteristic.On)
       .on(
         'set',
-        function(value, callback) {
+        function (value, callback) {
           this.setSwitchOnCharacteristic(
             homebridgeAccessory,
             service.getCharacteristic(Characteristic.On),
@@ -1503,7 +1503,7 @@ HarmonySubPlatform.prototype = {
       )
       .on(
         'get',
-        function(callback) {
+        function (callback) {
           this.refreshService(service, callback);
         }.bind(this)
       );

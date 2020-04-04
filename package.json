@@ -26,6 +26,7 @@
   ],
   "dependencies": {
     "harmony-websocket": "^1.5.0",
+    "harmonyhubjs-discover": "^1.1.1",
     "request": "latest"
   },
   "bugs": {

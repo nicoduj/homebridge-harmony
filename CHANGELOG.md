@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - [NEW] Add capacity to send multiple commands at once with remoteOverrideCommandsList #236
 - [NEW] General volume control as a slider #239
+- [NEW] Dynamic Discovery of Hubs #238
 
 ## 1.2.7
 

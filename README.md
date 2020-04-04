@@ -63,7 +63,6 @@ To setup mutliple tv platorm, you will have to add others manually in homekit. O
   {
     "platform": "HarmonyHubWebSocket",
     "name": "HubName",
-    "hubIP": "192.168.1.XX",
     "publishAllTVAsExternalAccessory" : true
   }
 ]
@@ -76,14 +75,13 @@ To setup mutliple tv platorm, you will have to add others manually in homekit. O
   {
     "platform": "HarmonyHubWebSocket",
     "name": "HubName",
-    "hubIP": "192.168.1.XX",
     "TVAccessory" : false,
     "switchAccessories" : true
   }
 ]
 ```
 
-**Mutliple hubs**
+**Mutliple hubs - fixedIP**
 
 ```json
 "platforms": [
@@ -99,13 +97,30 @@ To setup mutliple tv platorm, you will have to add others manually in homekit. O
 ]
 ```
 
+**Mutliple hubs - using harmonyNames**
+
+```json
+"platforms": [
+  {
+    "platform": "HarmonyHubWebSocket",
+    "name": "HubName",
+    "hubName": "myFirstHub",
+    "otherPlatforms": [{
+      "name": "OtherHubName",
+      "hubName": "mySecondHub",
+      }]
+  }
+]
+```
+
 Fields:
 
 - `platform` **GLOBAL** must be "HarmonyHubWebSocket" (required).
 - `publishAllTVAsExternalAccessory` **GLOBAL** publish all TV accessory as external Accessories. This way, if another plugin on the same homebridge instance as one, the one on harmony will also be visible, but you will have to add them manually after the hub itself. Defaults to false (in that case, only second tv accessory or following will be published by this plugin as external accessories, first one will be linked to the hub).
 - `cleanCache` **GLOBAL** option to clean all cached Accessory. Please use with caution, might be needed if you change names / config of the hub and there is some ghost devices in Homekit. Be sure that all your icloud sync is done while launching Homebridge with this option set to true. Set it back to false after and launch again ! It does not affect external accessories.
 - `name` is the name of the published Platform (required).
-- `hubIP` is the static IP address of the hub (required). A static IP address is required.
+- `hubName` is the name of your hub in harmony app (optionnal, but mandatory if you have mutliple hubs). In case both hubName and hubIP are not set, it will discover your hub automatically, providing there is only one
+- `hubIP` is the static IP address of the hub (optionnal). A static IP address is required.
 - `TVAccessory` publish hub with its activities as a TV Accessory (defaults to true).
 - `switchAccessories` publish all activities as a Switch Accessory (defaults to false).
 - `activitiesToPublishAsAccessoriesSwitch` array of Activities you want to expose as switches (all by default if switchAccessories is set to true, otherwise specify the list you want)

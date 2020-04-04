@@ -17,7 +17,12 @@
         "title": "IP Address of your hub (must be fixed)",
         "type": "string",
         "format": "ipv4",
-        "required": true
+        "required": false
+      },
+      "hubName": {
+        "title": "Hub Name in your Harmony App",
+        "type": "string",
+        "required": false
       },
       "cleanCache": {
         "title": "Clean cached accessories at startup",
@@ -269,7 +274,12 @@
               "title": "IP Address of your other hub (must be fixed)",
               "type": "string",
               "format": "ipv4",
-              "required": true
+              "required": false
+            },
+            "hubName": {
+              "title": "Hub Name in your Harmony App",
+              "type": "string",
+              "required": false
             },
             "TVAccessory": {
               "title": "TV accessory in homekit (Defaults to true if not set)",
@@ -516,6 +526,11 @@
           "type": "flex",
           "flex-flow": "column",
           "items": ["hubIP"]
+        },
+        {
+          "type": "flex",
+          "flex-flow": "column",
+          "items": ["hubName"]
         }
       ]
     },
@@ -871,6 +886,11 @@
                       "type": "flex",
                       "flex-flow": "column",
                       "items": ["otherPlatforms[].hubIP"]
+                    },
+                    {
+                      "type": "flex",
+                      "flex-flow": "column",
+                      "items": ["otherPlatforms[].hubName"]
                     }
                   ]
                 },

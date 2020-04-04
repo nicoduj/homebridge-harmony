@@ -1,5 +1,7 @@
 var Service, Characteristic, Accessory, AccessoryType, UUIDGen;
 const HarmonyConst = require('./harmonyConst');
+const HarmonyHubDiscover = require('harmonyhubjs-discover');
+const discover = new HarmonyHubDiscover(61991);
 
 const Harmony = require('harmony-websocket');
 const HarmonyTools = require('./harmonyTools.js');
@@ -22,9 +24,10 @@ function HarmonyBase(api) {
 
 HarmonyBase.prototype = {
   //SETUP
-  configCommonProperties: function(log, config, harmonyPlatform) {
+  configCommonProperties: function (log, config, harmonyPlatform) {
     harmonyPlatform.log = log;
     harmonyPlatform.hubIP = config['hubIP'];
+    harmonyPlatform.hubName = config['hubName'];
 
     harmonyPlatform.name = config['name'];
     harmonyPlatform.devMode = HarmonyTools.checkParameter(
@@ -81,7 +84,123 @@ HarmonyBase.prototype = {
     );
   },
 
-  configureAccessories: function(harmonyPlatform) {
+  //HUB discovery
+  initHub: function (harmonyPlatform) {
+    this.harmony
+      .connect(harmonyPlatform.hubIP)
+      .then(() => this.harmony.getConfig())
+      .then((response) => {
+        harmonyPlatform.log.debug(
+          'INFO - Hub config : ' + JSON.stringify(response)
+        );
+        this.getHomeControlsAccessories(harmonyPlatform).then(
+          (responseHome) => {
+            harmonyPlatform.readAccessories(response, responseHome);
+            this.numberAttemps = 0;
+          }
+        );
+      })
+      .catch((e) => {
+        this.numberAttemps = this.numberAttemps + 1;
+        if (this.harmony.isOpened()) {
+          this.harmony.close().catch((e2) => {
+            harmonyPlatform.log('Error - Error closing  ' + e2.message);
+          });
+        }
+
+        harmonyPlatform.log(
+          'Error - Error retrieving info from hub : ' +
+            e.message +
+            '-(' +
+            this.numberAttemps +
+            ')'
+        );
+
+        setTimeout(() => {
+          this.configureAccessories(harmonyPlatform);
+        }, HarmonyConst.DELAY_BEFORE_RECONNECT);
+      });
+  },
+
+  discoverHub: function (harmonyPlatform, isInit = true) {
+    discover.on('online', (hub) => {
+      // Triggered when a new hub was found
+      harmonyPlatform.log(
+        'INFO - discovered ' +
+          hub.ip +
+          '|' +
+          hub.friendlyName +
+          '|' +
+          hub.remoteId
+      );
+    });
+
+    discover.on('offline', (hub) => {
+      // Triggered when a hub disappeared
+      harmonyPlatform.log(
+        'WARNING - lost hub ' +
+          hub.ip +
+          '|' +
+          hub.friendlyName +
+          '|' +
+          hub.remoteId
+      );
+    });
+
+    discover.on('update', (hubs) => {
+      // Combines the online & update events by returning an array with all known
+      // hubs for ease of use.
+      const knownHubs = hubs.reduce(function (prev, hub) {
+        return (
+          prev +
+          (prev.length > 0 ? ',' : '') +
+          hub.ip +
+          '|' +
+          hub.friendlyName +
+          '|' +
+          hub.remoteId
+        );
+      }, '');
+
+      console.log('known hubs: ' + knownHubs);
+
+      knownHubsArray = knownHubs.split(',');
+
+      if (knownHubsArray.length > 1) {
+        harmonyPlatform.log(
+          'ERROR - Multiple hubs found, you must use hubName or hubIP in your config : ' +
+            knownHubIps
+        );
+      } else {
+        hubInfo = knownHubsArray[0].split('|');
+
+        if (
+          harmonyPlatform.hubName !== undefined &&
+          harmonyPlatform.hubName != hubInfo[1]
+        ) {
+          harmonyPlatform.log(
+            'ERROR - hub name does not match : ' +
+              harmonyPlatform.hubName +
+              ' is expected, ' +
+              hubInfo[1] +
+              ' was found'
+          );
+        } else {
+          discover.stop();
+
+          harmonyPlatform.hubIP = hubInfo[0];
+          harmonyPlatform.hubRemoteId = hubInfo[2];
+          if (isInit) this.initHub(harmonyPlatform);
+          else this.refreshCurrentActivity(harmonyPlatform, () => {});
+        }
+      }
+    });
+
+    discover.start();
+  },
+
+  //Configuration entry point
+  configureAccessories: function (harmonyPlatform) {
     if (HarmonyTools.isPlatformEmpty(harmonyPlatform)) {
       harmonyPlatform.log(
         'WARNING - platform ' + harmonyPlatform.name + ' is empty'
@@ -101,11 +220,16 @@ HarmonyBase.prototype = {
       harmonyPlatform.log('WARNING - socket closed');
 
       setTimeout(() => {
-        this.refreshCurrentActivity(harmonyPlatform, () => {});
+        if (harmonyPlatform.hubRemoteId == undefined) {
+          this.refreshCurrentActivity(harmonyPlatform, () => {});
+        } else {
+          this.discoverHub(harmonyPlatform, false);
+        }
+        //this.refreshCurrentActivity(harmonyPlatform, () => {});
       }, HarmonyConst.DELAY_BEFORE_RECONNECT);
     });
 
-    this.harmony.on('automationState', message => {
+    this.harmony.on('automationState', (message) => {
       //DEBUG
       //message = JSON.parse('{"type":"automation.state?notify","data":{"hue-light.harmony_virtual_button_2":{"color":{"mode":"xy","xy":{"y":0,"x":0},"temp":300,"hueSat":{"hue":0,"sat":0}},"brightness":254,"on":true,"status":0}}}');
 
@@ -116,7 +240,7 @@ HarmonyBase.prototype = {
       this.refreshHomeSwitch(harmonyPlatform, message.data);
     });
 
-    this.harmony.on('stateDigest', message => {
+    this.harmony.on('stateDigest', (message) => {
       harmonyPlatform.log.debug(
         'INFO - onMessage : received message : ' + JSON.stringify(message)
       );
@@ -137,33 +261,11 @@ HarmonyBase.prototype = {
     this.harmony.sendTimeout = HarmonyConst.HUB_SEND_TIMEOUT;
     this.harmony.connectTimeout = HarmonyConst.HUB_CONNECT_TIMEOUT;
 
-    this.harmony
-      .connect(harmonyPlatform.hubIP)
-      .then(() => this.harmony.getConfig())
-      .then(response => {
-        harmonyPlatform.log.debug(
-          'INFO - Hub config : ' + JSON.stringify(response)
-        );
-        this.getHomeControlsAccessories(harmonyPlatform).then(responseHome => {
-          harmonyPlatform.readAccessories(response, responseHome);
-          this.numberAttemps = 0;
-        });
-      })
-      .catch(e => {
-        this.numberAttemps = this.numberAttemps + 1;
-
-        harmonyPlatform.log(
-          'Error - Error retrieving info from hub : ' +
-            e.message +
-            '-(' +
-            this.numberAttemps +
-            ')'
-        );
-
-        setTimeout(() => {
-          this.configureAccessories(harmonyPlatform);
-        }, HarmonyConst.DELAY_BEFORE_RECONNECT);
-      });
+    if (harmonyPlatform.hubIP == undefined) {
+      this.discoverHub(harmonyPlatform);
+    } else {
+      this.initHub(harmonyPlatform);
+    }
   },
 
   setupFoundAccessories(harmonyPlatform, accessoriesToAdd, data, homedata) {
@@ -225,7 +327,7 @@ HarmonyBase.prototype = {
     let accstoRemove = [];
     for (let acc of harmonyPlatform._foundAccessories) {
       if (
-        !harmonyPlatform._confirmedAccessories.find(x => x.UUID == acc.UUID)
+        !harmonyPlatform._confirmedAccessories.find((x) => x.UUID == acc.UUID)
       ) {
         accstoRemove.push(acc);
         harmonyPlatform.log(
@@ -251,7 +353,7 @@ HarmonyBase.prototype = {
         if (
           serv.subtype !== undefined &&
           !harmonyPlatform._confirmedServices.find(
-            x => x.UUID == serv.UUID && x.subtype == serv.subtype
+            (x) => x.UUID == serv.UUID && x.subtype == serv.subtype
           )
         ) {
           servicestoRemove.push(serv);
@@ -277,8 +379,7 @@ HarmonyBase.prototype = {
   },
 
   //REFRESH
-
-  refreshCurrentActivity: function(harmonyPlatform, callback) {
+  refreshCurrentActivity: function (harmonyPlatform, callback) {
     //Infinite llop handling on errors / network loss ?
 
     if (this.numberOfErrors >= HarmonyConst.MAX_SOCKET_ERROR) {
@@ -319,7 +420,7 @@ HarmonyBase.prototype = {
         );
 
         //if we dont have an activity set, we callback immediately
-        var callbackDone = false;
+
         if (this.refreshInprogress) {
           harmonyPlatform.log.debug(
             'INFO - refreshCurrentActivity : Cancelling refresh since a refresh is allready in progress ' +
@@ -331,7 +432,7 @@ HarmonyBase.prototype = {
           this.refreshInprogress = true;
           this.harmony
             .getCurrentActivity()
-            .then(response => {
+            .then((response) => {
               this.numberOfErrors = 0;
               if (this.generalErrorTimer) {
                 clearTimeout(this.generalErrorTimer);
@@ -342,7 +443,7 @@ HarmonyBase.prototype = {
               this.refreshInprogress = false;
               callback();
             })
-            .catch(e => {
+            .catch((e) => {
               this.numberOfErrors = this.numberOfErrors + 1;
 
               harmonyPlatform.log(
@@ -366,7 +467,7 @@ HarmonyBase.prototype = {
 
   //HOME SWITCHES
   refreshHomeAccessory(harmonyPlatform) {
-    this.getHomeControlsAccessories(harmonyPlatform).then(responseHome => {
+    this.getHomeControlsAccessories(harmonyPlatform).then((responseHome) => {
       if (responseHome && responseHome.data) {
         harmonyPlatform.log.debug(
           'INFO - got home controls : ' + JSON.stringify(responseHome)
@@ -401,7 +502,7 @@ HarmonyBase.prototype = {
     }
   },
 
-  handleHomeControls: function(harmonyPlatform, data) {
+  handleHomeControls: function (harmonyPlatform, data) {
     if (!data || !data.data) {
       return;
     }
@@ -474,7 +575,7 @@ HarmonyBase.prototype = {
     this.addAccessories(harmonyPlatform, accessoriesToAdd);
   },
 
-  getHomeControlsAccessories: function(harmonyPlatform) {
+  getHomeControlsAccessories: function (harmonyPlatform) {
     if (
       harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch &&
       harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch.length > 0
@@ -495,7 +596,7 @@ HarmonyBase.prototype = {
 
   //GENERAL Volume SLIDER
 
-  getGeneralVolumeSliderAccessory: function(harmonyPlatform, data) {
+  getGeneralVolumeSliderAccessory: function (harmonyPlatform, data) {
     if (harmonyPlatform.publishGeneralVolumeSlider) {
       harmonyPlatform.log('INFO - Loading general volume Slider...');
 
@@ -558,7 +659,7 @@ HarmonyBase.prototype = {
 
   //GENERAL Mute SWITCH
 
-  getGeneralMuteSwitchAccessory: function(harmonyPlatform, data) {
+  getGeneralMuteSwitchAccessory: function (harmonyPlatform, data) {
     if (harmonyPlatform.publishGeneralMuteSwitch) {
       harmonyPlatform.log('INFO - Loading general mute Switch...');
 
@@ -615,7 +716,7 @@ HarmonyBase.prototype = {
   },
 
   //SEQUENCES SWITCHES
-  getSequencesAccessories: function(harmonyPlatform, data) {
+  getSequencesAccessories: function (harmonyPlatform, data) {
     if (
       harmonyPlatform.sequencesToPublishAsAccessoriesSwitch &&
       harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.length > 0
@@ -689,7 +790,7 @@ HarmonyBase.prototype = {
   },
 
   //DEVICES SWITCHES
-  printAndStoreCommands: function(harmonyPlatform, devices) {
+  printAndStoreCommands: function (harmonyPlatform, devices) {
     this.deviceCommands = {};
     for (let i = 0, len = devices.length; i < len; i++) {
       let controlGroup = devices[i].controlGroup;
@@ -711,7 +812,7 @@ HarmonyBase.prototype = {
     }
   },
 
-  populateCommands: function(harmonyPlatform, controlGroup, switchName) {
+  populateCommands: function (harmonyPlatform, controlGroup, switchName) {
     let commandFunctions = [];
 
     for (let j = 0, len = controlGroup.length; j < len; j++) {
@@ -750,7 +851,7 @@ HarmonyBase.prototype = {
     return commandFunctions;
   },
 
-  handleDefaultCommandMode: function(
+  handleDefaultCommandMode: function (
     myHarmonyAccessory,
     harmonyPlatform,
     controlGroup,
@@ -770,7 +871,7 @@ HarmonyBase.prototype = {
       switchName
     );
 
-    if (commandFunctions.some(e => e.key == 'PowerToggle')) {
+    if (commandFunctions.some((e) => e.key == 'PowerToggle')) {
       foundToggle = true;
     }
 
@@ -814,7 +915,7 @@ HarmonyBase.prototype = {
     return accessoriesToAdd;
   },
 
-  handleSpecificCommandMode: function(
+  handleSpecificCommandMode: function (
     myHarmonyAccessory,
     harmonyPlatform,
     commands,
@@ -892,7 +993,7 @@ HarmonyBase.prototype = {
     return accessoriesToAdd;
   },
 
-  getDevicesAccessories: function(harmonyPlatform, data) {
+  getDevicesAccessories: function (harmonyPlatform, data) {
     let devices = data.data.device;
     //printing and storing
     this.printAndStoreCommands(harmonyPlatform, devices);
@@ -975,7 +1076,7 @@ HarmonyBase.prototype = {
   },
 
   //ACCESSORIES, SERVICES AND CHARACERISTICS
-  handleCharacteristicUpdate: function(
+  handleCharacteristicUpdate: function (
     harmonyPlatform,
     characteristic,
     value,
@@ -991,7 +1092,7 @@ HarmonyBase.prototype = {
     }
   },
 
-  updateCharacteristicToErr: function(characteristic, callback) {
+  updateCharacteristicToErr: function (characteristic, callback) {
     try {
       if (callback) {
         callback(1);
@@ -1003,7 +1104,7 @@ HarmonyBase.prototype = {
     }
   },
 
-  updateCharacteristic: function(
+  updateCharacteristic: function (
     characteristic,
     characteristicValue,
     callback
@@ -1022,7 +1123,7 @@ HarmonyBase.prototype = {
   checkAccessory(harmonyPlatform, name) {
     let fullName = harmonyPlatform.name + (name ? '-' + name : '');
     let uuid = UUIDGen.generate(fullName);
-    return harmonyPlatform._foundAccessories.find(x => x.UUID == uuid);
+    return harmonyPlatform._foundAccessories.find((x) => x.UUID == uuid);
   },
 
   createAccessory(harmonyPlatform, name) {
@@ -1037,7 +1138,11 @@ HarmonyBase.prototype = {
     myHarmonyAccessory.name = fullName;
     myHarmonyAccessory.model = harmonyPlatform.name;
     myHarmonyAccessory.manufacturer = 'Harmony';
-    myHarmonyAccessory.serialNumber = harmonyPlatform.hubIP;
+
+    myHarmonyAccessory.serialNumber =
+      harmonyPlatform.hubRemoteId == undefined
+        ? harmonyPlatform.hubIP
+        : harmonyPlatform.name + '-' + harmonyPlatform.hubRemoteId;
     myHarmonyAccessory.context.subPlatformName = harmonyPlatform.name;
 
     myHarmonyAccessory
@@ -1084,12 +1189,12 @@ HarmonyBase.prototype = {
     return service;
   },
 
-  bindCharacteristicEventsForSwitch: function(harmonyPlatform, service) {
+  bindCharacteristicEventsForSwitch: function (harmonyPlatform, service) {
     service
       .getCharacteristic(Characteristic.On)
       .on(
         'set',
-        function(value, callback) {
+        function (value, callback) {
           //send command
           if (service.type === HarmonyConst.HOME_TYPE) {
             let command = {};
@@ -1128,10 +1233,10 @@ HarmonyBase.prototype = {
       )
       .on(
         'get',
-        function(callback) {
+        function (callback) {
           if (service.type === HarmonyConst.HOME_TYPE) {
             this.getHomeControlsAccessories(harmonyPlatform).then(
-              responseHome => {
+              (responseHome) => {
                 var newValue = false;
                 if (
                   responseHome &&
@@ -1176,12 +1281,12 @@ HarmonyBase.prototype = {
     return service;
   },
 
-  bindCharacteristicEventsForSlider: function(harmonyPlatform, service) {
+  bindCharacteristicEventsForSlider: function (harmonyPlatform, service) {
     service
       .getCharacteristic(Characteristic.On)
       .on(
         'set',
-        function(value, callback) {
+        function (value, callback) {
           var isOn = false;
           if (
             harmonyPlatform._currentActivity > -1 &&
@@ -1212,7 +1317,7 @@ HarmonyBase.prototype = {
       )
       .on(
         'get',
-        function(callback) {
+        function (callback) {
           let isOn = false;
           //always on if current activity set and volumes is mapped , off otherwise
           if (
@@ -1237,7 +1342,7 @@ HarmonyBase.prototype = {
       .getCharacteristic(Characteristic.Brightness)
       .on(
         'set',
-        function(value, callback) {
+        function (value, callback) {
           let diff = value - 50;
           let numberOfcommandstoSend = diff / 5;
           if (
@@ -1278,7 +1383,7 @@ HarmonyBase.prototype = {
       )
       .on(
         'get',
-        function(callback) {
+        function (callback) {
           var newVolume = 0;
           //always on if current activity set and volumes is mapped , off otherwise
           if (
@@ -1303,7 +1408,7 @@ HarmonyBase.prototype = {
 
   //COMMAND
 
-  sendCommand: function(harmonyPlatform, incommingCommandToSend) {
+  sendCommand: function (harmonyPlatform, incommingCommandToSend) {
     if (!incommingCommandToSend) {
       harmonyPlatform.log.debug('INFO - sendCommand : Command not available ');
       return;
@@ -1329,18 +1434,18 @@ HarmonyBase.prototype = {
     for (let i = 0, len = numberOFcommandsToSend; i < len; i++) {
       this.harmony
         .sendCommand(commandToSend)
-        .then(data => {
+        .then((data) => {
           harmonyPlatform.log.debug(
             'INFO - sendCommand done' + JSON.stringify(data)
           );
         })
-        .catch(e => {
+        .catch((e) => {
           harmonyPlatform.log('ERROR - sendCommand : ' + e);
         });
     }
   },
 
-  sendAutomationCommand: function(harmonyPlatform, commandToSend) {
+  sendAutomationCommand: function (harmonyPlatform, commandToSend) {
     if (!commandToSend) {
       harmonyPlatform.log.debug(
         'INFO - sendAutomationCommand : Command not available '
@@ -1353,7 +1458,7 @@ HarmonyBase.prototype = {
 
     return this.harmony
       .sendAutomationCommand(commandToSend)
-      .then(data => {
+      .then((data) => {
         harmonyPlatform.log.debug(
           'INFO - sendingAutomationCommand done' + JSON.stringify(data)
         );
@@ -1362,7 +1467,7 @@ HarmonyBase.prototype = {
           this.refreshHomeAccessory(harmonyPlatform);
         }
       })
-      .catch(e => {
+      .catch((e) => {
         harmonyPlatform.log('ERROR - sendingAutomationCommand : ' + e);
         this.refreshHomeAccessory(harmonyPlatform);
       });
