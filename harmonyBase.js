@@ -555,7 +555,6 @@ HarmonyBase.prototype = {
   },
 
   //GENERAL Volume SLIDER
-
   checkVolumeAccessory: function (harmonyPlatform, accessoriesToAdd, name) {
     var myHarmonyAccessory;
     if (harmonyPlatform.TVFoundAccessory && harmonyPlatform.linkVolumeControlToTV) {
@@ -623,7 +622,6 @@ HarmonyBase.prototype = {
   },
 
   //GENERAL Mute SWITCH
-
   getGeneralMuteSwitchAccessory: function (harmonyPlatform, data) {
     if (harmonyPlatform.publishGeneralMuteSwitch) {
       harmonyPlatform.log('INFO - Loading general mute Switch...');
@@ -1086,71 +1084,79 @@ HarmonyBase.prototype = {
     return service;
   },
 
+  setSwitchOnCharacteristic: function (harmonyPlatform, service, value, callback) {
+    //send command
+    if (service.type === HarmonyConst.HOME_TYPE) {
+      let command = {};
+      command.on = value;
+      let commandToSend = {};
+      commandToSend[service.HomeId] = command;
+      this.sendAutomationCommand(harmonyPlatform, commandToSend);
+    } else if (value) {
+      if (service.type === HarmonyConst.DEVICE_TYPE) {
+        let command = service.command;
+        this.sendCommand(harmonyPlatform, command);
+      } else if (service.type === HarmonyConst.DEVICEMACRO_TYPE) {
+        let commands = JSON.parse(service.command);
+        HarmonyTools.processCommands(this, harmonyPlatform, commands);
+      } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
+        let command = '{"sequenceId":"' + service.sequenceId + '"}';
+        this.sendCommand(harmonyPlatform, command);
+      } else if (service.type === HarmonyConst.GENERALMUTE_TYPE) {
+        ///MUTE
+        if (harmonyPlatform._currentActivity > -1) {
+          let command = service.muteCommands[harmonyPlatform._currentActivity];
+          this.sendCommand(harmonyPlatform, command);
+        }
+      }
+      // In order to behave like a push button reset the status to off
+      HarmonyTools.resetCharacteristic(
+        service,
+        Characteristic.On,
+        HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE
+      );
+    }
+
+    callback();
+  },
+
+  getSwitchOnCharacteristic(harmonyPlatform, service, callback) {
+    if (service.type === HarmonyConst.HOME_TYPE) {
+      this.getHomeControlsAccessories(harmonyPlatform).then((responseHome) => {
+        var newValue = false;
+        if (responseHome && responseHome.data && responseHome.data[service.HomeId])
+          newValue = responseHome.data[service.HomeId].on;
+
+        this.handleCharacteristicUpdate(
+          harmonyPlatform,
+          service.getCharacteristic(Characteristic.On),
+          newValue,
+          callback
+        );
+      });
+    } else {
+      this.handleCharacteristicUpdate(
+        harmonyPlatform,
+        service.getCharacteristic(Characteristic.On),
+        false,
+        callback
+      );
+    }
+  },
+
   bindCharacteristicEventsForSwitch: function (harmonyPlatform, service) {
     service
       .getCharacteristic(Characteristic.On)
       .on(
         'set',
         function (value, callback) {
-          //send command
-          if (service.type === HarmonyConst.HOME_TYPE) {
-            let command = {};
-            command.on = value;
-            let commandToSend = {};
-            commandToSend[service.HomeId] = command;
-            this.sendAutomationCommand(harmonyPlatform, commandToSend);
-          } else if (value) {
-            if (service.type === HarmonyConst.DEVICE_TYPE) {
-              let command = service.command;
-              this.sendCommand(harmonyPlatform, command);
-            } else if (service.type === HarmonyConst.DEVICEMACRO_TYPE) {
-              let commands = JSON.parse(service.command);
-              HarmonyTools.processCommands(this, harmonyPlatform, commands);
-            } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
-              let command = '{"sequenceId":"' + service.sequenceId + '"}';
-              this.sendCommand(harmonyPlatform, command);
-            } else if (service.type === HarmonyConst.GENERALMUTE_TYPE) {
-              ///MUTE
-              if (harmonyPlatform._currentActivity > -1) {
-                let command = service.muteCommands[harmonyPlatform._currentActivity];
-                this.sendCommand(harmonyPlatform, command);
-              }
-            }
-            // In order to behave like a push button reset the status to off
-            HarmonyTools.resetCharacteristic(
-              service,
-              Characteristic.On,
-              HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE
-            );
-          }
-
-          callback();
+          this.setSwitchOnCharacteristic(harmonyPlatform, service, value, callback);
         }.bind(this)
       )
       .on(
         'get',
         function (callback) {
-          if (service.type === HarmonyConst.HOME_TYPE) {
-            this.getHomeControlsAccessories(harmonyPlatform).then((responseHome) => {
-              var newValue = false;
-              if (responseHome && responseHome.data && responseHome.data[service.HomeId])
-                newValue = responseHome.data[service.HomeId].on;
-
-              this.handleCharacteristicUpdate(
-                harmonyPlatform,
-                service.getCharacteristic(Characteristic.On),
-                newValue,
-                callback
-              );
-            });
-          } else {
-            this.handleCharacteristicUpdate(
-              harmonyPlatform,
-              service.getCharacteristic(Characteristic.On),
-              false,
-              callback
-            );
-          }
+          this.getSwitchOnCharacteristic(harmonyPlatform, service, callback);
         }.bind(this)
       );
   },
