@@ -1437,7 +1437,7 @@ HarmonyBase.prototype = {
     );
   },
 
-  bindSliderOnCharacteristic(harmonyPlatform, service) {
+  bindSliderOnCharacteristic: function (harmonyPlatform, service) {
     service
       .getCharacteristic(Characteristic.On)
       .on(
@@ -1459,7 +1459,7 @@ HarmonyBase.prototype = {
       );
   },
 
-  bindSliderVolumeCharacteristic(harmonyPlatform, service) {
+  bindSliderVolumeCharacteristic: function (harmonyPlatform, service) {
     service
       .getCharacteristic(Characteristic.Brightness)
       .on(
