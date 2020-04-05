@@ -42,7 +42,7 @@
     "bracketSpacing": false,
     "singleQuote": true,
     "trailingComma": "es5",
-    "printer-width": 85
+    "printWidth": 100
   },
   "husky": {
     "hooks": {
