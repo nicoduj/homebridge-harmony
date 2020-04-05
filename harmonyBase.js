@@ -1437,7 +1437,7 @@ HarmonyBase.prototype = {
     );
   },
 
-  bindCharacteristicEventsForSlider: function (harmonyPlatform, service) {
+  bindSliderOnCharacteristic(harmonyPlatform, service) {
     service
       .getCharacteristic(Characteristic.On)
       .on(
@@ -1457,6 +1457,9 @@ HarmonyBase.prototype = {
           this.getSliderOnCharacteristic(harmonyPlatform, service, callback);
         }.bind(this)
       );
+  },
+
+  bindSliderVolumeCharacteristic(harmonyPlatform, service) {
     service
       .getCharacteristic(Characteristic.Brightness)
       .on(
@@ -1480,6 +1483,11 @@ HarmonyBase.prototype = {
           );
         }.bind(this)
       );
+  },
+
+  bindCharacteristicEventsForSlider: function (harmonyPlatform, service) {
+    this.bindSliderOnCharacteristic(harmonyPlatform, service);
+    this.bindSliderVolumeCharacteristic(harmonyPlatform, service);
   },
 
   //COMMAND
