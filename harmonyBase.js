@@ -1190,13 +1190,6 @@ HarmonyBase.prototype = {
         HarmonyConst.DELAY_FOR_SLIDER_UPDATE
       );
 
-    if (isOn)
-      HarmonyTools.resetCharacteristic(
-        service,
-        Characteristic.Brightness,
-        HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE
-      );
-
     callback();
   },
 
@@ -1245,7 +1238,7 @@ HarmonyBase.prototype = {
         : service.volumeDownCommands[harmonyPlatform._currentActivity];
 
     if (command) {
-      command + '|' + Math.round(Math.abs(numberOfcommandstoSend));
+      command = command + '|' + Math.round(Math.abs(numberOfcommandstoSend));
       this.sendCommand(harmonyPlatform, command);
     }
 
@@ -1271,7 +1264,7 @@ HarmonyBase.prototype = {
 
     this.handleCharacteristicUpdate(
       harmonyPlatform,
-      service.getCharacteristic(Characteristic.On),
+      service.getCharacteristic(Characteristic.Brightness),
       newVolume,
       callback
     );
