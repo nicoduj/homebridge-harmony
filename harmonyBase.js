@@ -1,6 +1,5 @@
 var Service, Characteristic, Accessory, AccessoryType, UUIDGen;
 const HarmonyConst = require('./harmonyConst');
-const HarmonyHubDiscover = require('harmonyhubjs-discover');
 const Harmony = require('harmony-websocket');
 const HarmonyTools = require('./harmonyTools.js');
 
@@ -78,7 +77,7 @@ HarmonyBase.prototype = {
     );
   },
 
-  //HUB discovery
+  //HUB init
   initHub: function (harmonyPlatform) {
     this.harmony
       .connect(harmonyPlatform.hubIP)
@@ -108,68 +107,66 @@ HarmonyBase.prototype = {
       });
   },
 
-  discoverHub: function (harmonyPlatform, isInit = true) {
-    this.discover = new HarmonyHubDiscover(61991);
-
-    this.discover.on('online', (hub) => {
-      // Triggered when a new hub was found
+  //hub discovery events handling
+  checkHubsFound: function (harmonyPlatform, knownHubsArray) {
+    if (knownHubsArray.length > 1 && harmonyPlatform.hubName == undefined) {
       harmonyPlatform.log(
-        'INFO - discovered ' + hub.ip + '|' + hub.friendlyName + '|' + hub.remoteId
+        'ERROR - Multiple hubs found, you must use hubName or hubIP in your config : ' +
+          knownHubsArray +
+          '- platform ' +
+          harmonyPlatform.name
       );
-    });
-
-    this.discover.on('offline', (hub) => {
-      // Triggered when a hub disappeared
-      harmonyPlatform.log(
-        'WARNING - lost hub ' + hub.ip + '|' + hub.friendlyName + '|' + hub.remoteId
-      );
-    });
-
-    this.discover.on('update', (hubs) => {
-      // Combines the online & update events by returning an array with all known
-      // hubs for ease of use.
-      const knownHubs = hubs.reduce(function (prev, hub) {
-        return (
-          prev + (prev.length > 0 ? ',' : '') + hub.ip + '|' + hub.friendlyName + '|' + hub.remoteId
-        );
-      }, '');
-
-      knownHubsArray = knownHubs.split(',');
-
-      if (knownHubsArray.length > 1) {
-        harmonyPlatform.log(
-          'ERROR - Multiple hubs found, you must use hubName or hubIP in your config : ' +
-            knownHubsArray
-        );
-      } else {
-        hubInfo = knownHubsArray[0].split('|');
-
-        if (harmonyPlatform.hubName !== undefined && harmonyPlatform.hubName != hubInfo[1]) {
-          harmonyPlatform.log(
-            'ERROR - hub name does not match : ' +
-              harmonyPlatform.hubName +
-              ' is expected, ' +
-              hubInfo[1] +
-              ' was found'
-          );
-        } else {
-          this.discover.stop();
-
+    } else {
+      for (let hub of knownHubsArray) {
+        hubInfo = hub.split('|');
+        if (harmonyPlatform.hubName == undefined || harmonyPlatform.hubName == hubInfo[1]) {
           harmonyPlatform.hubIP = hubInfo[0];
           harmonyPlatform.hubRemoteId = hubInfo[2];
-          if (isInit) this.initHub(harmonyPlatform);
-          else this.refreshCurrentActivity(harmonyPlatform, () => {});
+          this.initHub(harmonyPlatform);
+          break;
         }
       }
-    });
+      if (harmonyPlatform.hubRemoteId == undefined) {
+        harmonyPlatform.log(
+          'ERROR - hub name was not found ' +
+            harmonyPlatform.hubName +
+            ' is expected, found : ' +
+            knownHubsArray
+        );
+      }
+    }
+  },
 
-    try {
-      this.discover.start();
-    } catch (error) {
-      harmonyPlatform.log('ERROR - cannot discover hub - ' + error);
-      setTimeout(() => {
-        this.discoverHub(harmonyPlatform, isInit);
-      }, HarmonyConst.DELAY_BEFORE_RECONNECT);
+  updateHub: function (harmonyPlatform, knownHubsArray) {
+    var found = false;
+    for (let hub of knownHubsArray) {
+      hubInfo = hub.split('|');
+      if (harmonyPlatform.hubRemoteId == hubInfo[2]) {
+        if (harmonyPlatform.hubIP != hubInfo[0]) {
+          harmonyPlatform.log(
+            'WARNING - hub IP for ' +
+              harmonyPlatform.name +
+              ' changed was  ' +
+              harmonyPlatform.hubIP +
+              ' is now : ' +
+              hubInfo[0]
+          );
+          harmonyPlatform.hubIP = hubInfo[0];
+          this.refreshCurrentActivity(harmonyPlatform, () => {});
+        }
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      harmonyPlatform.log(
+        'ERROR - hub  was not found ' +
+          harmonyPlatform.name +
+          ' is expected to be found on Id ' +
+          harmonyPlatform.hubRemoteId +
+          ', found : ' +
+          knownHubsArray
+      );
     }
   },
 
@@ -184,10 +181,18 @@ HarmonyBase.prototype = {
 
     this.configureHarmonyAPI(harmonyPlatform);
 
-    if (harmonyPlatform.hubIP == undefined) {
-      this.discoverHub(harmonyPlatform);
-    } else {
+    // if it has a fixed ip, won't be autodiscovered
+    if (harmonyPlatform.hubIP !== undefined) {
       this.initHub(harmonyPlatform);
+    } else {
+      harmonyPlatform.mainPlatform.on('discoveredHubs', (knownHubsArray) => {
+        harmonyPlatform.log('INFO - discovered hubs  ' + knownHubsArray);
+        if (harmonyPlatform.hubRemoteId == undefined) {
+          this.checkHubsFound(harmonyPlatform, knownHubsArray);
+        } else {
+          this.updateHub(harmonyPlatform, knownHubsArray);
+        }
+      });
     }
   },
 
@@ -205,7 +210,7 @@ HarmonyBase.prototype = {
         if (harmonyPlatform.hubRemoteId == undefined) {
           this.refreshCurrentActivity(harmonyPlatform, () => {});
         } else {
-          this.discoverHub(harmonyPlatform, false);
+          harmonyPlatform.mainPlatform.discoverHub();
         }
       }, HarmonyConst.DELAY_BEFORE_RECONNECT);
     });

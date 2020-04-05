@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.4
+
+- [FIX] Multiple Hubs : autoDiscovery not working #245
+
 ## 1.3.3
 
 - [FIX] Link volume switch/ mute to tv accessory #244

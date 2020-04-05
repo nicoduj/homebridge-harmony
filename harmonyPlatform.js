@@ -1,12 +1,17 @@
 var AccessoryType;
 const HarmonySubPlatform = require('./harmonySubPlatform').HarmonySubPlatform;
 const HarmonyTools = require('./harmonyTools.js');
+const HarmonyHubDiscover = require('harmonyhubjs-discover');
+var EventEmitter = require('events');
+var inherits = require('util').inherits;
 
 module.exports = {
   HarmonyPlatform: HarmonyPlatform,
 };
 
 function HarmonyPlatform(log, config, api) {
+  EventEmitter.call(this);
+
   this.log = log;
 
   this.log('HarmonyPlatform Init');
@@ -73,9 +78,19 @@ function HarmonyPlatform(log, config, api) {
           }
         }
 
+        var launchDiscovery = false;
         for (let i = 0, len = this.platforms.length; i < len; i++) {
           let platform = this.platforms[i];
           platform.harmonyBase.configureAccessories(platform);
+
+          //check for discovery
+          if (platform.hubIP == undefined) {
+            launchDiscovery = true;
+          }
+        }
+        if (launchDiscovery) {
+          this.discover = new HarmonyHubDiscover(61991);
+          this.discoverHub();
         }
       }.bind(this)
     );
@@ -116,4 +131,36 @@ HarmonyPlatform.prototype = {
       }
     }
   },
+
+  //HUB discovery
+  discoverHub: function () {
+    this.discover.on('update', (hubs) => {
+      // Combines the online & update events by returning an array with all known
+      // hubs for ease of use.
+      const knownHubs = hubs.reduce(function (prev, hub) {
+        return (
+          prev + (prev.length > 0 ? ',' : '') + hub.ip + '|' + hub.friendlyName + '|' + hub.remoteId
+        );
+      }, '');
+
+      knownHubsArray = knownHubs.split(',');
+      this.discover.stop();
+      this.discoverInProgress = false;
+      this.emit('discoveredHubs', knownHubsArray);
+    });
+
+    try {
+      if (!this.discoverInProgress) {
+        this.discoverInProgress = true;
+        this.discover.start();
+      }
+    } catch (error) {
+      harmonyPlatform.log('ERROR - cannot discover hub - ' + error);
+      setTimeout(() => {
+        this.discoverHub();
+      }, HarmonyConst.DELAY_BEFORE_RECONNECT);
+    }
+  },
 };
+
+inherits(HarmonyPlatform, EventEmitter);
