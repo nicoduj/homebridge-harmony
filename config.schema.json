@@ -16,13 +16,11 @@
       "hubIP": {
         "title": "IP Address of your hub (must be fixed)",
         "type": "string",
-        "format": "ipv4",
-        "required": false
+        "format": "ipv4"
       },
       "hubName": {
         "title": "Hub Name in your Harmony App",
-        "type": "string",
-        "required": false
+        "type": "string"
       },
       "cleanCache": {
         "title": "Clean cached accessories at startup",
@@ -203,6 +201,10 @@
       },
       "publishGeneralVolumeSlider": {
         "title": "Publish a general volume switch",
+        "type": "boolean"
+      },
+      "linkVolumeControlToTV": {
+        "title": "Links Volumes controls (mute / volume) to TV accessory if it exists",
         "type": "boolean"
       },
       "addAllActivitiesToSkippedIfSameStateActivitiesList": {
@@ -454,6 +456,10 @@
               "title": "publishGeneralVolumeSlider",
               "type": "boolean"
             },
+            "linkVolumeControlToTV": {
+              "title": "linkVolumeControlToTV",
+              "type": "boolean"
+            },
             "addAllActivitiesToSkippedIfSameStateActivitiesList": {
               "title": "Add all activities to skipped if same state activities list",
               "type": "boolean"
@@ -700,6 +706,10 @@
         {
           "key": "publishGeneralVolumeSlider",
           "description": "Publish a volume slider, stateless, that will send a volume command to current activity"
+        },
+        {
+          "key": "linkVolumeControlToTV",
+          "description": "Link volumes controls (mute / volume) to TV accessory if it exists"
         }
       ]
     },
@@ -1060,6 +1070,10 @@
                     {
                       "key": "otherPlatforms[].publishGeneralVolumeSlider",
                       "description": "Publish a volume slider, stateless, that will send a volume command to current activity"
+                    },
+                    {
+                      "key": "otherPlatforms[].linkVolumeControlToTV",
+                      "description": "Link volumes controls (mute / volume) to TV accessory if it exists"
                     }
                   ]
                 },

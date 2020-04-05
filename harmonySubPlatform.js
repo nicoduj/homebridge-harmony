@@ -33,6 +33,11 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
     false
   );
 
+  this.linkVolumeControlToTV = HarmonyTools.checkParameter(
+    config['linkVolumeControlToTV'],
+    false
+  );
+
   this.numberOfCommandsSentForVolumeControl = HarmonyTools.checkParameter(
     config['numberOfCommandsSentForVolumeControl'],
     1
@@ -320,6 +325,8 @@ HarmonySubPlatform.prototype = {
     }
 
     this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
+
+    this.TVFoundAccessory = myHarmonyAccessory;
 
     return accessoriesToAdd;
   },

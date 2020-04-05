@@ -608,13 +608,21 @@ HarmonyBase.prototype = {
       var accessoriesToAdd = [];
       var myHarmonyAccessory;
       let name = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeSlider';
-      myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
-      if (!myHarmonyAccessory) {
-        myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
-        accessoriesToAdd.push(myHarmonyAccessory);
+
+      if (
+        harmonyPlatform.TVFoundAccessory &&
+        harmonyPlatform.linkVolumeControlToTV
+      ) {
+        myHarmonyAccessory = harmonyPlatform.TVFoundAccessory;
+      } else {
+        myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+        if (!myHarmonyAccessory) {
+          myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
+          accessoriesToAdd.push(myHarmonyAccessory);
+        }
+        myHarmonyAccessory.category = AccessoryType;
+        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
       }
-      myHarmonyAccessory.category = AccessoryType;
-      harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
 
       let subType = name;
       let service = this.getSliderService(
@@ -671,13 +679,21 @@ HarmonyBase.prototype = {
       var accessoriesToAdd = [];
       var myHarmonyAccessory;
       let name = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralMuteSwitch';
-      myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
-      if (!myHarmonyAccessory) {
-        myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
-        accessoriesToAdd.push(myHarmonyAccessory);
+
+      if (
+        harmonyPlatform.TVFoundAccessory &&
+        harmonyPlatform.linkVolumeControlToTV
+      ) {
+        myHarmonyAccessory = harmonyPlatform.TVFoundAccessory;
+      } else {
+        myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+        if (!myHarmonyAccessory) {
+          myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
+          accessoriesToAdd.push(myHarmonyAccessory);
+        }
+        myHarmonyAccessory.category = AccessoryType.SWITCH;
+        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
       }
-      myHarmonyAccessory.category = AccessoryType.SWITCH;
-      harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
 
       let subType = name;
       let service = this.getSwitchService(
