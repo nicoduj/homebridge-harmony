@@ -216,6 +216,16 @@ HarmonyBase.prototype = {
 
     harmonyPlatform.log('INFO - Loading activities...');
 
+    this.configureHarmonyAPI(harmonyPlatform);
+
+    if (harmonyPlatform.hubIP == undefined) {
+      this.discoverHub(harmonyPlatform);
+    } else {
+      this.initHub(harmonyPlatform);
+    }
+  },
+
+  configureHarmonyAPI(harmonyPlatform) {
     this.harmony.removeAllListeners();
 
     this.harmony.on('open', () => {
@@ -265,12 +275,6 @@ HarmonyBase.prototype = {
 
     this.harmony.sendTimeout = HarmonyConst.HUB_SEND_TIMEOUT;
     this.harmony.connectTimeout = HarmonyConst.HUB_CONNECT_TIMEOUT;
-
-    if (harmonyPlatform.hubIP == undefined) {
-      this.discoverHub(harmonyPlatform);
-    } else {
-      this.initHub(harmonyPlatform);
-    }
   },
 
   setupFoundAccessories(harmonyPlatform, accessoriesToAdd, data, homedata) {
@@ -328,6 +332,21 @@ HarmonyBase.prototype = {
     );
     harmonyPlatform.log.debug(harmonyPlatform._confirmedServices);
 
+    this.cleanPlatform(harmonyPlatform);
+
+    //first refresh
+    setTimeout(() => {
+      harmonyPlatform.refreshPlatform();
+    }, HarmonyConst.DELAY_LAUNCH_REFRESH);
+  },
+
+  //Cleaning methods
+  cleanPlatform: function (harmonyPlatform) {
+    this.cleanAccessories(harmonyPlatform);
+    this.cleanServices(harmonyPlatform);
+  },
+
+  cleanAccessories: function (harmonyPlatform) {
     //cleaning accessories
     let accstoRemove = [];
     for (let acc of harmonyPlatform._foundAccessories) {
@@ -350,7 +369,9 @@ HarmonyBase.prototype = {
         'HarmonyHubWebSocket',
         accstoRemove
       );
+  },
 
+  cleanServices: function (harmonyPlatform) {
     //cleaning services
     for (let acc of harmonyPlatform._foundAccessories) {
       let servicestoRemove = [];
@@ -376,11 +397,6 @@ HarmonyBase.prototype = {
         acc.removeService(servToDel);
       }
     }
-
-    //first refresh
-    setTimeout(() => {
-      harmonyPlatform.refreshPlatform();
-    }, HarmonyConst.DELAY_LAUNCH_REFRESH);
   },
 
   //REFRESH
@@ -601,28 +617,37 @@ HarmonyBase.prototype = {
 
   //GENERAL Volume SLIDER
 
+  checkVolumeAccessory: function (harmonyPlatform, accessoriesToAdd, name) {
+    var myHarmonyAccessory;
+    if (
+      harmonyPlatform.TVFoundAccessory &&
+      harmonyPlatform.linkVolumeControlToTV
+    ) {
+      myHarmonyAccessory = harmonyPlatform.TVFoundAccessory;
+    } else {
+      myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
+      if (!myHarmonyAccessory) {
+        myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
+        accessoriesToAdd.push(myHarmonyAccessory);
+      }
+      myHarmonyAccessory.category = AccessoryType;
+      harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
+    }
+    return myHarmonyAccessory;
+  },
+
   getGeneralVolumeSliderAccessory: function (harmonyPlatform, data) {
     if (harmonyPlatform.publishGeneralVolumeSlider) {
       harmonyPlatform.log('INFO - Loading general volume Slider...');
 
       var accessoriesToAdd = [];
-      var myHarmonyAccessory;
       let name = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeSlider';
 
-      if (
-        harmonyPlatform.TVFoundAccessory &&
-        harmonyPlatform.linkVolumeControlToTV
-      ) {
-        myHarmonyAccessory = harmonyPlatform.TVFoundAccessory;
-      } else {
-        myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
-        if (!myHarmonyAccessory) {
-          myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
-          accessoriesToAdd.push(myHarmonyAccessory);
-        }
-        myHarmonyAccessory.category = AccessoryType;
-        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
-      }
+      var myHarmonyAccessory = this.checkVolumeAccessory(
+        harmonyPlatform,
+        accessoriesToAdd,
+        name
+      );
 
       let subType = name;
       let service = this.getSliderService(
@@ -677,23 +702,13 @@ HarmonyBase.prototype = {
       harmonyPlatform.log('INFO - Loading general mute Switch...');
 
       var accessoriesToAdd = [];
-      var myHarmonyAccessory;
       let name = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralMuteSwitch';
 
-      if (
-        harmonyPlatform.TVFoundAccessory &&
-        harmonyPlatform.linkVolumeControlToTV
-      ) {
-        myHarmonyAccessory = harmonyPlatform.TVFoundAccessory;
-      } else {
-        myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
-        if (!myHarmonyAccessory) {
-          myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
-          accessoriesToAdd.push(myHarmonyAccessory);
-        }
-        myHarmonyAccessory.category = AccessoryType.SWITCH;
-        harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
-      }
+      var myHarmonyAccessory = this.checkVolumeAccessory(
+        harmonyPlatform,
+        accessoriesToAdd,
+        name
+      );
 
       let subType = name;
       let service = this.getSwitchService(
@@ -1194,6 +1209,7 @@ HarmonyBase.prototype = {
     );
   },
 
+  //SWITCH SERVICE
   getSwitchService(harmonyPlatform, accessory, switchName, serviceSubType) {
     let service = accessory.getServiceByUUIDAndSubType(
       switchName,
@@ -1286,6 +1302,7 @@ HarmonyBase.prototype = {
       );
   },
 
+  //SLIDER SERVICE FOR VOLUME
   getSliderService(harmonyPlatform, accessory, sliderName, serviceSubType) {
     let service = accessory.getServiceByUUIDAndSubType(
       sliderName,
@@ -1302,61 +1319,142 @@ HarmonyBase.prototype = {
     return service;
   },
 
+  setSliderOnCharacteristic: function (
+    harmonyPlatform,
+    service,
+    value,
+    callback
+  ) {
+    var isOn = false;
+    if (
+      harmonyPlatform._currentActivity > -1 &&
+      service.volumeDownCommands[harmonyPlatform._currentActivity] !==
+        undefined &&
+      service.volumeUpCommands[harmonyPlatform._currentActivity] !== undefined
+    ) {
+      isOn = true;
+    }
+
+    if (isOn != value)
+      HarmonyTools.resetCharacteristic(
+        service,
+        Characteristic.On,
+        HarmonyConst.DELAY_FOR_SLIDER_UPDATE
+      );
+
+    if (isOn)
+      HarmonyTools.resetCharacteristic(
+        service,
+        Characteristic.Brightness,
+        HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE
+      );
+
+    callback();
+  },
+
+  getSliderOnCharacteristic: function (harmonyPlatform, service, callback) {
+    let isOn = false;
+    //always on if current activity set and volumes is mapped , off otherwise
+    if (
+      harmonyPlatform._currentActivity > -1 &&
+      service.volumeDownCommands[harmonyPlatform._currentActivity] !==
+        undefined &&
+      service.volumeUpCommands[harmonyPlatform._currentActivity] !== undefined
+    ) {
+      isOn = true;
+    }
+
+    this.handleCharacteristicUpdate(
+      harmonyPlatform,
+      service.getCharacteristic(Characteristic.On),
+      isOn,
+      callback
+    );
+  },
+
+  setSliderVolumeCharacteristic: function (
+    harmonyPlatform,
+    service,
+    value,
+    callback
+  ) {
+    let diff = value - 50;
+    let numberOfcommandstoSend = diff / 5;
+    if (
+      harmonyPlatform.numberOfCommandsSentForVolumeControl &&
+      harmonyPlatform.numberOfCommandsSentForVolumeControl > 0
+    )
+      numberOfcommandstoSend =
+        numberOfcommandstoSend *
+        harmonyPlatform.numberOfCommandsSentForVolumeControl;
+
+    harmonyPlatform.log.debug(
+      'INFO - updtVolume : ' +
+        value +
+        ' - ' +
+        numberOfcommandstoSend +
+        ' (' +
+        harmonyPlatform.numberOfCommandsSentForVolumeControl +
+        ')'
+    );
+
+    let command =
+      numberOfcommandstoSend > 0
+        ? service.volumeUpCommands[harmonyPlatform._currentActivity]
+        : service.volumeDownCommands[harmonyPlatform._currentActivity];
+
+    if (command) {
+      command + '|' + Math.round(Math.abs(numberOfcommandstoSend));
+      this.sendCommand(harmonyPlatform, command);
+    }
+
+    HarmonyTools.resetCharacteristic(
+      service,
+      Characteristic.Brightness,
+      HarmonyConst.DELAY_FOR_SLIDER_UPDATE
+    );
+
+    callback();
+  },
+
+  getSliderVolumeCharacteristic: function (harmonyPlatform, service, callback) {
+    var newVolume = 0;
+    //always on if current activity set and volumes is mapped , off otherwise
+    if (
+      harmonyPlatform._currentActivity > -1 &&
+      service.volumeDownCommands[harmonyPlatform._currentActivity] !==
+        undefined &&
+      service.volumeUpCommands[harmonyPlatform._currentActivity] !== undefined
+    ) {
+      newVolume = 50;
+    }
+
+    this.handleCharacteristicUpdate(
+      harmonyPlatform,
+      service.getCharacteristic(Characteristic.On),
+      newVolume,
+      callback
+    );
+  },
+
   bindCharacteristicEventsForSlider: function (harmonyPlatform, service) {
     service
       .getCharacteristic(Characteristic.On)
       .on(
         'set',
         function (value, callback) {
-          var isOn = false;
-          if (
-            harmonyPlatform._currentActivity > -1 &&
-            service.volumeDownCommands[harmonyPlatform._currentActivity] !==
-              undefined &&
-            service.volumeUpCommands[harmonyPlatform._currentActivity] !==
-              undefined
-          ) {
-            isOn = true;
-          }
-
-          if (isOn != value)
-            HarmonyTools.resetCharacteristic(
-              service,
-              Characteristic.On,
-              HarmonyConst.DELAY_FOR_SLIDER_UPDATE
-            );
-
-          if (isOn)
-            HarmonyTools.resetCharacteristic(
-              service,
-              Characteristic.Brightness,
-              HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE
-            );
-
-          callback();
+          this.setSliderOnCharacteristic(
+            harmonyPlatform,
+            service,
+            value,
+            callback
+          );
         }.bind(this)
       )
       .on(
         'get',
         function (callback) {
-          let isOn = false;
-          //always on if current activity set and volumes is mapped , off otherwise
-          if (
-            harmonyPlatform._currentActivity > -1 &&
-            service.volumeDownCommands[harmonyPlatform._currentActivity] !==
-              undefined &&
-            service.volumeUpCommands[harmonyPlatform._currentActivity] !==
-              undefined
-          ) {
-            isOn = true;
-          }
-
-          this.handleCharacteristicUpdate(
-            harmonyPlatform,
-            service.getCharacteristic(Characteristic.On),
-            isOn,
-            callback
-          );
+          this.getSliderOnCharacteristic(harmonyPlatform, service, callback);
         }.bind(this)
       );
     service
@@ -1364,64 +1462,20 @@ HarmonyBase.prototype = {
       .on(
         'set',
         function (value, callback) {
-          let diff = value - 50;
-          let numberOfcommandstoSend = diff / 5;
-          if (
-            harmonyPlatform.numberOfCommandsSentForVolumeControl &&
-            harmonyPlatform.numberOfCommandsSentForVolumeControl > 0
-          )
-            numberOfcommandstoSend =
-              numberOfcommandstoSend *
-              harmonyPlatform.numberOfCommandsSentForVolumeControl;
-
-          harmonyPlatform.log.debug(
-            'INFO - updtVolume : ' +
-              value +
-              ' - ' +
-              numberOfcommandstoSend +
-              ' (' +
-              harmonyPlatform.numberOfCommandsSentForVolumeControl +
-              ')'
-          );
-
-          let command =
-            numberOfcommandstoSend > 0
-              ? service.volumeUpCommands[harmonyPlatform._currentActivity]
-              : service.volumeDownCommands[harmonyPlatform._currentActivity];
-
-          if (command) {
-            command + '|' + Math.round(Math.abs(numberOfcommandstoSend));
-            this.sendCommand(harmonyPlatform, command);
-          }
-
-          HarmonyTools.resetCharacteristic(
+          this.setSliderVolumeCharacteristic(
+            harmonyPlatform,
             service,
-            Characteristic.Brightness,
-            HarmonyConst.DELAY_FOR_SLIDER_UPDATE
+            value,
+            callback
           );
-
-          callback();
         }.bind(this)
       )
       .on(
         'get',
         function (callback) {
-          var newVolume = 0;
-          //always on if current activity set and volumes is mapped , off otherwise
-          if (
-            harmonyPlatform._currentActivity > -1 &&
-            service.volumeDownCommands[harmonyPlatform._currentActivity] !==
-              undefined &&
-            service.volumeUpCommands[harmonyPlatform._currentActivity] !==
-              undefined
-          ) {
-            newVolume = 50;
-          }
-
-          this.handleCharacteristicUpdate(
+          this.getSliderVolumeCharacteristic(
             harmonyPlatform,
-            service.getCharacteristic(Characteristic.On),
-            newVolume,
+            service,
             callback
           );
         }.bind(this)
@@ -1429,7 +1483,6 @@ HarmonyBase.prototype = {
   },
 
   //COMMAND
-
   sendCommand: function (harmonyPlatform, incommingCommandToSend) {
     if (!incommingCommandToSend) {
       harmonyPlatform.log.debug('INFO - sendCommand : Command not available ');
