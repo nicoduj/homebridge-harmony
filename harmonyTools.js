@@ -29,7 +29,7 @@ module.exports = {
     }
   },
 
-  checkParameter: function(parameter, def) {
+  checkParameter: function (parameter, def) {
     if (parameter == undefined) {
       return def;
     } else {
@@ -51,7 +51,7 @@ module.exports = {
     }
   },
 
-  checkTurnOffActivityOption: function(str) {
+  checkTurnOffActivityOption: function (str) {
     if (str == null || str == undefined) return false;
 
     if (typeof str === 'boolean') {
@@ -84,7 +84,7 @@ module.exports = {
     );
   },
 
-  isActivtyToBeSkipped: function(platform, activity) {
+  isActivtyToBeSkipped: function (platform, activity) {
     return (
       platform.addAllActivitiesToSkippedIfSameStateActivitiesList ||
       (platform.skippedIfSameStateActivities &&
@@ -92,7 +92,7 @@ module.exports = {
     );
   },
 
-  processCommands: async function(hb, platform, commands) {
+  processCommands: async function (hb, platform, commands) {
     for (const command of commands) {
       let commandTosend = command.split('|');
       let timeToWait = HarmonyConst.DELAY_FOR_MACRO;
@@ -102,13 +102,7 @@ module.exports = {
     }
   },
 
-  disablePreviousActivity: function(
-    platform,
-    characteristic,
-    service,
-    commandToSend,
-    on
-  ) {
+  disablePreviousActivity: function (platform, characteristic, service, commandToSend, on) {
     //we disable previous activities that were on
     if (service.activityId != -1 && service.activityId != commandToSend && on) {
       platform.log.debug('Switching off ' + service.displayName);
@@ -116,41 +110,29 @@ module.exports = {
     }
   },
 
-  handleOffActivity: function(
-    platform,
-    characteristic,
-    service,
-    commandToSend
-  ) {
+  handleOffActivity: function (platform, characteristic, service, commandToSend) {
     //we turn off Off Activity if another activity was launched
     if (service.activityId == -1 && commandToSend != -1) {
-      platform.log.debug(
-        'New activity on , turning off off Activity ' + service.displayName
-      );
-      characteristic.updateValue(
-        platform.showTurnOffActivity == 'inverted' ? true : false
-      );
+      platform.log.debug('New activity on , turning off off Activity ' + service.displayName);
+      characteristic.updateValue(platform.showTurnOffActivity == 'inverted' ? true : false);
     }
 
     //we turn on Off Activity if we turned off an activity (or turn on the general switch)
     if (service.activityId == -1 && commandToSend == -1) {
       platform.log.debug('Turning on off Activity ' + service.displayName);
       characteristic.updateValue(
-        platform.showTurnOffActivity != 'inverted' &&
-          platform.showTurnOffActivity != 'stateless'
+        platform.showTurnOffActivity != 'inverted' && platform.showTurnOffActivity != 'stateless'
           ? true
           : false
       );
     }
   },
 
-  isCommandOk: function(data) {
-    return (
-      data && data.code && data.code == 200 && data.msg && data.msg == 'OK'
-    );
+  isCommandOk: function (data) {
+    return data && data.code && data.code == 200 && data.msg && data.msg == 'OK';
   },
 
-  isCommandInProgress: function(data) {
+  isCommandInProgress: function (data) {
     return data && (data.code == 202 || data.code == 100);
   },
 
@@ -162,17 +144,15 @@ module.exports = {
    * @param {Characteristic} characterisitc The characteristic of the service to reset
    * @param {number} delay The delay when the reset takes place
    */
-  resetCharacteristic: function(service, characteristic, delay) {
+  resetCharacteristic: function (service, characteristic, delay) {
     if (!delay) {
       delay = 1000;
     }
 
-    setTimeout(function() {
-      service
-        .getCharacteristic(characteristic)
-        .emit('get', function(error, newValue) {
-          service.getCharacteristic(characteristic).updateValue(newValue);
-        });
+    setTimeout(function () {
+      service.getCharacteristic(characteristic).emit('get', function (error, newValue) {
+        service.getCharacteristic(characteristic).updateValue(newValue);
+      });
     }, delay);
   },
 };
@@ -185,5 +165,5 @@ async function processCommand(hb, platform, command, timeToWait) {
 }
 
 function delay(timeToWait) {
-  return new Promise(resolve => setTimeout(resolve, timeToWait));
+  return new Promise((resolve) => setTimeout(resolve, timeToWait));
 }

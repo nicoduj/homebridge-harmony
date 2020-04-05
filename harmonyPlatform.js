@@ -1,5 +1,4 @@
 var AccessoryType;
-
 const HarmonySubPlatform = require('./harmonySubPlatform').HarmonySubPlatform;
 const HarmonyTools = require('./harmonyTools.js');
 
@@ -25,10 +24,7 @@ function HarmonyPlatform(log, config, api) {
   this.plaformsConfigs.push(config);
 
   if (config['otherPlatforms']) {
-    this.plaformsConfigs.push.apply(
-      this.plaformsConfigs,
-      config['otherPlatforms']
-    );
+    this.plaformsConfigs.push.apply(this.plaformsConfigs, config['otherPlatforms']);
   }
 
   this.cleanCache = HarmonyTools.checkParameter(config['cleanCache'], false);
@@ -49,7 +45,7 @@ function HarmonyPlatform(log, config, api) {
   this.api
     .on(
       'shutdown',
-      function() {
+      function () {
         this.log('INFO - shutdown');
         for (let i = 0, len = this.platforms.length; i < len; i++) {
           let platform = this.platforms[i];
@@ -60,7 +56,7 @@ function HarmonyPlatform(log, config, api) {
     )
     .on(
       'didFinishLaunching',
-      function() {
+      function () {
         this.log('DidFinishLaunching');
 
         if (this.cleanCache) {
@@ -87,12 +83,12 @@ function HarmonyPlatform(log, config, api) {
 
 HarmonyPlatform.prototype = {
   //Restore from cache
-  configureAccessory: function(accessory) {
+  configureAccessory: function (accessory) {
     let platformName = accessory.context.subPlatformName;
     var platform;
 
     if (this.platforms && this.platforms.length > 0)
-      platform = this.platforms.find(x => x.name == platformName);
+      platform = this.platforms.find((x) => x.name == platformName);
 
     if (platform == undefined) {
       this.log(
@@ -101,11 +97,9 @@ HarmonyPlatform.prototype = {
           " is not there anymore in your config (name property). It won't be loaded and will be removed from cache."
       );
 
-      this.api.unregisterPlatformAccessories(
-        'homebridge-harmonyHub',
-        'HarmonyHubWebSocket',
-        [accessory]
-      );
+      this.api.unregisterPlatformAccessories('homebridge-harmonyHub', 'HarmonyHubWebSocket', [
+        accessory,
+      ]);
     } else {
       this.log.debug(
         accessory.displayName,
