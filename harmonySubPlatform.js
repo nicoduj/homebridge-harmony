@@ -47,7 +47,7 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
     this.remoteOverrideCommandsList = config['remoteOverrideCommandsList'];
 
     if (Array.isArray(this.remoteOverrideCommandsList)) {
-      this.log.debug('INFO - remoteOverrideCommandsList is in new format');
+      this.log.debug('(' + this.name + ')' + 'INFO - remoteOverrideCommandsList is in new format');
       const NewRemoteOverrideCommandsList = {};
       this.remoteOverrideCommandsList.forEach((x) => {
         var commands = {};
@@ -58,7 +58,11 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
     }
 
     this.log.debug(
-      'INFO - remoteOverrideCommandsList is : ' + JSON.stringify(this.remoteOverrideCommandsList)
+      '(' +
+        this.name +
+        ')' +
+        'INFO - remoteOverrideCommandsList is : ' +
+        JSON.stringify(this.remoteOverrideCommandsList)
     );
 
     if (

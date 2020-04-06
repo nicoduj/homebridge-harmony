@@ -1,5 +1,6 @@
 var AccessoryType;
 const HarmonySubPlatform = require('./harmonySubPlatform').HarmonySubPlatform;
+const HarmonyConst = require('./harmonyConst');
 const HarmonyTools = require('./harmonyTools.js');
 const HarmonyHubDiscover = require('harmonyhubjs-discover');
 var EventEmitter = require('events');
@@ -143,19 +144,26 @@ HarmonyPlatform.prototype = {
         );
       }, '');
 
-      knownHubsArray = knownHubs.split(',');
-      this.discover.stop();
-      this.discoverInProgress = false;
-      this.emit('discoveredHubs', knownHubsArray);
+      this.knownHubsArray = knownHubs.split(',');
     });
 
     try {
       if (!this.discoverInProgress) {
+        this.log('INFO - starting hub discovery');
+
         this.discoverInProgress = true;
+        this.knownHubsArray = undefined;
         this.discover.start();
+
+        setTimeout(() => {
+          this.discover.stop();
+          this.discoverInProgress = false;
+          this.log('INFO - stopping hub discovery, hubs found : ' + this.knownHubsArray);
+          this.emit('discoveredHubs', this.knownHubsArray);
+        }, HarmonyConst.DELAY_FOR_AUTO_DISCOVERY);
       }
     } catch (error) {
-      harmonyPlatform.log('ERROR - cannot discover hub - ' + error);
+      this.log('ERROR - cannot discover hub - ' + error);
       setTimeout(() => {
         this.discoverHub();
       }, HarmonyConst.DELAY_BEFORE_RECONNECT);

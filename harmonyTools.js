@@ -105,7 +105,7 @@ module.exports = {
   disablePreviousActivity: function (platform, characteristic, service, commandToSend, on) {
     //we disable previous activities that were on
     if (service.activityId != -1 && service.activityId != commandToSend && on) {
-      platform.log.debug('Switching off ' + service.displayName);
+      platform.log.debug('(' + platform.name + ')' + 'Switching off ' + service.displayName);
       characteristic.updateValue(false);
     }
   },
@@ -113,13 +113,21 @@ module.exports = {
   handleOffActivity: function (platform, characteristic, service, commandToSend) {
     //we turn off Off Activity if another activity was launched
     if (service.activityId == -1 && commandToSend != -1) {
-      platform.log.debug('New activity on , turning off off Activity ' + service.displayName);
+      platform.log.debug(
+        '(' +
+          platform.name +
+          ')' +
+          'New activity on , turning off off Activity ' +
+          service.displayName
+      );
       characteristic.updateValue(platform.showTurnOffActivity == 'inverted' ? true : false);
     }
 
     //we turn on Off Activity if we turned off an activity (or turn on the general switch)
     if (service.activityId == -1 && commandToSend == -1) {
-      platform.log.debug('Turning on off Activity ' + service.displayName);
+      platform.log.debug(
+        '(' + platform.name + ')' + 'Turning on off Activity ' + service.displayName
+      );
       characteristic.updateValue(
         platform.showTurnOffActivity != 'inverted' && platform.showTurnOffActivity != 'stateless'
           ? true

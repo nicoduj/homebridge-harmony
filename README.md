@@ -283,11 +283,14 @@ Thanks to
 
 - [iandday] for the Harmoney WebSocket protocol implementation and understanding of it.
 - [lopelex] for his clean plugin.
-- every tester / contributor that test, and give feedback in any way , and especially [gitgayhub] for Home controls in 0.6.0
+- every tester / contributor that test, and give feedback in any way , and especially
+  - [gitgayhub] for Home controls in 0.6.0
+  - [donavanbecker] for testing multiple hubs auto discovery (and supporting homebirdge :) )
 
 [lopelex]: https://github.com/lopelex/harmony-websocket
 [iandday]: https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py
 [gitgayhub]: https://github.com/gitgayhub
+[donavanbecker]: https://github.com/donavanbecker
 
 ## Donating
 

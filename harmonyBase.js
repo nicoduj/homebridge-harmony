@@ -68,7 +68,10 @@ HarmonyBase.prototype = {
     harmonyPlatform._currentActivity = -1;
 
     harmonyPlatform.log.debug(
-      'INFO : following activites controls will be ignored if they are in the same state : ' +
+      '(' +
+        harmonyPlatform.name +
+        ')' +
+        'INFO : following activites controls will be ignored if they are in the same state : ' +
         (harmonyPlatform.addAllActivitiesToSkippedIfSameStateActivitiesList
           ? 'ALL'
           : harmonyPlatform.skippedIfSameStateActivities
@@ -83,7 +86,9 @@ HarmonyBase.prototype = {
       .connect(harmonyPlatform.hubIP)
       .then(() => this.harmony.getConfig())
       .then((response) => {
-        harmonyPlatform.log.debug('INFO - Hub config : ' + JSON.stringify(response));
+        harmonyPlatform.log.debug(
+          '(' + harmonyPlatform.name + ')' + 'INFO - Hub config : ' + JSON.stringify(response)
+        );
         this.getHomeControlsAccessories(harmonyPlatform).then((responseHome) => {
           harmonyPlatform.readAccessories(response, responseHome);
           this.numberAttemps = 0;
@@ -93,12 +98,21 @@ HarmonyBase.prototype = {
         this.numberAttemps = this.numberAttemps + 1;
         if (this.harmony.isOpened()) {
           this.harmony.close().catch((e2) => {
-            harmonyPlatform.log('Error - Error closing  ' + e2.message);
+            harmonyPlatform.log(
+              '(' + harmonyPlatform.name + ')' + 'Error - Error closing  ' + e2.message
+            );
           });
         }
 
         harmonyPlatform.log(
-          'Error - Error retrieving info from hub : ' + e.message + '-(' + this.numberAttemps + ')'
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'Error - Error retrieving info from hub : ' +
+            e.message +
+            '-(' +
+            this.numberAttemps +
+            ')'
         );
 
         setTimeout(() => {
@@ -111,7 +125,10 @@ HarmonyBase.prototype = {
   checkHubsFound: function (harmonyPlatform, knownHubsArray) {
     if (knownHubsArray.length > 1 && harmonyPlatform.hubName == undefined) {
       harmonyPlatform.log(
-        'ERROR - Multiple hubs found, you must use hubName or hubIP in your config : ' +
+        '(' +
+          harmonyPlatform.name +
+          ')' +
+          'ERROR - Multiple hubs found, you must use hubName or hubIP in your config : ' +
           knownHubsArray +
           '- platform ' +
           harmonyPlatform.name
@@ -128,7 +145,10 @@ HarmonyBase.prototype = {
       }
       if (harmonyPlatform.hubRemoteId == undefined) {
         harmonyPlatform.log(
-          'ERROR - hub name was not found ' +
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'ERROR - hub name was not found ' +
             harmonyPlatform.hubName +
             ' is expected, found : ' +
             knownHubsArray
@@ -144,7 +164,10 @@ HarmonyBase.prototype = {
       if (harmonyPlatform.hubRemoteId == hubInfo[2]) {
         if (harmonyPlatform.hubIP != hubInfo[0]) {
           harmonyPlatform.log(
-            'WARNING - hub IP for ' +
+            '(' +
+              harmonyPlatform.name +
+              ')' +
+              'WARNING - hub IP for ' +
               harmonyPlatform.name +
               ' changed was  ' +
               harmonyPlatform.hubIP +
@@ -160,7 +183,10 @@ HarmonyBase.prototype = {
     }
     if (!found) {
       harmonyPlatform.log(
-        'ERROR - hub  was not found ' +
+        '(' +
+          harmonyPlatform.name +
+          ')' +
+          'ERROR - hub  was not found ' +
           harmonyPlatform.name +
           ' is expected to be found on Id ' +
           harmonyPlatform.hubRemoteId +
@@ -173,20 +199,30 @@ HarmonyBase.prototype = {
   //Configuration entry point
   configureAccessories: function (harmonyPlatform) {
     if (HarmonyTools.isPlatformEmpty(harmonyPlatform)) {
-      harmonyPlatform.log('WARNING - platform ' + harmonyPlatform.name + ' is empty');
+      harmonyPlatform.log(
+        '(' +
+          harmonyPlatform.name +
+          ')' +
+          'WARNING - platform ' +
+          harmonyPlatform.name +
+          ' is empty'
+      );
       return;
     }
 
-    harmonyPlatform.log('INFO - Loading activities...');
+    harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'INFO - Loading activities...');
 
     this.configureHarmonyAPI(harmonyPlatform);
 
     // if it has a fixed ip, won't be autodiscovered
+
     if (harmonyPlatform.hubIP !== undefined) {
       this.initHub(harmonyPlatform);
     } else {
       harmonyPlatform.mainPlatform.on('discoveredHubs', (knownHubsArray) => {
-        harmonyPlatform.log('INFO - discovered hubs  ' + knownHubsArray);
+        harmonyPlatform.log(
+          '(' + harmonyPlatform.name + ')' + 'INFO - received discovered hubs  ' + knownHubsArray
+        );
         if (harmonyPlatform.hubRemoteId == undefined) {
           this.checkHubsFound(harmonyPlatform, knownHubsArray);
         } else {
@@ -200,11 +236,11 @@ HarmonyBase.prototype = {
     this.harmony.removeAllListeners();
 
     this.harmony.on('open', () => {
-      harmonyPlatform.log.debug('INFO - socket opened');
+      harmonyPlatform.log.debug('(' + harmonyPlatform.name + ')' + 'INFO - socket opened');
     });
 
     this.harmony.on('close', () => {
-      harmonyPlatform.log('WARNING - socket closed');
+      harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'WARNING - socket closed');
 
       setTimeout(() => {
         if (harmonyPlatform.hubRemoteId == undefined) {
@@ -226,7 +262,13 @@ HarmonyBase.prototype = {
     });
 
     this.harmony.on('stateDigest', (message) => {
-      harmonyPlatform.log.debug('INFO - onMessage : received message : ' + JSON.stringify(message));
+      harmonyPlatform.log.debug(
+        '(' +
+          harmonyPlatform.name +
+          ')' +
+          'INFO - onMessage : received message : ' +
+          JSON.stringify(message)
+      );
       if (
         (message.data.activityStatus === 2 &&
           message.data.activityId === message.data.runningActivityList) ||
@@ -235,7 +277,11 @@ HarmonyBase.prototype = {
           message.data.runningActivityList === '')
       ) {
         harmonyPlatform.log.debug(
-          'INFO - onMessage : Refreshing activity to ' + message.data.activityId
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'INFO - onMessage : Refreshing activity to ' +
+            message.data.activityId
         );
         harmonyPlatform.onMessage(message.data.activityId);
       }
@@ -259,11 +305,17 @@ HarmonyBase.prototype = {
         try {
           harmonyPlatform.api.publishExternalAccessories('homebridge-harmonyHub', [accessory]);
           harmonyPlatform.log(
-            'INFO - setupFoundAccessories - TV accessory added as external accessory'
+            '(' +
+              harmonyPlatform.name +
+              ')' +
+              'INFO - setupFoundAccessories - TV accessory added as external accessory'
           );
         } catch (err) {
           harmonyPlatform.log(
-            "ERROR - readAccessories - Can't publish TV Acccessory as external device, need Homebridge 0.0.47 at least : " +
+            '(' +
+              harmonyPlatform.name +
+              ')' +
+              "ERROR - readAccessories - Can't publish TV Acccessory as external device, need Homebridge 0.0.47 at least : " +
               err
           );
         }
@@ -271,7 +323,10 @@ HarmonyBase.prototype = {
         if (isTv) {
           harmonyPlatform.mainPlatform._oneTVAdded = true;
           harmonyPlatform.log(
-            'WARNING - setupFoundAccessories - TV accessory added in your bridge, if another plugin is exposing a TV accessory this one might not be visible in your remote widget'
+            '(' +
+              harmonyPlatform.name +
+              ')' +
+              'WARNING - setupFoundAccessories - TV accessory added in your bridge, if another plugin is exposing a TV accessory this one might not be visible in your remote widget'
           );
         }
 
@@ -288,9 +343,16 @@ HarmonyBase.prototype = {
     this.handleHomeControls(harmonyPlatform, homedata);
 
     //handling removing
-    harmonyPlatform.log.debug('INFO - Accessories confirmed after retrieving hub infos : ');
+    harmonyPlatform.log.debug(
+      '(' +
+        harmonyPlatform.name +
+        ')' +
+        'INFO - Accessories confirmed after retrieving hub infos : '
+    );
     harmonyPlatform.log.debug(harmonyPlatform._confirmedAccessories);
-    harmonyPlatform.log.debug('INFO - Services confirmed after retrieving hub infos : ');
+    harmonyPlatform.log.debug(
+      '(' + harmonyPlatform.name + ')' + 'INFO - Services confirmed after retrieving hub infos : '
+    );
     harmonyPlatform.log.debug(harmonyPlatform._confirmedServices);
 
     this.cleanPlatform(harmonyPlatform);
@@ -314,7 +376,13 @@ HarmonyBase.prototype = {
       if (!harmonyPlatform._confirmedAccessories.find((x) => x.UUID == acc.UUID)) {
         accstoRemove.push(acc);
         harmonyPlatform.log(
-          'WARNING - Accessory will be Removed ' + acc.UUID + '/' + acc.displayName
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'WARNING - Accessory will be Removed ' +
+            acc.UUID +
+            '/' +
+            acc.displayName
         );
       }
     }
@@ -361,7 +429,10 @@ HarmonyBase.prototype = {
 
     if (this.numberOfErrors >= HarmonyConst.MAX_SOCKET_ERROR) {
       harmonyPlatform.log(
-        'WARNING - refreshCurrentActivity : NO refresh done since too much socket errors - will retry later'
+        '(' +
+          harmonyPlatform.name +
+          ')' +
+          'WARNING - refreshCurrentActivity : NO refresh done since too much socket errors - will retry later'
       );
       callback();
 
@@ -370,7 +441,10 @@ HarmonyBase.prototype = {
 
       this.generalErrorTimer = setTimeout(() => {
         harmonyPlatform.log(
-          'WARNING - refreshCurrentActivity : Resetting counter after network loss, trying to refresh'
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'WARNING - refreshCurrentActivity : Resetting counter after network loss, trying to refresh'
         );
         this.numberOfErrors = 0;
         this.refreshCurrentActivity(harmonyPlatform, () => {});
@@ -384,14 +458,20 @@ HarmonyBase.prototype = {
       ) {
         // we don't refresh since status was retrieved not so far away
         harmonyPlatform.log.debug(
-          'INFO - refreshCurrentActivity : NO refresh needed since last update was on :' +
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'INFO - refreshCurrentActivity : NO refresh needed since last update was on :' +
             harmonyPlatform._currentActivity +
             ' and current Activity is set'
         );
         callback();
       } else {
         harmonyPlatform.log.debug(
-          'INFO - refreshCurrentActivity : Refresh needed since last update is too old or current Activity is not set : ' +
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'INFO - refreshCurrentActivity : Refresh needed since last update is too old or current Activity is not set : ' +
             harmonyPlatform._currentActivity
         );
 
@@ -399,7 +479,10 @@ HarmonyBase.prototype = {
 
         if (this.refreshInprogress) {
           harmonyPlatform.log.debug(
-            'INFO - refreshCurrentActivity : Cancelling refresh since a refresh is allready in progress ' +
+            '(' +
+              harmonyPlatform.name +
+              ')' +
+              'INFO - refreshCurrentActivity : Cancelling refresh since a refresh is allready in progress ' +
               harmonyPlatform._currentActivity
           );
 
@@ -423,7 +506,10 @@ HarmonyBase.prototype = {
               this.numberOfErrors = this.numberOfErrors + 1;
 
               harmonyPlatform.log(
-                'ERROR (' +
+                '(' +
+                  harmonyPlatform.name +
+                  ')' +
+                  'ERROR (' +
                   this.numberOfErrors +
                   ')- refreshCurrentActivity ' +
                   e +
@@ -445,7 +531,13 @@ HarmonyBase.prototype = {
   refreshHomeAccessory(harmonyPlatform) {
     this.getHomeControlsAccessories(harmonyPlatform).then((responseHome) => {
       if (responseHome && responseHome.data) {
-        harmonyPlatform.log.debug('INFO - got home controls : ' + JSON.stringify(responseHome));
+        harmonyPlatform.log.debug(
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'INFO - got home controls : ' +
+            JSON.stringify(responseHome)
+        );
         this.refreshHomeSwitch(harmonyPlatform, responseHome.data);
       }
     });
@@ -464,7 +556,10 @@ HarmonyBase.prototype = {
             let characteristic = service.getCharacteristic(Characteristic.On);
 
             harmonyPlatform.log.debug(
-              'INFO - refreshHomeSwitch - Refreshing home switch ' +
+              '(' +
+                harmonyPlatform.name +
+                ')' +
+                'INFO - refreshHomeSwitch - Refreshing home switch ' +
                 service.displayName +
                 ' to ' +
                 newValue.on
@@ -481,7 +576,9 @@ HarmonyBase.prototype = {
       return;
     }
 
-    harmonyPlatform.log.debug('INFO - got Home Control : ' + JSON.stringify(data));
+    harmonyPlatform.log.debug(
+      '(' + harmonyPlatform.name + ')' + 'INFO - got Home Control : ' + JSON.stringify(data)
+    );
 
     let homeControls = data.data;
 
@@ -508,7 +605,9 @@ HarmonyBase.prototype = {
           switchName = 'DEV' + switchName;
         }
 
-        harmonyPlatform.log('INFO - Discovered Home Control : ' + switchName);
+        harmonyPlatform.log(
+          '(' + harmonyPlatform.name + ')' + 'INFO - Discovered Home Control : ' + switchName
+        );
 
         if (harmonyPlatform.publishHomeControlsAsIndividualAccessories) {
           myHarmonyAccessory = this.checkAccessory(harmonyPlatform, switchName);
@@ -545,7 +644,9 @@ HarmonyBase.prototype = {
       harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch &&
       harmonyPlatform.homeControlsToPublishAsAccessoriesSwitch.length > 0
     ) {
-      harmonyPlatform.log.debug('INFO - getting home controls ...');
+      harmonyPlatform.log.debug(
+        '(' + harmonyPlatform.name + ')' + 'INFO - getting home controls ...'
+      );
       return this.harmony.getAutomationCommands();
     } else {
       var responseHome = {};
@@ -578,7 +679,9 @@ HarmonyBase.prototype = {
 
   getGeneralVolumeSliderAccessory: function (harmonyPlatform, data) {
     if (harmonyPlatform.publishGeneralVolumeSlider) {
-      harmonyPlatform.log('INFO - Loading general volume Slider...');
+      harmonyPlatform.log(
+        '(' + harmonyPlatform.name + ')' + 'INFO - Loading general volume Slider...'
+      );
 
       var accessoriesToAdd = [];
       let name = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeSlider';
@@ -614,7 +717,9 @@ HarmonyBase.prototype = {
 
       service.volumeUpCommands = volumeUpCommandsMap;
       service.volumeDownCommands = volumeDownCommandsMap;
-      harmonyPlatform.log.debug('Volume commands for Global Volume Slider : ');
+      harmonyPlatform.log.debug(
+        '(' + harmonyPlatform.name + ')' + 'Volume commands for Global Volume Slider : '
+      );
       harmonyPlatform.log.debug(volumeUpCommandsMap);
       harmonyPlatform.log.debug(volumeDownCommandsMap);
       harmonyPlatform._confirmedServices.push(service);
@@ -629,7 +734,9 @@ HarmonyBase.prototype = {
   //GENERAL Mute SWITCH
   getGeneralMuteSwitchAccessory: function (harmonyPlatform, data) {
     if (harmonyPlatform.publishGeneralMuteSwitch) {
-      harmonyPlatform.log('INFO - Loading general mute Switch...');
+      harmonyPlatform.log(
+        '(' + harmonyPlatform.name + ')' + 'INFO - Loading general mute Switch...'
+      );
 
       var accessoriesToAdd = [];
       let name = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralMuteSwitch';
@@ -661,7 +768,9 @@ HarmonyBase.prototype = {
       }
 
       service.muteCommands = muteCommandsMap;
-      harmonyPlatform.log.debug('Mute commands for Global Mute Switch : ');
+      harmonyPlatform.log.debug(
+        '(' + harmonyPlatform.name + ')' + 'Mute commands for Global Mute Switch : '
+      );
       harmonyPlatform.log.debug(muteCommandsMap);
       harmonyPlatform._confirmedServices.push(service);
 
@@ -678,7 +787,7 @@ HarmonyBase.prototype = {
       harmonyPlatform.sequencesToPublishAsAccessoriesSwitch &&
       harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.length > 0
     ) {
-      harmonyPlatform.log('INFO - Loading sequences...');
+      harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'INFO - Loading sequences...');
       let sequences = data.data.sequence;
 
       var accessoriesToAdd = [];
@@ -703,7 +812,9 @@ HarmonyBase.prototype = {
             switchName = 'DEV' + switchName;
           }
 
-          harmonyPlatform.log('INFO - Discovered sequence : ' + switchName);
+          harmonyPlatform.log(
+            '(' + harmonyPlatform.name + ')' + 'INFO - Discovered sequence : ' + switchName
+          );
 
           if (harmonyPlatform.publishSequencesAsIndividualAccessories) {
             myHarmonyAccessory = this.checkAccessory(harmonyPlatform, switchName);
@@ -746,7 +857,10 @@ HarmonyBase.prototype = {
         for (let k = 0, len = functions.length; k < len; k++) {
           if (harmonyPlatform.showCommandsAtStartup)
             harmonyPlatform.log(
-              'INFO - Command : ' +
+              '(' +
+                harmonyPlatform.name +
+                ')' +
+                'INFO - Command : ' +
                 functions[k].name +
                 ' discovered for device : ' +
                 devices[i].label
@@ -766,19 +880,25 @@ HarmonyBase.prototype = {
         let functions = controlGroup[j].function;
         for (let k = 0, len = functions.length; k < len; k++) {
           if (functions[k].name === 'PowerOff') {
-            harmonyPlatform.log.debug('INFO - Activating PowerOff for ' + switchName);
+            harmonyPlatform.log.debug(
+              '(' + harmonyPlatform.name + ')' + 'INFO - Activating PowerOff for ' + switchName
+            );
             commandFunctions.push({
               key: 'PowerOff',
               value: functions[k].action,
             });
           } else if (functions[k].name === 'PowerOn') {
-            harmonyPlatform.log.debug('INFO - Activating  PowerOn for ' + switchName);
+            harmonyPlatform.log.debug(
+              '(' + harmonyPlatform.name + ')' + 'INFO - Activating  PowerOn for ' + switchName
+            );
             commandFunctions.push({
               key: 'PowerOn',
               value: functions[k].action,
             });
           } else if (functions[k].name === 'PowerToggle') {
-            harmonyPlatform.log.debug('INFO - Activating  PowerToggle for ' + switchName);
+            harmonyPlatform.log.debug(
+              '(' + harmonyPlatform.name + ')' + 'INFO - Activating  PowerToggle for ' + switchName
+            );
             commandFunctions.push({
               key: 'PowerToggle',
               value: functions[k].action,
@@ -802,7 +922,9 @@ HarmonyBase.prototype = {
 
     switchName = harmonyPlatform.devMode ? 'DEV' + device.label : device.label;
 
-    harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
+    harmonyPlatform.log(
+      '(' + harmonyPlatform.name + ')' + 'INFO - Discovered Device : ' + switchName
+    );
 
     let foundToggle = false;
     let commandFunctions = this.populateCommands(harmonyPlatform, controlGroup, switchName);
@@ -812,7 +934,9 @@ HarmonyBase.prototype = {
     }
 
     if (commandFunctions.length == 0) {
-      harmonyPlatform.log('Error - No function found for ' + switchName);
+      harmonyPlatform.log(
+        '(' + harmonyPlatform.name + ')' + 'Error - No function found for ' + switchName
+      );
     } else {
       for (let j = 0, len = commandFunctions.length; j < len; j++) {
         if ((foundToggle && commandFunctions[j].key === 'PowerToggle') || !foundToggle) {
@@ -860,7 +984,9 @@ HarmonyBase.prototype = {
 
     let switchName = harmonyPlatform.devMode ? 'DEV' + device.label : device.label;
 
-    harmonyPlatform.log('INFO - Discovered Device : ' + switchName);
+    harmonyPlatform.log(
+      '(' + harmonyPlatform.name + ')' + 'INFO - Discovered Device : ' + switchName
+    );
     let functionsForSwitch = [];
     let functionsKey = '';
 
@@ -872,7 +998,13 @@ HarmonyBase.prototype = {
 
           if (functions[k].name === commandTosend[0]) {
             harmonyPlatform.log.debug(
-              'INFO - Activating  Macro ' + commandTosend[0] + ' for ' + switchName
+              '(' +
+                harmonyPlatform.name +
+                ')' +
+                'INFO - Activating  Macro ' +
+                commandTosend[0] +
+                ' for ' +
+                switchName
             );
 
             if (commandTosend.length === 2) {
@@ -888,7 +1020,9 @@ HarmonyBase.prototype = {
     }
 
     if (functionsForSwitch.length === 0) {
-      harmonyPlatform.log('Error - No function list found for ' + switchName);
+      harmonyPlatform.log(
+        '(' + harmonyPlatform.name + ')' + 'Error - No function list found for ' + switchName
+      );
     } else {
       if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
         let name = switchName + '-' + functionsKey;
@@ -933,7 +1067,7 @@ HarmonyBase.prototype = {
       harmonyPlatform.devicesToPublishAsAccessoriesSwitch &&
       harmonyPlatform.devicesToPublishAsAccessoriesSwitch.length > 0
     ) {
-      harmonyPlatform.log('INFO - Loading devices...');
+      harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'INFO - Loading devices...');
 
       if (!harmonyPlatform.publishDevicesAsIndividualAccessories) {
         let name = 'Devices';
@@ -1040,9 +1174,11 @@ HarmonyBase.prototype = {
 
   createAccessory(harmonyPlatform, name) {
     let fullName = harmonyPlatform.name + (name ? '-' + name : '');
-    harmonyPlatform.log('INFO - Adding Accessory : ' + fullName);
+    harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'INFO - Adding Accessory : ' + fullName);
     let uuid = UUIDGen.generate(fullName);
-    harmonyPlatform.log.debug('INFO - UUID for : *' + fullName + '* is : *' + uuid + '*');
+    harmonyPlatform.log.debug(
+      '(' + harmonyPlatform.name + ')' + 'INFO - UUID for : *' + fullName + '* is : *' + uuid + '*'
+    );
     let myHarmonyAccessory = new Accessory(fullName, uuid);
 
     myHarmonyAccessory.name = fullName;
@@ -1081,7 +1217,15 @@ HarmonyBase.prototype = {
   getSwitchService(harmonyPlatform, accessory, switchName, serviceSubType) {
     let service = accessory.getServiceByUUIDAndSubType(switchName, serviceSubType);
     if (!service) {
-      harmonyPlatform.log('INFO - Creating Switch Service ' + switchName + '/' + serviceSubType);
+      harmonyPlatform.log(
+        '(' +
+          harmonyPlatform.name +
+          ')' +
+          'INFO - Creating Switch Service ' +
+          switchName +
+          '/' +
+          serviceSubType
+      );
       service = new Service.Switch(switchName, 'switchService' + switchName);
       service.subtype = serviceSubType;
       accessory.addService(service);
@@ -1170,7 +1314,15 @@ HarmonyBase.prototype = {
   getSliderService(harmonyPlatform, accessory, sliderName, serviceSubType) {
     let service = accessory.getServiceByUUIDAndSubType(sliderName, serviceSubType);
     if (!service) {
-      harmonyPlatform.log('INFO - Creating Slider Service ' + sliderName + '/' + serviceSubType);
+      harmonyPlatform.log(
+        '(' +
+          harmonyPlatform.name +
+          ')' +
+          'INFO - Creating Slider Service ' +
+          sliderName +
+          '/' +
+          serviceSubType
+      );
       service = new Service.Lightbulb(sliderName, 'sliderService' + sliderName);
       service.subtype = serviceSubType;
       accessory.addService(service);
@@ -1228,7 +1380,10 @@ HarmonyBase.prototype = {
         numberOfcommandstoSend * harmonyPlatform.numberOfCommandsSentForVolumeControl;
 
     harmonyPlatform.log.debug(
-      'INFO - updtVolume : ' +
+      '(' +
+        harmonyPlatform.name +
+        ')' +
+        'INFO - updtVolume : ' +
         value +
         ' - ' +
         numberOfcommandstoSend +
@@ -1317,7 +1472,9 @@ HarmonyBase.prototype = {
   //COMMAND
   sendCommand: function (harmonyPlatform, incommingCommandToSend) {
     if (!incommingCommandToSend) {
-      harmonyPlatform.log.debug('INFO - sendCommand : Command not available ');
+      harmonyPlatform.log.debug(
+        '(' + harmonyPlatform.name + ')' + 'INFO - sendCommand : Command not available '
+      );
       return;
     }
 
@@ -1335,39 +1492,64 @@ HarmonyBase.prototype = {
     }
 
     harmonyPlatform.log.debug(
-      'INFO - sendingCommand' + commandToSend + ' ' + numberOFcommandsToSend + ' times'
+      '(' +
+        harmonyPlatform.name +
+        ')' +
+        'INFO - sendingCommand' +
+        commandToSend +
+        ' ' +
+        numberOFcommandsToSend +
+        ' times'
     );
 
     for (let i = 0, len = numberOFcommandsToSend; i < len; i++) {
       this.harmony
         .sendCommand(commandToSend)
         .then((data) => {
-          harmonyPlatform.log.debug('INFO - sendCommand done' + JSON.stringify(data));
+          harmonyPlatform.log.debug(
+            '(' + harmonyPlatform.name + ')' + 'INFO - sendCommand done' + JSON.stringify(data)
+          );
         })
         .catch((e) => {
-          harmonyPlatform.log('ERROR - sendCommand : ' + e);
+          harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'ERROR - sendCommand : ' + e);
         });
     }
   },
 
   sendAutomationCommand: function (harmonyPlatform, commandToSend) {
     if (!commandToSend) {
-      harmonyPlatform.log.debug('INFO - sendAutomationCommand : Command not available ');
+      harmonyPlatform.log.debug(
+        '(' + harmonyPlatform.name + ')' + 'INFO - sendAutomationCommand : Command not available '
+      );
       return;
     }
-    harmonyPlatform.log.debug('INFO - sendingAutomationCommand' + JSON.stringify(commandToSend));
+    harmonyPlatform.log.debug(
+      '(' +
+        harmonyPlatform.name +
+        ')' +
+        'INFO - sendingAutomationCommand' +
+        JSON.stringify(commandToSend)
+    );
 
     return this.harmony
       .sendAutomationCommand(commandToSend)
       .then((data) => {
-        harmonyPlatform.log.debug('INFO - sendingAutomationCommand done' + JSON.stringify(data));
+        harmonyPlatform.log.debug(
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'INFO - sendingAutomationCommand done' +
+            JSON.stringify(data)
+        );
 
         if (!HarmonyTools.isCommandOk(data)) {
           this.refreshHomeAccessory(harmonyPlatform);
         }
       })
       .catch((e) => {
-        harmonyPlatform.log('ERROR - sendingAutomationCommand : ' + e);
+        harmonyPlatform.log(
+          '(' + harmonyPlatform.name + ')' + 'ERROR - sendingAutomationCommand : ' + e
+        );
         this.refreshHomeAccessory(harmonyPlatform);
       });
   },
