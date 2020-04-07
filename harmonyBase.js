@@ -128,7 +128,7 @@ HarmonyBase.prototype = {
         '(' +
           harmonyPlatform.name +
           ')' +
-          'ERROR - Multiple hubs found, you must use hubName or hubIP in your config : ' +
+          'ERROR - Multiple hubs found, you must use hubName or hubIP (only if it is fixed on your router) in your config : ' +
           knownHubsArray +
           '- platform ' +
           harmonyPlatform.name
