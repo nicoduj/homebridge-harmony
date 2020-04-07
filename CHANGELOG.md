@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## 1.3.4
 
-- [FIX] Multiple Hubs : autoDiscovery not working #245
+- [FIX] Multiple Hubs : autoDiscovery not working #245 special thanks to donavanbecker(https://github.com/donavanbecker) for testing
 
 ## 1.3.3
 
