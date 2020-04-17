@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.0
+
+**It seems from my test that those changes are not breaking the cache accessories, but you might need to clean your cache in case of problems. Concerning SerialNumber, it should be updated after a restart, but could be a problem also. If that is the case, you will need to clean cache.**
+
+- [FIX] Chnage pluginIdentifier in platform registration to be compatible with 1.0 of Homebridge (sorry guys, was not clean on this before ...)
+- [FIX] Unique serialnumber for accessories to avoid Eve App problems #249
+
 ## 1.3.4
 
 - [FIX] Multiple Hubs : autoDiscovery not working #245 special thanks to donavanbecker(https://github.com/donavanbecker) for testing

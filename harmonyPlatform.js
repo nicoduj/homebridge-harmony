@@ -22,7 +22,7 @@ function HarmonyPlatform(log, config, api) {
   AccessoryType = this.api.hap.Accessory.Categories;
 
   if (!config) {
-    log('No configuration found for homebridge-harmonyHub');
+    log('No configuration found for homebridge-harmony');
     return;
   }
 
@@ -71,7 +71,7 @@ function HarmonyPlatform(log, config, api) {
           for (let i = 0, len = this.platforms.length; i < len; i++) {
             let platform = this.platforms[i];
             platform.api.unregisterPlatformAccessories(
-              'homebridge-harmonyHub',
+              'homebridge-harmony',
               'HarmonyHubWebSocket',
               platform._foundAccessories
             );
@@ -113,7 +113,7 @@ HarmonyPlatform.prototype = {
           " is not there anymore in your config (name property). It won't be loaded and will be removed from cache."
       );
 
-      this.api.unregisterPlatformAccessories('homebridge-harmonyHub', 'HarmonyHubWebSocket', [
+      this.api.unregisterPlatformAccessories('homebridge-harmony', 'HarmonyHubWebSocket', [
         accessory,
       ]);
     } else {

@@ -303,7 +303,7 @@ HarmonyBase.prototype = {
           harmonyPlatform.mainPlatform.publishAllTVAsExternalAccessory)
       ) {
         try {
-          harmonyPlatform.api.publishExternalAccessories('homebridge-harmonyHub', [accessory]);
+          harmonyPlatform.api.publishExternalAccessories('homebridge-harmony', [accessory]);
           harmonyPlatform.log(
             '(' +
               harmonyPlatform.name +
@@ -389,7 +389,7 @@ HarmonyBase.prototype = {
 
     if (accstoRemove.length > 0)
       harmonyPlatform.api.unregisterPlatformAccessories(
-        'homebridge-harmonyHub',
+        'homebridge-harmony',
         'HarmonyHubWebSocket',
         accstoRemove
       );
@@ -1169,7 +1169,30 @@ HarmonyBase.prototype = {
   checkAccessory(harmonyPlatform, name) {
     let fullName = harmonyPlatform.name + (name ? '-' + name : '');
     let uuid = UUIDGen.generate(fullName);
-    return harmonyPlatform._foundAccessories.find((x) => x.UUID == uuid);
+    let foundAccessory = harmonyPlatform._foundAccessories.find((x) => x.UUID == uuid);
+
+    if (foundAccessory) {
+      let serialNumber = foundAccessory
+        .getService(Service.AccessoryInformation)
+        .getCharacteristic(Characteristic.SerialNumber).value;
+      if (serialNumber != uuid) {
+        harmonyPlatform.log(
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'WARNING - updating serialNumber for ' +
+            fullName +
+            ' from ' +
+            serialNumber +
+            ' to ' +
+            uuid
+        );
+        foundAccessory
+          .getService(Service.AccessoryInformation)
+          .setCharacteristic(Characteristic.SerialNumber, uuid);
+      }
+    }
+    return foundAccessory;
   },
 
   createAccessory(harmonyPlatform, name) {
@@ -1185,10 +1208,14 @@ HarmonyBase.prototype = {
     myHarmonyAccessory.model = harmonyPlatform.name;
     myHarmonyAccessory.manufacturer = 'Harmony';
 
-    myHarmonyAccessory.serialNumber =
+    myHarmonyAccessory.serialNumber = uuid;
+    /*
       harmonyPlatform.hubRemoteId == undefined
         ? harmonyPlatform.hubIP
         : harmonyPlatform.name + '-' + harmonyPlatform.hubRemoteId;
+
+    */
+
     myHarmonyAccessory.context.subPlatformName = harmonyPlatform.name;
 
     myHarmonyAccessory
@@ -1207,7 +1234,7 @@ HarmonyBase.prototype = {
     );
 
     harmonyPlatform.api.registerPlatformAccessories(
-      'homebridge-harmonyHub',
+      'homebridge-harmony',
       'HarmonyHubWebSocket',
       accessoriesToAdd
     );
