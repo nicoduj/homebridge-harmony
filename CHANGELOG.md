@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## 2.0.0
+## 1.3.5
 
 **It seems from my test that those changes are not breaking the cache accessories, but you might need to clean your cache in case of problems. Concerning SerialNumber, it should be updated after a restart, but could be a problem also. If that is the case, you will need to clean cache.**
 
