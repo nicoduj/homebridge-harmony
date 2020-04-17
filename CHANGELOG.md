@@ -2,11 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.6
+
+- [FIX] changelog and dep error
+
 ## 1.3.5
 
-**It seems from my test that those changes are not breaking the cache accessories, but you might need to clean your cache in case of problems. Concerning SerialNumber, it should be updated after a restart, but could be a problem also. If that is the case, you will need to clean cache.**
+**It seems from my test that those changes are not breaking the cached accessories, but you might need to clean your cache in case of problems. Concerning SerialNumber, it should be updated after a restart, but could be a problem also. If that is the case, you will need to clean cache.**
 
-- [FIX] Chnage pluginIdentifier in platform registration to be compatible with 1.0 of Homebridge (sorry guys, was not clean on this before ...)
+- [FIX] Change pluginIdentifier in platform registration to be compatible with 1.0 of Homebridge (sorry guys, was not clean on this before ...)
 - [FIX] Unique serialnumber for accessories to avoid Eve App problems #249
 
 ## 1.3.4
