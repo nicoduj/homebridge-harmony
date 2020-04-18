@@ -19,6 +19,7 @@ jobs:
         edge: true
     - stage: GitHub Release
       if: tag IS present
+      node_js: '12'
       script: echo "Deploying to GitHub releases ..."
       deploy:
         provider: releases
