@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.7
+
+- [FIX] change node prerequisite to LTS version (10.20.0 at least)
+
 ## 1.3.6
 
 - [FIX] changelog and dep error
