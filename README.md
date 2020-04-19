@@ -300,7 +300,7 @@ Support this project and [others by nicoduj][nicoduj-projects] via [PayPal][payp
 
 [nicoduj-projects]: https://github.com/nicoduj/
 [paypal-button]: https://img.shields.io/badge/Donate-PayPal-green.svg
-[paypal-nicoduj]: https://www.paypal.me/nicoduj/5.00
+[paypal-nicoduj]: https://www.paypal.me/nicoduj
 
 ## License
 

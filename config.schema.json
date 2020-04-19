@@ -3,7 +3,7 @@
   "pluginType": "platform",
   "singular": true,
   "headerDisplay": "This plugin is provided by [nicoduj](https://github.com/nicoduj/)",
-  "footerDisplay": "Support via [paypal](https://www.paypal.me/nicoduj/5.00).",
+  "footerDisplay": "Support via [paypal](https://www.paypal.me/nicoduj).",
   "schema": {
     "type": "object",
     "properties": {
@@ -624,9 +624,7 @@
                         {
                           "type": "flex",
                           "flex-flow": "column",
-                          "items": [
-                            "remoteOverrideCommandsList[].CommandsList[].CommandName"
-                          ]
+                          "items": ["remoteOverrideCommandsList[].CommandsList[].CommandName"]
                         },
                         {
                           "type": "flex",
