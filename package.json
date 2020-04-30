@@ -5,7 +5,9 @@
   "description": "Publish your harmony activities as homekit accessories",
   "main": "index.js",
   "scripts": {
-    "test": "node index.js && echo \"No syntax errors! (node $(node -v))\""
+    "test": "node index.js && echo \"No syntax errors! (node $(node -v))\"",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "license": "ISC",
   "repository": {
@@ -26,7 +28,8 @@
   ],
   "dependencies": {
     "harmony-websocket": "^1.5.1",
-    "harmonyhubjs-discover": "^1.1.1"
+    "harmonyhubjs-discover": "^1.1.1",
+    "snyk": "^1.316.1"
   },
   "bugs": {
     "url": "https://github.com/nicoduj/homebridge-harmony/issues"
@@ -47,5 +50,6 @@
     "hooks": {
       "pre-commit": "pretty-quick --staged"
     }
-  }
+  },
+  "snyk": true
 }
