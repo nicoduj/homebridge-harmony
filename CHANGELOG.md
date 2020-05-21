@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## 1.3.8
 
 - [FIX] numberOfCommands for volume broken - #261
+- [FIX] typo in config.schema for HomeBridge UI-X - PR #267
+- [NEW] adding AcessControlManagement to TV Accessories / Bumping homebridge Version
 
 ## 1.3.7
 

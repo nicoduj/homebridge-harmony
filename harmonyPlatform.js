@@ -113,9 +113,15 @@ HarmonyPlatform.prototype = {
           " is not there anymore in your config (name property). It won't be loaded and will be removed from cache."
       );
 
-      this.api.unregisterPlatformAccessories('homebridge-harmony', 'HarmonyHubWebSocket', [
-        accessory,
-      ]);
+      try {
+        this.api.unregisterPlatformAccessories('homebridge-harmony', 'HarmonyHubWebSocket', [
+          accessory,
+        ]);
+      } catch {
+        this.log(
+          'WARNING - configureAccessory - The platform ' + platformName + ' could not be removed'
+        );
+      }
     } else {
       this.log.debug(
         accessory.displayName,

@@ -13,7 +13,7 @@
     "url": "git+https://github.com/nicoduj/homebridge-harmony.git"
   },
   "engines": {
-    "homebridge": ">=0.4.50",
+    "homebridge": ">=1.0.4",
     "node": ">=10.20.0"
   },
   "keywords": [
