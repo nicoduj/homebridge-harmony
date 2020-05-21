@@ -144,7 +144,7 @@ Fields:
 - `linkVolumeControlToTV`links mute / volume switch to TV accessory if present
 - `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
 - `activitiesToPublishAsInputForTVMode` array of Activities you want to expose as inputs (all by default)
-- `numberOfCommandsSentForVolumeControl` option to set the nnumber of commands to send for each volum (up or down) press. Defaults to 1
+- `numberOfCommandsSentForVolumeControl` option to set the number of commands to send for each volum (up or down) press. Defaults to 1
 - `showCommandsAtStartup` show commands and device losts at startup (defaults to false)
 - `otherPlatforms` is an array of hubs platform . All option are available except **GLOBAL** ones
 
