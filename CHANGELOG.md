@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.9
+
+- [FIX] crash at reboot after last update : you might need to restart twice for everything to work again if you upgrade from 1.3.8 - #269
+
 ## 1.3.8
 
 - [FIX] numberOfCommands for volume broken - #261

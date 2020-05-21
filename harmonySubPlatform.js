@@ -282,54 +282,70 @@ HarmonySubPlatform.prototype = {
 
     ////
 
-    //acces control
-    let subType = this.name + ' AccessControlService';
-    this.accessControlService = myHarmonyAccessory.getServiceByUUIDAndSubType(this.name, subType);
-    var accessControl;
+    try {
+      //acces control
+      let subType = this.name + ' AccessControlService';
+      this.accessControlService = myHarmonyAccessory.getServiceByUUIDAndSubType(this.name, subType);
+      var accessControl;
 
-    if (!this.accessControlService) {
-      accessControl = new AccessControlManagement(true);
-      this.accessControlService = accessControl.getService();
-    } else {
-      accessControl = new AccessControlManagement(true, this.accessControlService);
-    }
+      if (!this.accessControlService) {
+        accessControl = new AccessControlManagement(true);
+        this.accessControlService = accessControl.getService();
+        this.accessControlService.subtype = subType;
+        this.accessControlService.displayName = this.name;
+        myHarmonyAccessory.addService(this.accessControlService);
+      } else {
+        accessControl = new AccessControlManagement(true, this.accessControlService);
+      }
 
-    this._confirmedServices.push(this.accessControlService);
-    myHarmonyAccessory.addService(this.accessControlService);
+      this._confirmedServices.push(this.accessControlService);
 
-    accessControl.on(AccessControlEvent.ACCESS_LEVEL_UPDATED, (level) => {
-      this.log.debug(
+      accessControl.on(AccessControlEvent.ACCESS_LEVEL_UPDATED, (level) => {
+        this.log.debug(
+          '(' +
+            this.name +
+            ')' +
+            'INFO - New access control level of ' +
+            level +
+            '/' +
+            myHarmonyAccessory.displayName
+        );
+      });
+      accessControl.on(
+        AccessControlEvent.PASSWORD_SETTING_UPDATED,
+        (password, passwordRequired) => {
+          if (passwordRequired) {
+            this.log.debug(
+              '(' +
+                this.name +
+                ')' +
+                'INFO - New access control - Required password is: ' +
+                password +
+                '/' +
+                myHarmonyAccessory.displayName
+            );
+          } else {
+            this.log.debug(
+              '(' +
+                this.name +
+                ')' +
+                'INFO - access control - No password set! ' +
+                '/' +
+                myHarmonyAccessory.displayName
+            );
+          }
+        }
+      );
+    } catch {
+      this.log(
         '(' +
           this.name +
           ')' +
-          'INFO - New access control level of ' +
-          level +
+          'ERROR - error adding control service, you should try to restart (possible cache problem because of previous bug) or you are not on correct homebridge version' +
           '/' +
           myHarmonyAccessory.displayName
       );
-    });
-    accessControl.on(AccessControlEvent.PASSWORD_SETTING_UPDATED, (password, passwordRequired) => {
-      if (passwordRequired) {
-        this.log.debug(
-          '(' +
-            this.name +
-            ')' +
-            'INFO - New access control - Required password is: ' +
-            password +
-            '/' +
-            myHarmonyAccessory.displayName
-        );
-      } else {
-        this.log.debug(
-          '(' +
-            this.name +
-            ')' +
-            'INFO - access control - No password set! ' +
-            '/' +
-            myHarmonyAccessory.displayName
-        );
-      }
-    });
+    }
 
     /*
         const myController = new RemoteController();

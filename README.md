@@ -24,7 +24,7 @@ This plugin is publishing harmony hub activities and devices as switches, with s
 
 ## Note
 
-- This plugin was developed with [Homebridge](https://github.com/nfarina/homebridge) and therefore has not been tested with HOOBS. If you use HOOBS, use this plugin at your own risk, or [migrate to homebridge](https://github.com/homebridge/homebridge-raspbian-image/wiki/How-to-migrate-from-HOOBS-to-Homebridge).
+- This plugin was developed with [Homebridge](https://github.com/nfarina/homebridge) and therefore has not been tested with [Hoobs](https://github.com/hoobs-org/HOOBS). If you use [Hoobs](https://github.com/hoobs-org/HOOBS), please report any issues [there](https://github.com/hoobs-org/HOOBS) first - or [migrate to homebridge](https://github.com/homebridge/homebridge-raspbian-image/wiki/How-to-migrate-from-HOOBS-to-Homebridge).
 
 ## Installation
 
