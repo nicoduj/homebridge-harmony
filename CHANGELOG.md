@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.8
+
+- [FIX] numberOfCommands for volume broken - #261
+
 ## 1.3.7
 
 - [FIX] change node prerequisite to LTS version (10.20.0 at least)

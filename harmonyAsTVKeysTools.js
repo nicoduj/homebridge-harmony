@@ -115,7 +115,7 @@ module.exports = {
     return keysMap;
   },
 
-  getOverrideCommand: function (platform, command, defaultCommand, defaultNumberToSend = 1) {
+  getOverrideCommand: function (platform, command, defaultCommand, defaultNumberToSend) {
     if (
       platform.remoteOverrideCommandsList &&
       platform.remoteOverrideCommandsList[platform._currentInputService.activityName] &&
@@ -127,14 +127,13 @@ module.exports = {
       let overrideArray = override.split(';');
       let device = overrideArray[0];
       let cmd = overrideArray[1];
-      var numberOfCommands = defaultNumberToSend;
+      var numberOfCommands = 1;
+
+      if (defaultNumberToSend) numberOfCommands = defaultNumberToSend;
       if (overrideArray.length > 2) numberOfCommands = overrideArray[2];
 
       let commandToSend = platform.harmonyBase.deviceCommands[[device, cmd]];
 
-      platform.log(
-        '(' + platform.name + ')' + 'INFO - TEST - ' + commandToSend + '-' + numberOfCommands
-      );
       if (commandToSend) {
         commandToSend = commandToSend + '|' + numberOfCommands;
 
@@ -166,6 +165,8 @@ module.exports = {
         );
       }
     }
+
+    defaultCommand = defaultCommand + '|' + defaultNumberToSend;
 
     return defaultCommand;
   },
