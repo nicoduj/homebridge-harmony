@@ -22,6 +22,10 @@ You can discuss this plugin on [Discord](https://discord.gg/DRxjgv) in #harmony 
 
 This plugin is publishing harmony hub activities and devices as switches, with some advanced option (see below) for custom needs like macros, seuqences, and much more. The TV mode is focused on harmony hub activities only at the moment : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
 
+## Note
+
+- This plugin was developed with [Homebridge](https://github.com/nfarina/homebridge) and therefore has not been tested with HOOBS. If you use HOOBS, use this plugin at your own risk, or [migrate to homebridge](https://github.com/homebridge/homebridge-raspbian-image/wiki/How-to-migrate-from-HOOBS-to-Homebridge).
+
 ## Installation
 
 1. Install Homebridge using: `npm install -g homebridge`
