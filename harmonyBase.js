@@ -1509,7 +1509,7 @@ HarmonyBase.prototype = {
     let commandToSendArray = incommingCommandToSend.split('|');
     if (commandToSendArray.length > 1) {
       commandToSend = commandToSendArray[0];
-      numberOFcommandsToSend = commandToSendArray[1];
+      if (commandToSendArray[1] != undefined) numberOFcommandsToSend = commandToSendArray[1];
     } else {
       commandToSend = commandToSendArray[0];
     }

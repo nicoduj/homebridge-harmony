@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.10
+
+- [FIX] since Update 1.3.9 no iOS Remote button works except volume #271
+
 ## 1.3.9
 
 - [FIX] crash at reboot after last update : you might need to restart twice for everything to work again if you upgrade from 1.3.8 - #269
