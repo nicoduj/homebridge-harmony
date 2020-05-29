@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.11
+
+- [FIX] No longer existing platform cannot be removed #275
+
 ## 1.3.10
 
 - [FIX] since Update 1.3.9 no iOS Remote button works except volume #271

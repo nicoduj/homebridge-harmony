@@ -280,6 +280,19 @@ HarmonySubPlatform.prototype = {
       else this.configureMainActivity(myHarmonyAccessory, defaultActivity);
     }
 
+    //AccessControl
+    this.configureAccessControl(myHarmonyAccessory);
+
+    this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
+
+    this.TVFoundAccessory = myHarmonyAccessory;
+
+    return accessoriesToAdd;
+  },
+
+  //TV METHODS
+
+  configureAccessControl(myHarmonyAccessory) {
     ////
 
     try {
@@ -346,35 +359,7 @@ HarmonySubPlatform.prototype = {
           myHarmonyAccessory.displayName
       );
     }
-
-    /*
-        const myController = new RemoteController();
-        // ----------------- for siri support -----------------
-       // import { GStreamerAudioProducer, GStreamerOptions } from "./gstreamer-audioProducer";
-// CHANGE this to enable siri support. Read docs in 'gstreamer-audioProducer.ts' for necessary package dependencies
-//const siriSupport = false;
-//const gstreamerOptions: Partial<GStreamerOptions> = { // any configuration regarding the producer can be made here
-// ----------------------------------------------------
-        //new RemoteController(GStreamerAudioProducer, gstreamerOptions)
-
-        myHarmonyAccessory.configureController(myController)
-
-        this._confirmedServices.push(myController.targetControlManagementService);
-        this._confirmedServices.push(myController.targetControlService);
-        //TO ENABLE SIRI this._confirmedServices.push(myController.audioStreamManagementService);
-        this.log('readTV - Remote' +  JSON.stringify(myController)); 
-
-
-    ////
-*/
-    this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
-
-    this.TVFoundAccessory = myHarmonyAccessory;
-
-    return accessoriesToAdd;
   },
-
-  //TV METHODS
 
   configureMainService: function (accessory) {
     let subType = this.name + ' TV';

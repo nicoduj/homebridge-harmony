@@ -41,6 +41,7 @@ function HarmonyPlatform(log, config, api) {
   );
 
   this.platforms = [];
+  this._AccessoriesToRemove = [];
 
   for (let i = 0, len = this.plaformsConfigs.length; i < len; i++) {
     let platformConfig = this.plaformsConfigs[i];
@@ -79,6 +80,14 @@ function HarmonyPlatform(log, config, api) {
           }
         }
 
+        if (this._AccessoriesToRemove.length > 0) {
+          this.api.unregisterPlatformAccessories(
+            'homebridge-harmony',
+            'HarmonyHubWebSocket',
+            this._AccessoriesToRemove
+          );
+        }
+
         var launchDiscovery = false;
         for (let i = 0, len = this.platforms.length; i < len; i++) {
           let platform = this.platforms[i];
@@ -112,16 +121,7 @@ HarmonyPlatform.prototype = {
           platformName +
           " is not there anymore in your config (name property). It won't be loaded and will be removed from cache."
       );
-
-      try {
-        this.api.unregisterPlatformAccessories('homebridge-harmony', 'HarmonyHubWebSocket', [
-          accessory,
-        ]);
-      } catch {
-        this.log(
-          'WARNING - configureAccessory - The platform ' + platformName + ' could not be removed'
-        );
-      }
+      this._AccessoriesToRemove.push(accessory);
     } else {
       this.log.debug(
         accessory.displayName,
