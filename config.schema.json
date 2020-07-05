@@ -34,6 +34,10 @@
         "title": "TV accessory in homekit (Defaults to true if not set)",
         "type": "boolean"
       },
+      "configureAccesscontrol": {
+        "title": "Enable Access Control Service (false by default)",
+        "type": "boolean"
+      },
       "mainActivity": {
         "title": "Main Activity",
         "type": "string"
@@ -285,6 +289,10 @@
             },
             "TVAccessory": {
               "title": "TV accessory in homekit (Defaults to true if not set)",
+              "type": "boolean"
+            },
+            "configureAccesscontrol": {
+              "title": "Enable Access Control Service (false by default)",
               "type": "boolean"
             },
             "mainActivity": {
@@ -592,6 +600,10 @@
             {
               "key": "numberOfCommandsSentForVolumeControl",
               "description": "Option to set the number of commands to send for each volum (up or down) press."
+            },
+            {
+              "key": "configureAccesscontrol",
+              "description": "Enable Access Control Service"
             },
             {
               "type": "help",
@@ -954,6 +966,10 @@
                         {
                           "key": "otherPlatforms[].numberOfCommandsSentForVolumeControl",
                           "description": "Option to set the number of commands to send for each volum (up or down) press."
+                        },
+                        {
+                          "key": "otherPlatforms[].configureAccesscontrol",
+                          "description": "Enable Access Control Service"
                         },
                         {
                           "type": "help",

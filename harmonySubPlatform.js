@@ -48,6 +48,11 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
 
     this.remoteOverrideCommandsList = config['remoteOverrideCommandsList'];
 
+    this.configureAccesscontrol = HarmonyTools.checkParameter(
+      config['configureAccesscontrol'],
+      false
+    );
+
     if (Array.isArray(this.remoteOverrideCommandsList)) {
       this.log.debug('(' + this.name + ')' + 'INFO - remoteOverrideCommandsList is in new format');
       const NewRemoteOverrideCommandsList = {};
@@ -281,7 +286,7 @@ HarmonySubPlatform.prototype = {
     }
 
     //AccessControl
-    this.configureAccessControl(myHarmonyAccessory);
+    if (this.configureAccesscontrol) this.configureAccessControlService(myHarmonyAccessory);
 
     this.bindCharacteristicEventsForInputs(myHarmonyAccessory);
 
@@ -292,11 +297,12 @@ HarmonySubPlatform.prototype = {
 
   //TV METHODS
 
-  configureAccessControl(myHarmonyAccessory) {
+  configureAccessControlService: function (myHarmonyAccessory) {
     ////
 
     try {
       //acces control
+      this.log('(' + this.name + ')' + 'INFO - configuring Access Control Service');
       let subType = this.name + ' AccessControlService';
       this.accessControlService = myHarmonyAccessory.getServiceByUUIDAndSubType(this.name, subType);
       var accessControl;
@@ -314,7 +320,7 @@ HarmonySubPlatform.prototype = {
       this._confirmedServices.push(this.accessControlService);
 
       accessControl.on(AccessControlEvent.ACCESS_LEVEL_UPDATED, (level) => {
-        this.log.debug(
+        this.log(
           '(' +
             this.name +
             ')' +
@@ -328,7 +334,7 @@ HarmonySubPlatform.prototype = {
         AccessControlEvent.PASSWORD_SETTING_UPDATED,
         (password, passwordRequired) => {
           if (passwordRequired) {
-            this.log.debug(
+            this.log(
               '(' +
                 this.name +
                 ')' +
@@ -338,7 +344,7 @@ HarmonySubPlatform.prototype = {
                 myHarmonyAccessory.displayName
             );
           } else {
-            this.log.debug(
+            this.log(
               '(' +
                 this.name +
                 ')' +

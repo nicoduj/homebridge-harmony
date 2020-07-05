@@ -411,7 +411,7 @@ HarmonyBase.prototype = {
       }
       for (let servToDel of servicestoRemove) {
         harmonyPlatform.log(
-          'WARNING - Service Removed' +
+          'WARNING - Service Removed ' +
             servToDel.UUID +
             '/' +
             servToDel.subtype +
