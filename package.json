@@ -47,5 +47,15 @@
     "hooks": {
       "pre-commit": "pretty-quick --staged"
     }
-  }
+  },
+  "funding": [
+      {
+      "type" : "github",
+      "url" : "https://github.com/sponsors/nicoduj"
+    },
+    {
+      "type" : "paypal",
+      "url" : "https://www.paypal.me/nicoduj/"
+    }
+  ]
 }
