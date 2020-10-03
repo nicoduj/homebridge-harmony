@@ -20,7 +20,7 @@ You can discuss this plugin on [Discord](https://discord.gg/DRxjgv) in #harmony 
 
 [![Discord Status](https://img.shields.io/discord/432663330281226270.svg?label=discord)](https://discord.gg/KYcX25z)
 
-This plugin is publishing harmony hub activities and devices as switches, with some advanced option (see below) for custom needs like macros, seuqences, and much more. The TV mode is focused on harmony hub activities only at the moment : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
+This plugin is publishing harmony hub activities and devices as switches, with some advanced option (see below) for custom needs like macros, sequences, and much more. The TV mode is focused on harmony hub activities only at the moment : each activity of the hub is mapped to an input. A main activity is linked to the on/off switch of the accessory. Buttons on the remote app and volume controls will be binded to the one defined in the activity (if so). VOLUME IS BIND TO PHYSICAL BUTTONS WHEN REMOTE FROM CONTROL CENTER IS SHOWN . There is an option to override default mappings.
 
 ## Note
 
