@@ -207,6 +207,10 @@
         "title": "Publish a general volume switch",
         "type": "boolean"
       },
+      "publishGeneralVolumeSwitches": {
+        "title": "Publish general volume up and down switches",
+        "type": "boolean"
+      },
       "linkVolumeControlToTV": {
         "title": "Links Volumes controls (mute / volume) to TV accessory if it exists",
         "type": "boolean"
@@ -464,6 +468,10 @@
               "title": "publishGeneralVolumeSlider",
               "type": "boolean"
             },
+            "publishGeneralVolumeSwitches": {
+              "title": "Publish general volume up and down switches",
+              "type": "boolean"
+            },
             "linkVolumeControlToTV": {
               "title": "linkVolumeControlToTV",
               "type": "boolean"
@@ -716,6 +724,10 @@
         {
           "key": "publishGeneralVolumeSlider",
           "description": "Publish a volume slider, stateless, that will send a volume command to current activity"
+        },
+        {
+          "key": "publishGeneralVolumeSwitches",
+          "description": "Publish two volume switches (up and down), stateless, that will send a volume command to current activity"
         },
         {
           "key": "linkVolumeControlToTV",
@@ -1086,6 +1098,10 @@
                       "description": "Publish a volume slider, stateless, that will send a volume command to current activity"
                     },
                     {
+                      "key": "otherPlatforms[].publishGeneralVolumeSwitches",
+                      "description": "Publish two volume switches (up and down), stateless, that will send a volume command to current activity"
+                    },
+                    {
                       "key": "otherPlatforms[].linkVolumeControlToTV",
                       "description": "Link volumes controls (mute / volume) to TV accessory if it exists"
                     }
@@ -1253,7 +1269,7 @@
       "items": [
         {
           "key": "publishAllTVAsExternalAccessory",
-          "description": "Publish all TV accessory as external Accessories. This way, if another plugin on the same homebridge instance as one, the one on harmony will also be visible, but you will have to add them manually after the hub itself. Defaults to false (in that case, only second tv accessory or following will be published by this plugin as external accessories, first one will be linked to the hub)."
+          "description": "Publish all TV accessory as external Accessories. This way, if another plugin on the same homebridge instance as one, the one on harmony will also be visible, but you will have to add them manually after the hub itself. Defaults to true. (if set to false, only second tv accessory or following will be published by this plugin as external accessories, first one will be linked to the hub and might not dispaly a TV icon)."
         }
       ]
     },

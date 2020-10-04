@@ -123,7 +123,7 @@ HarmonyBase.prototype = {
 
   //hub discovery events handling
   checkHubsFound: function (harmonyPlatform, knownHubsArray) {
-    if (knownHubsArray.length > 1 && harmonyPlatform.hubName == undefined) {
+    if (knownHubsArray && knownHubsArray.length > 1 && harmonyPlatform.hubName == undefined) {
       harmonyPlatform.log(
         '(' +
           harmonyPlatform.name +
@@ -133,7 +133,7 @@ HarmonyBase.prototype = {
           '- platform ' +
           harmonyPlatform.name
       );
-    } else {
+    } else if (knownHubsArray) {
       for (let hub of knownHubsArray) {
         hubInfo = hub.split('|');
         if (harmonyPlatform.hubName == undefined || harmonyPlatform.hubName == hubInfo[1]) {
@@ -154,6 +154,8 @@ HarmonyBase.prototype = {
             knownHubsArray
         );
       }
+    } else {
+      harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'ERROR - no hub found ');
     }
   },
 
@@ -335,7 +337,7 @@ HarmonyBase.prototype = {
     }
 
     this.getGeneralMuteSwitchAccessory(harmonyPlatform, data);
-
+    this.getGeneralVolumeSwitchesAccessories(harmonyPlatform, data);
     this.getGeneralVolumeSliderAccessory(harmonyPlatform, data);
 
     this.getDevicesAccessories(harmonyPlatform, data);
@@ -692,7 +694,7 @@ HarmonyBase.prototype = {
       let service = this.getSliderService(harmonyPlatform, myHarmonyAccessory, name, subType);
       service.type = HarmonyConst.GENERALVOLUME_TYPE;
 
-      //array of mutes commands
+      //array of commands
       var volumeUpCommandsMap = new Object();
       var volumeDownCommandsMap = new Object();
       let activities = data.data.activity;
@@ -731,6 +733,106 @@ HarmonyBase.prototype = {
     }
   },
 
+  //GENERAL Volume Up Switches
+
+  getGeneralVolumeSwitchesAccessories: function (harmonyPlatform, data) {
+    if (harmonyPlatform.publishGeneralVolumeSwitches) {
+      harmonyPlatform.log(
+        '(' + harmonyPlatform.name + ')' + 'INFO - Loading general volume switches...'
+      );
+
+      var accessoriesToAdd = [];
+
+      // Accessory Names
+
+      let volumeUpName = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeUp';
+      let volumeDownName = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeDown';
+
+      // Create the accesories and add them to our array to add below
+
+      var volumeUpAccessory = this.checkVolumeAccessory(
+        harmonyPlatform,
+        accessoriesToAdd,
+        volumeUpName
+      );
+      var volumeDownAccessory = this.checkVolumeAccessory(
+        harmonyPlatform,
+        accessoriesToAdd,
+        volumeDownName
+      );
+
+      // Create volume up service
+
+      let volumeUpSubType = volumeUpName;
+      let volumeUpService = this.getSwitchService(
+        harmonyPlatform,
+        volumeUpAccessory,
+        volumeUpName,
+        volumeUpSubType
+      );
+      volumeUpService.type = HarmonyConst.GENERALVOLUMEUP_TYPE;
+
+      // Create volume down service
+
+      let volumeDownSubType = volumeDownName;
+      let volumeDownService = this.getSwitchService(
+        harmonyPlatform,
+        volumeDownAccessory,
+        volumeDownName,
+        volumeDownSubType
+      );
+      volumeDownService.type = HarmonyConst.GENERALVOLUMEDOWN_TYPE;
+
+      //array of commands
+      var volumeUpCommandsMap = new Object();
+      var volumeDownCommandsMap = new Object();
+      let activities = data.data.activity;
+      for (let i = 0, len = activities.length; i < len; i++) {
+        let activity = activities[i];
+        let controlGroup = activity.controlGroup;
+        for (let j = 0, len = controlGroup.length; j < len; j++) {
+          if (controlGroup[j].name == 'Volume') {
+            let functions = controlGroup[j].function;
+            for (let k = 0, len = functions.length; k < len; k++) {
+              if (functions[k].name == 'VolumeUp') {
+                volumeUpCommandsMap[activity.id] = functions[k].action;
+              }
+              if (functions[k].name == 'VolumeDown') {
+                volumeDownCommandsMap[activity.id] = functions[k].action;
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      // Add volume up commands to service, bind events
+
+      volumeUpService.volumeUpCommands = volumeUpCommandsMap;
+      harmonyPlatform.log.debug(
+        '(' + harmonyPlatform.name + ')' + 'Volume commands for Global Volume Up : '
+      );
+      harmonyPlatform.log.debug(volumeUpCommandsMap);
+      harmonyPlatform._confirmedServices.push(volumeUpService);
+
+      this.bindCharacteristicEventsForSwitch(harmonyPlatform, volumeUpService);
+
+      // Add volume down commands to service, bind events
+
+      volumeDownService.volumeDownCommands = volumeDownCommandsMap;
+      harmonyPlatform.log.debug(
+        '(' + harmonyPlatform.name + ')' + 'Volume commands for Global Volume Down : '
+      );
+      harmonyPlatform.log.debug(volumeDownCommandsMap);
+      harmonyPlatform._confirmedServices.push(volumeDownService);
+
+      this.bindCharacteristicEventsForSwitch(harmonyPlatform, volumeDownService);
+
+      //creating accessories
+      this.addAccessories(harmonyPlatform, accessoriesToAdd);
+    }
+  },
+
   //GENERAL Mute SWITCH
   getGeneralMuteSwitchAccessory: function (harmonyPlatform, data) {
     if (harmonyPlatform.publishGeneralMuteSwitch) {
@@ -747,7 +849,7 @@ HarmonyBase.prototype = {
       let service = this.getSwitchService(harmonyPlatform, myHarmonyAccessory, name, subType);
       service.type = HarmonyConst.GENERALMUTE_TYPE;
 
-      //array of mutes commands
+      //array of commands
       var muteCommandsMap = new Object();
       let activities = data.data.activity;
       for (let i = 0, len = activities.length; i < len; i++) {
@@ -876,29 +978,67 @@ HarmonyBase.prototype = {
     let commandFunctions = [];
 
     for (let j = 0, len = controlGroup.length; j < len; j++) {
-      if (controlGroup[j].name === 'Power') {
-        let functions = controlGroup[j].function;
-        for (let k = 0, len = functions.length; k < len; k++) {
-          if (functions[k].name === 'PowerOff') {
-            harmonyPlatform.log.debug(
-              '(' + harmonyPlatform.name + ')' + 'INFO - Activating PowerOff for ' + switchName
+      //if (controlGroup[j].name === 'Power') {
+      let functions = controlGroup[j].function;
+      for (let k = 0, len = functions.length; k < len; k++) {
+        if (functions[k].name === 'PowerOff') {
+          harmonyPlatform.log.debug(
+            '(' + harmonyPlatform.name + ')' + 'INFO - Activating PowerOff for ' + switchName
+          );
+
+          if (commandFunctions.some((e) => e.key == 'PowerOff')) {
+            harmonyPlatform.log(
+              '(' +
+                harmonyPlatform.name +
+                ')' +
+                'WARNING - Multiple PowerOff - found for ' +
+                switchName +
+                '- not adding one in ' +
+                controlGroup[j].name
             );
+          } else {
             commandFunctions.push({
               key: 'PowerOff',
               value: functions[k].action,
             });
-          } else if (functions[k].name === 'PowerOn') {
-            harmonyPlatform.log.debug(
-              '(' + harmonyPlatform.name + ')' + 'INFO - Activating  PowerOn for ' + switchName
+          }
+        } else if (functions[k].name === 'PowerOn') {
+          harmonyPlatform.log.debug(
+            '(' + harmonyPlatform.name + ')' + 'INFO - Activating  PowerOn for ' + switchName
+          );
+
+          if (commandFunctions.some((e) => e.key == 'PowerOn')) {
+            harmonyPlatform.log(
+              '(' +
+                harmonyPlatform.name +
+                ')' +
+                'WARNING - Multiple PowerOn - found for ' +
+                switchName +
+                '- not adding one in ' +
+                controlGroup[j].name
             );
+          } else {
             commandFunctions.push({
               key: 'PowerOn',
               value: functions[k].action,
             });
-          } else if (functions[k].name === 'PowerToggle') {
-            harmonyPlatform.log.debug(
-              '(' + harmonyPlatform.name + ')' + 'INFO - Activating  PowerToggle for ' + switchName
+          }
+        } else if (functions[k].name === 'PowerToggle') {
+          harmonyPlatform.log.debug(
+            '(' + harmonyPlatform.name + ')' + 'INFO - Activating  PowerToggle for ' + switchName
+          );
+
+          if (commandFunctions.some((e) => e.key == 'PowerToggle')) {
+            harmonyPlatform.log(
+              '(' +
+                harmonyPlatform.name +
+                ')' +
+                'WARNING - Multiple PowerToggle - found for ' +
+                switchName +
+                '- not adding one in ' +
+                controlGroup[j].name
             );
+          } else {
             commandFunctions.push({
               key: 'PowerToggle',
               value: functions[k].action,
@@ -906,8 +1046,8 @@ HarmonyBase.prototype = {
           }
         }
       }
+      //}
     }
-
     return commandFunctions;
   },
 
@@ -1284,7 +1424,32 @@ HarmonyBase.prototype = {
           let command = service.muteCommands[harmonyPlatform._currentActivity];
           this.sendCommand(harmonyPlatform, command);
         }
+      } else if (service.type === HarmonyConst.GENERALVOLUMEUP_TYPE) {
+        //Volume Up
+        if (harmonyPlatform._currentActivity > -1) {
+          let command = service.volumeUpCommands[harmonyPlatform._currentActivity];
+          let numberOfcommandstoSend =
+            harmonyPlatform.numberOfCommandsSentForVolumeControl &&
+            harmonyPlatform.numberOfCommandsSentForVolumeControl > 0
+              ? harmonyPlatform.numberOfCommandsSentForVolumeControl
+              : 1;
+          command = command + '|' + Math.round(Math.abs(numberOfcommandstoSend));
+          this.sendCommand(harmonyPlatform, command);
+        }
+      } else if (service.type === HarmonyConst.GENERALVOLUMEDOWN_TYPE) {
+        ///Volume Down
+        if (harmonyPlatform._currentActivity > -1) {
+          let command = service.volumeDownCommands[harmonyPlatform._currentActivity];
+          let numberOfcommandstoSend =
+            harmonyPlatform.numberOfCommandsSentForVolumeControl &&
+            harmonyPlatform.numberOfCommandsSentForVolumeControl > 0
+              ? harmonyPlatform.numberOfCommandsSentForVolumeControl
+              : 1;
+          command = command + '|' + Math.round(Math.abs(numberOfcommandstoSend));
+          this.sendCommand(harmonyPlatform, command);
+        }
       }
+
       // In order to behave like a push button reset the status to off
       HarmonyTools.resetCharacteristic(
         service,

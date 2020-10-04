@@ -37,7 +37,7 @@ function HarmonyPlatform(log, config, api) {
 
   this.publishAllTVAsExternalAccessory = HarmonyTools.checkParameter(
     config['publishAllTVAsExternalAccessory'],
-    false
+    true
   );
 
   this.platforms = [];

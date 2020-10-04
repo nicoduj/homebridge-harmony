@@ -33,6 +33,11 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
     false
   );
 
+  this.publishGeneralVolumeSwitches = HarmonyTools.checkParameter(
+    config['publishGeneralVolumeSwitches'],
+    false
+  );
+
   this.linkVolumeControlToTV = HarmonyTools.checkParameter(config['linkVolumeControlToTV'], false);
 
   this.numberOfCommandsSentForVolumeControl = HarmonyTools.checkParameter(
@@ -516,7 +521,9 @@ HarmonySubPlatform.prototype = {
           let service = myHarmonyAccessory.services[s];
           if (
             service.type == HarmonyConst.ACTIVITY_TYPE ||
-            service.type == HarmonyConst.GENERALVOLUME_TYPE
+            service.type == HarmonyConst.GENERALVOLUME_TYPE ||
+            service.type == HarmonyConst.GENERALVOLUMEUP_TYPE ||
+            service.type == HarmonyConst.GENERALVOLUMEDOWN_TYPE
           )
             this.refreshService(service, undefined);
         }
@@ -1166,6 +1173,15 @@ HarmonySubPlatform.prototype = {
         this._currentActivity > -1 &&
         service.volumeDownCommands[this._currentActivity] !== undefined &&
         service.volumeUpCommands[this._currentActivity] !== undefined
+      );
+    } else if (service.type == HarmonyConst.GENERALVOLUMEUP_TYPE) {
+      return (
+        this._currentActivity > -1 && service.volumeUpCommands[this._currentActivity] !== undefined
+      );
+    } else if (service.type == HarmonyConst.GENERALVOLUMEDOWN_TYPE) {
+      return (
+        this._currentActivity > -1 &&
+        service.volumeDownCommands[this._currentActivity] !== undefined
       );
     } else if (service.activityId == -1) {
       if (

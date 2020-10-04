@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.0
+
+- [NEW] !!! TV defaults now to external accessories - #298 !!!
+- [FIX] prevent crash if no hubs found on auto discovery #300
+- [NEW] test power On / Off outside of Power control group for custom devices - #294
+- [NEW] General Volume Up and Down Accessories #296 - thx to @jplwoodward
+- [NEW] Add support ot github sponsors - thank you :) - #304
+
 ## 1.3.12
 
 - [FIX?] Removing access control by default to try to resolve #280

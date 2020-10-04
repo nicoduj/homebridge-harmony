@@ -60,18 +60,6 @@ To setup mutliple tv platorm, you will have to add others manually in homekit. O
 ]
 ```
 
-**Simple Config (only TV Accessory, but with another plugin exposing a TV accessory)**
-
-```json
-"platforms": [
-  {
-    "platform": "HarmonyHubWebSocket",
-    "name": "HubName",
-    "publishAllTVAsExternalAccessory" : true
-  }
-]
-```
-
 **Only switch mode**
 
 ```json
@@ -120,7 +108,7 @@ To setup mutliple tv platorm, you will have to add others manually in homekit. O
 Fields:
 
 - `platform` **GLOBAL** must be "HarmonyHubWebSocket" (required).
-- `publishAllTVAsExternalAccessory` **GLOBAL** publish all TV accessory as external Accessories. This way, if another plugin on the same homebridge instance as one, the one on harmony will also be visible, but you will have to add them manually after the hub itself. Defaults to false (in that case, only second tv accessory or following will be published by this plugin as external accessories, first one will be linked to the hub).
+- `publishAllTVAsExternalAccessory` **GLOBAL** publish all TV accessory as external Accessories. This way, if another plugin on the same homebridge instance as one, the one on harmony will also be visible, but you will have to add them manually after the hub itself. Defaults to TRUE (if set to false, only second tv accessory or following will be published by this plugin as external accessories, first one will be linked to the hub and might not display a TV icon).
 - `cleanCache` **GLOBAL** option to clean all cached Accessory. Please use with caution, might be needed if you change names / config of the hub and there is some ghost devices in Homekit. Be sure that all your icloud sync is done while launching Homebridge with this option set to true. Set it back to false after and launch again ! It does not affect external accessories.
 - `name` is the name of the published Platform (required).
 - `hubName` is the name of your hub in harmony app (optional, but mandatory if you have mutliple hubs). In case both hubName and hubIP are not set, it will discover your hub automatically, providing there is only one
@@ -146,6 +134,7 @@ Fields:
 - `configureAccesscontrol` configure Access control service (false by default)
 - `publishGeneralMuteSwitch` publish a mute switch, stateless, that will send a mute command to current activity.
 - `publishGeneralVolumeSlider` publish a volume slider, stateless, that will send a volume commands to current activity. Approximativley, it will send an Up / Down Volume command each 5%. It can be combined with `numberOfCommandsSentForVolumeControl` option to multiply the number of up / down commands sent.
+- `publishGeneralVolumeSwitches` publish switches, stateless, for volume up / down on TV Accessory. It can be combined with `numberOfCommandsSentForVolumeControl` option to multiply the number of up / down commands sent.
 - `linkVolumeControlToTV`links mute / volume switch to TV accessory if present
 - `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
 - `activitiesToPublishAsInputForTVMode` array of Activities you want to expose as inputs (all by default)
