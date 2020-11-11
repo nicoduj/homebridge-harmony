@@ -397,7 +397,7 @@ HarmonySubPlatform.prototype = {
         Characteristic.SleepDiscoveryMode,
         Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE
       )
-      .setCharacteristic(Characteristic.ActiveIdentifier, -1)
+      //.setCharacteristic(Characteristic.ActiveIdentifier, -1)
       .setCharacteristic(Characteristic.Active, false);
 
     this.bindCharacteristicEventsForTV(accessory);
@@ -959,8 +959,10 @@ HarmonySubPlatform.prototype = {
         this.log.debug(
           '(' + this.name + ')' + 'INFO - SET Characteristic.ConfiguredName : ' + value
         );
-        let idConf = 0;
+
+        var idConf = 0;
         if (service.UUID == Service.InputSource.UUID) idConf = service.activityId;
+        else if (service.type !== undefined) idConf = service.type;
 
         this.savedNames[idConf] = value;
         fs.writeFile(this.savedNamesFile, JSON.stringify(this.savedNames), (err) => {

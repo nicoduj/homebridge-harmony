@@ -294,6 +294,10 @@ HarmonyBase.prototype = {
   },
 
   setupFoundAccessories(harmonyPlatform, accessoriesToAdd, data, homedata) {
+    this.getGeneralMuteSwitchAccessory(harmonyPlatform, data);
+    this.getGeneralVolumeSwitchesAccessories(harmonyPlatform, data);
+    this.getGeneralVolumeSliderAccessory(harmonyPlatform, data);
+
     //creating accessories
 
     for (const accessory of accessoriesToAdd) {
@@ -335,10 +339,6 @@ HarmonyBase.prototype = {
         this.addAccessories(harmonyPlatform, [accessory]);
       }
     }
-
-    this.getGeneralMuteSwitchAccessory(harmonyPlatform, data);
-    this.getGeneralVolumeSwitchesAccessories(harmonyPlatform, data);
-    this.getGeneralVolumeSliderAccessory(harmonyPlatform, data);
 
     this.getDevicesAccessories(harmonyPlatform, data);
     this.getSequencesAccessories(harmonyPlatform, data);
@@ -686,13 +686,33 @@ HarmonyBase.prototype = {
       );
 
       var accessoriesToAdd = [];
-      let name = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeSlider';
+      let subType = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeSlider';
+      let name = subType;
+
+      if (
+        harmonyPlatform.savedNames &&
+        harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUME_TYPE]
+      ) {
+        name = harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUME_TYPE];
+      }
 
       var myHarmonyAccessory = this.checkVolumeAccessory(harmonyPlatform, accessoriesToAdd, name);
 
-      let subType = name;
       let service = this.getSliderService(harmonyPlatform, myHarmonyAccessory, name, subType);
       service.type = HarmonyConst.GENERALVOLUME_TYPE;
+
+      //handling name if linked to TV service && external
+      if (
+        (harmonyPlatform.mainPlatform._oneTVAdded ||
+          harmonyPlatform.mainPlatform.publishAllTVAsExternalAccessory) &&
+        harmonyPlatform.TVFoundAccessory &&
+        harmonyPlatform.linkVolumeControlToTV
+      ) {
+        harmonyPlatform.bindConfiguredNameCharacteristic(
+          service.getCharacteristic(Characteristic.ConfiguredName),
+          service
+        );
+      }
 
       //array of commands
       var volumeUpCommandsMap = new Object();
@@ -745,8 +765,23 @@ HarmonyBase.prototype = {
 
       // Accessory Names
 
-      let volumeUpName = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeUp';
-      let volumeDownName = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeDown';
+      let volumeUpSubType = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeUp';
+      let volumeDownSubType = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeDown';
+      let volumeUpName = volumeUpSubType;
+      let volumeDownName = volumeDownSubType;
+
+      if (
+        harmonyPlatform.savedNames &&
+        harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUMEUP_TYPE]
+      ) {
+        volumeUpName = harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUMEUP_TYPE];
+      }
+      if (
+        harmonyPlatform.savedNames &&
+        harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUMEDOWN_TYPE]
+      ) {
+        volumeDownName = harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUMEDOWN_TYPE];
+      }
 
       // Create the accesories and add them to our array to add below
 
@@ -763,7 +798,6 @@ HarmonyBase.prototype = {
 
       // Create volume up service
 
-      let volumeUpSubType = volumeUpName;
       let volumeUpService = this.getSwitchService(
         harmonyPlatform,
         volumeUpAccessory,
@@ -774,7 +808,6 @@ HarmonyBase.prototype = {
 
       // Create volume down service
 
-      let volumeDownSubType = volumeDownName;
       let volumeDownService = this.getSwitchService(
         harmonyPlatform,
         volumeDownAccessory,
@@ -782,6 +815,23 @@ HarmonyBase.prototype = {
         volumeDownSubType
       );
       volumeDownService.type = HarmonyConst.GENERALVOLUMEDOWN_TYPE;
+
+      //handling name if linked to TV service && external
+      if (
+        (harmonyPlatform.mainPlatform._oneTVAdded ||
+          harmonyPlatform.mainPlatform.publishAllTVAsExternalAccessory) &&
+        harmonyPlatform.TVFoundAccessory &&
+        harmonyPlatform.linkVolumeControlToTV
+      ) {
+        harmonyPlatform.bindConfiguredNameCharacteristic(
+          volumeUpService.getCharacteristic(Characteristic.ConfiguredName),
+          volumeUpService
+        );
+        harmonyPlatform.bindConfiguredNameCharacteristic(
+          volumeDownService.getCharacteristic(Characteristic.ConfiguredName),
+          volumeDownService
+        );
+      }
 
       //array of commands
       var volumeUpCommandsMap = new Object();
@@ -840,14 +890,30 @@ HarmonyBase.prototype = {
         '(' + harmonyPlatform.name + ')' + 'INFO - Loading general mute Switch...'
       );
 
+      let subType = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralMuteSwitch';
+      let name = subType;
       var accessoriesToAdd = [];
-      let name = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralMuteSwitch';
 
+      if (harmonyPlatform.savedNames && harmonyPlatform.savedNames[HarmonyConst.GENERALMUTE_TYPE]) {
+        name = harmonyPlatform.savedNames[HarmonyConst.GENERALMUTE_TYPE];
+      }
       var myHarmonyAccessory = this.checkVolumeAccessory(harmonyPlatform, accessoriesToAdd, name);
 
-      let subType = name;
       let service = this.getSwitchService(harmonyPlatform, myHarmonyAccessory, name, subType);
       service.type = HarmonyConst.GENERALMUTE_TYPE;
+
+      //handling name if linked to TV service && external
+      if (
+        (harmonyPlatform.mainPlatform._oneTVAdded ||
+          harmonyPlatform.mainPlatform.publishAllTVAsExternalAccessory) &&
+        harmonyPlatform.TVFoundAccessory &&
+        harmonyPlatform.linkVolumeControlToTV
+      ) {
+        harmonyPlatform.bindConfiguredNameCharacteristic(
+          service.getCharacteristic(Characteristic.ConfiguredName),
+          service
+        );
+      }
 
       //array of commands
       var muteCommandsMap = new Object();

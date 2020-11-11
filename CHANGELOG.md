@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.1
+
+- [FIX] Renaming mute/volumeup/volumedown does not persist even if not linked to tv accessory #313
+- [FIX] Accessories get re-added on every Homebridge start #314
+- [FIX] Received warning for the plugin 'homebridge-harmony' #315
+
 ## 1.4.0
 
 - [NEW] !!! TV defaults now to external accessories - #298 !!!
