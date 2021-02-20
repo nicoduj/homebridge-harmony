@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.0
+
+- [FIX] Warning with homebridge 1.3.0 #315
+- [FIX] Duplicate sequence names not handled #333
+- [NEW] devicesToPublishAsAccessoriesSwitch allow single switch to have a steta and different command for on / off - SEE README #308 #286
+- [NEW] remoteOverrideCommandsList allow command sequence #288 (numberOfCommands not supported anymore, you have to repeat the command - same syntax as in devicesToPublishAsAccessoriesSwitch)
+- [NEW] new parameters to set timeout and retry polling parameters #339
+
 ## 1.4.1
 
 - [FIX] Renaming mute/volumeup/volumedown does not persist even if not linked to tv accessory #313
@@ -106,7 +114,7 @@ All notable changes to this project will be documented in this file.
 
 ## 1.2.0
 
-- [NEW] Supports config UI X configuration interface. **Be aware that remoteOverrideCommandsList is not in the same format anymore f you edit your config through the interface.**
+- [NEW] Supports config UI X configuration interface. **Be aware that remoteOverrideCommandsList is not in the same format anymore if you edit your config through the interface.**
 
 ## 1.1.1
 

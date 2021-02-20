@@ -26,6 +26,20 @@ HarmonyBase.prototype = {
     harmonyPlatform.hubIP = config['hubIP'];
     harmonyPlatform.hubName = config['hubName'];
 
+    harmonyPlatform.DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS = HarmonyTools.checkParameter(
+      config['DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS'],
+      HarmonyConst.DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS
+    );
+
+    harmonyPlatform.HUB_CONNECT_TIMEOUT = HarmonyTools.checkParameter(
+      config['HUB_CONNECT_TIMEOUT'],
+      HarmonyConst.HUB_CONNECT_TIMEOUT
+    );
+    harmonyPlatform.HUB_SEND_TIMEOUT = HarmonyTools.checkParameter(
+      config['HUB_SEND_TIMEOUT'],
+      HarmonyConst.HUB_SEND_TIMEOUT
+    );
+
     harmonyPlatform.name = config['name'];
     harmonyPlatform.devMode = HarmonyTools.checkParameter(config['DEVMODE'], false);
 
@@ -289,8 +303,8 @@ HarmonyBase.prototype = {
       }
     });
 
-    this.harmony.sendTimeout = HarmonyConst.HUB_SEND_TIMEOUT;
-    this.harmony.connectTimeout = HarmonyConst.HUB_CONNECT_TIMEOUT;
+    this.harmony.sendTimeout = harmonyPlatform.HUB_SEND_TIMEOUT;
+    this.harmony.connectTimeout = harmonyPlatform.HUB_CONNECT_TIMEOUT;
   },
 
   setupFoundAccessories(harmonyPlatform, accessoriesToAdd, data, homedata) {
@@ -450,7 +464,7 @@ HarmonyBase.prototype = {
         );
         this.numberOfErrors = 0;
         this.refreshCurrentActivity(harmonyPlatform, () => {});
-      }, HarmonyConst.DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS);
+      }, harmonyPlatform.DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS);
     } else {
       if (
         harmonyPlatform._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE &&
@@ -689,30 +703,10 @@ HarmonyBase.prototype = {
       let subType = (harmonyPlatform.devMode ? 'DEV' : '') + 'GeneralVolumeSlider';
       let name = subType;
 
-      if (
-        harmonyPlatform.savedNames &&
-        harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUME_TYPE]
-      ) {
-        name = harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUME_TYPE];
-      }
-
       var myHarmonyAccessory = this.checkVolumeAccessory(harmonyPlatform, accessoriesToAdd, name);
 
       let service = this.getSliderService(harmonyPlatform, myHarmonyAccessory, name, subType);
       service.type = HarmonyConst.GENERALVOLUME_TYPE;
-
-      //handling name if linked to TV service && external
-      if (
-        (harmonyPlatform.mainPlatform._oneTVAdded ||
-          harmonyPlatform.mainPlatform.publishAllTVAsExternalAccessory) &&
-        harmonyPlatform.TVFoundAccessory &&
-        harmonyPlatform.linkVolumeControlToTV
-      ) {
-        harmonyPlatform.bindConfiguredNameCharacteristic(
-          service.getCharacteristic(Characteristic.ConfiguredName),
-          service
-        );
-      }
 
       //array of commands
       var volumeUpCommandsMap = new Object();
@@ -770,19 +764,6 @@ HarmonyBase.prototype = {
       let volumeUpName = volumeUpSubType;
       let volumeDownName = volumeDownSubType;
 
-      if (
-        harmonyPlatform.savedNames &&
-        harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUMEUP_TYPE]
-      ) {
-        volumeUpName = harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUMEUP_TYPE];
-      }
-      if (
-        harmonyPlatform.savedNames &&
-        harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUMEDOWN_TYPE]
-      ) {
-        volumeDownName = harmonyPlatform.savedNames[HarmonyConst.GENERALVOLUMEDOWN_TYPE];
-      }
-
       // Create the accesories and add them to our array to add below
 
       var volumeUpAccessory = this.checkVolumeAccessory(
@@ -815,23 +796,6 @@ HarmonyBase.prototype = {
         volumeDownSubType
       );
       volumeDownService.type = HarmonyConst.GENERALVOLUMEDOWN_TYPE;
-
-      //handling name if linked to TV service && external
-      if (
-        (harmonyPlatform.mainPlatform._oneTVAdded ||
-          harmonyPlatform.mainPlatform.publishAllTVAsExternalAccessory) &&
-        harmonyPlatform.TVFoundAccessory &&
-        harmonyPlatform.linkVolumeControlToTV
-      ) {
-        harmonyPlatform.bindConfiguredNameCharacteristic(
-          volumeUpService.getCharacteristic(Characteristic.ConfiguredName),
-          volumeUpService
-        );
-        harmonyPlatform.bindConfiguredNameCharacteristic(
-          volumeDownService.getCharacteristic(Characteristic.ConfiguredName),
-          volumeDownService
-        );
-      }
 
       //array of commands
       var volumeUpCommandsMap = new Object();
@@ -894,26 +858,10 @@ HarmonyBase.prototype = {
       let name = subType;
       var accessoriesToAdd = [];
 
-      if (harmonyPlatform.savedNames && harmonyPlatform.savedNames[HarmonyConst.GENERALMUTE_TYPE]) {
-        name = harmonyPlatform.savedNames[HarmonyConst.GENERALMUTE_TYPE];
-      }
       var myHarmonyAccessory = this.checkVolumeAccessory(harmonyPlatform, accessoriesToAdd, name);
 
       let service = this.getSwitchService(harmonyPlatform, myHarmonyAccessory, name, subType);
       service.type = HarmonyConst.GENERALMUTE_TYPE;
-
-      //handling name if linked to TV service && external
-      if (
-        (harmonyPlatform.mainPlatform._oneTVAdded ||
-          harmonyPlatform.mainPlatform.publishAllTVAsExternalAccessory) &&
-        harmonyPlatform.TVFoundAccessory &&
-        harmonyPlatform.linkVolumeControlToTV
-      ) {
-        harmonyPlatform.bindConfiguredNameCharacteristic(
-          service.getCharacteristic(Characteristic.ConfiguredName),
-          service
-        );
-      }
 
       //array of commands
       var muteCommandsMap = new Object();
@@ -975,10 +923,13 @@ HarmonyBase.prototype = {
 
       for (let i = 0, len = sequences.length; i < len; i++) {
         let switchName = sequences[i].name;
+
         if (harmonyPlatform.sequencesToPublishAsAccessoriesSwitch.includes(switchName)) {
           if (harmonyPlatform.devMode) {
             switchName = 'DEV' + switchName;
           }
+
+          switchName = switchName + '(' + sequences[i].id + ')';
 
           harmonyPlatform.log(
             '(' + harmonyPlatform.name + ')' + 'INFO - Discovered sequence : ' + switchName
@@ -1122,7 +1073,8 @@ HarmonyBase.prototype = {
     harmonyPlatform,
     controlGroup,
     device,
-    customSwitchName
+    customSwitchName,
+    isStateless
   ) {
     let accessoriesToAdd = [];
 
@@ -1133,10 +1085,20 @@ HarmonyBase.prototype = {
     );
 
     let foundToggle = false;
+    let foundNonStateless = false;
     let commandFunctions = this.populateCommands(harmonyPlatform, controlGroup, switchName);
 
     if (commandFunctions.some((e) => e.key == 'PowerToggle')) {
       foundToggle = true;
+    }
+
+    if (
+      !foundToggle &&
+      commandFunctions.some((e) => e.key == 'PowerOn') &&
+      commandFunctions.some((e) => e.key == 'PowerOff') &&
+      !isStateless
+    ) {
+      foundNonStateless = true;
     }
 
     if (commandFunctions.length == 0) {
@@ -1147,7 +1109,7 @@ HarmonyBase.prototype = {
       for (let j = 0, len = commandFunctions.length; j < len; j++) {
         if ((foundToggle && commandFunctions[j].key === 'PowerToggle') || !foundToggle) {
           if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
-            let name = switchName + '-' + commandFunctions[j].key;
+            let name = switchName + '-' + foundNonStateless ? 'Power' : commandFunctions[j].key;
             myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
             if (!myHarmonyAccessory) {
               myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
@@ -1158,7 +1120,7 @@ HarmonyBase.prototype = {
             harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
           }
 
-          let subType = switchName + '-' + commandFunctions[j].key;
+          let subType = switchName + '-' + foundNonStateless ? 'Power' : commandFunctions[j].key;
           let service = this.getSwitchService(
             harmonyPlatform,
             myHarmonyAccessory,
@@ -1168,7 +1130,20 @@ HarmonyBase.prototype = {
 
           service.deviceId = device.id;
           service.type = HarmonyConst.DEVICE_TYPE;
-          service.command = commandFunctions[j].value;
+
+          if (!isStateless) {
+            if (commandFunctions[j].key === 'PowerToggle') {
+              service.command = commandFunctions[j].value;
+              service.offCommand = commandFunctions[j].value;
+            } else if (commandFunctions[j].key === 'PowerOn') {
+              service.command = commandFunctions[j].value;
+            } else if (commandFunctions[j].key === 'PowerOff') {
+              service.offCommand = commandFunctions[j].value;
+            }
+          } else {
+            service.command = commandFunctions[j].value;
+          }
+          service.isStateless = isStateless;
           harmonyPlatform._confirmedServices.push(service);
 
           this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
@@ -1194,32 +1169,44 @@ HarmonyBase.prototype = {
       '(' + harmonyPlatform.name + ')' + 'INFO - Discovered Device : ' + switchName
     );
     let functionsForSwitch = [];
+    let functionsOffForSwitch = [];
     let functionsKey = '';
 
-    for (let l = 1, len = commands.length; l < len; l++) {
-      for (let j = 0, len = controlGroup.length; j < len; j++) {
-        let functions = controlGroup[j].function;
-        for (let k = 0, len = functions.length; k < len; k++) {
-          let commandTosend = commands[l].split('|');
+    //check stateless
+    var OnOffcommands = commands.split('/');
 
-          if (functions[k].name === commandTosend[0]) {
-            harmonyPlatform.log.debug(
-              '(' +
-                harmonyPlatform.name +
-                ')' +
-                'INFO - Activating  Macro ' +
-                commandTosend[0] +
-                ' for ' +
-                switchName
-            );
+    for (let a = 0, len = OnOffcommands.length; a < len; a++) {
+      let commands = OnOffcommands[a].split(';');
 
-            if (commandTosend.length === 2) {
-              let fctWithDelay = functions[k].action + '|' + commandTosend[1];
-              functionsForSwitch.push(fctWithDelay);
-            } else {
-              functionsForSwitch.push(functions[k].action);
+      for (let l = a == 0 ? 1 : 0, len = commands.length; l < len; l++) {
+        for (let j = 0, len = controlGroup.length; j < len; j++) {
+          let functions = controlGroup[j].function;
+          for (let k = 0, len = functions.length; k < len; k++) {
+            let commandTosend = commands[l].split('|');
+
+            if (functions[k].name === commandTosend[0]) {
+              harmonyPlatform.log.debug(
+                '(' +
+                  harmonyPlatform.name +
+                  ')' +
+                  'INFO - Activating  Macro ' +
+                  commandTosend[0] +
+                  ' for ' +
+                  switchName
+              );
+
+              if (commandTosend.length === 2) {
+                let fctWithDelay = functions[k].action + '|' + commandTosend[1];
+                a == 0
+                  ? functionsForSwitch.push(fctWithDelay)
+                  : functionsOffForSwitch.push(fctWithDelay);
+              } else {
+                a == 0
+                  ? functionsForSwitch.push(functions[k].action)
+                  : functionsOffForSwitch.push(functions[k].action);
+              }
+              functionsKey = functionsKey + commandTosend[0];
             }
-            functionsKey = functionsKey + commandTosend[0];
           }
         }
       }
@@ -1253,6 +1240,12 @@ HarmonyBase.prototype = {
       service.deviceId = device.id;
       service.type = HarmonyConst.DEVICEMACRO_TYPE;
       service.command = JSON.stringify(functionsForSwitch);
+      if (functionsOffForSwitch.length > 0) {
+        service.offCommand = JSON.stringify(functionsOffForSwitch);
+        service.isStateless = false;
+      } else {
+        service.isStateless = true;
+      }
       harmonyPlatform._confirmedServices.push(service);
 
       this.bindCharacteristicEventsForSwitch(harmonyPlatform, service);
@@ -1297,14 +1290,17 @@ HarmonyBase.prototype = {
         for (let i = 0, len = devices.length; i < len; i++) {
           let nameSwitchArray = commands[0].split('|');
           let ServiceName = nameSwitchArray[0];
-          let customSwitchName = nameSwitchArray.length > 1 ? nameSwitchArray[1] : undefined;
-          if (devices[i].label === ServiceName) {
-            //check  functions
 
+          if (devices[i].label === ServiceName) {
+            let customSwitchName = nameSwitchArray.length > 1 ? nameSwitchArray[1] : undefined;
+            //check  functions
             let controlGroup = devices[i].controlGroup;
 
             //default mode
-            if (commands.length === 1) {
+            if (commands.length === 1 || (commands.length === 2 && commands[1] === '/')) {
+              var isStateless =
+                harmonyPlatform.devicesToPublishAsAccessoriesSwitch[c].split('/').length == 1;
+
               accessoriesToAdd.push.apply(
                 accessoriesToAdd,
                 this.handleDefaultCommandMode(
@@ -1312,24 +1308,27 @@ HarmonyBase.prototype = {
                   harmonyPlatform,
                   controlGroup,
                   devices[i],
-                  customSwitchName
+                  customSwitchName,
+                  isStateless
                 )
               );
             }
             //specifc command or list mode
             else {
+              var commandsToparse = harmonyPlatform.devicesToPublishAsAccessoriesSwitch[c];
               accessoriesToAdd.push.apply(
                 accessoriesToAdd,
                 this.handleSpecificCommandMode(
                   myHarmonyAccessory,
                   harmonyPlatform,
-                  commands,
+                  commandsToparse,
                   controlGroup,
                   devices[i],
                   customSwitchName
                 )
               );
             }
+            break;
           }
         }
       }
@@ -1342,12 +1341,16 @@ HarmonyBase.prototype = {
   //ACCESSORIES, SERVICES AND CHARACERISTICS
   handleCharacteristicUpdate: function (harmonyPlatform, characteristic, value, callback) {
     if (harmonyPlatform._currentActivity == HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
-      this.updateCharacteristicToErr(characteristic, callback);
+      if (callback) {
+        callback(1);
+      }
+      //this.updateCharacteristicToErr(characteristic, callback);
     } else {
       this.updateCharacteristic(characteristic, value, callback);
     }
   },
 
+  /*
   updateCharacteristicToErr: function (characteristic, callback) {
     try {
       if (callback) {
@@ -1359,6 +1362,7 @@ HarmonyBase.prototype = {
       characteristic.updateValue(undefined);
     }
   },
+  */
 
   updateCharacteristic: function (characteristic, characteristicValue, callback) {
     try {
@@ -1412,7 +1416,7 @@ HarmonyBase.prototype = {
 
     myHarmonyAccessory.name = fullName;
     myHarmonyAccessory.model = harmonyPlatform.name;
-    myHarmonyAccessory.manufacturer = 'Harmony';
+    myHarmonyAccessory.manufacturer = 'Logitech';
 
     myHarmonyAccessory.serialNumber = uuid;
     /*
@@ -1474,12 +1478,20 @@ HarmonyBase.prototype = {
       let commandToSend = {};
       commandToSend[service.HomeId] = command;
       this.sendAutomationCommand(harmonyPlatform, commandToSend);
-    } else if (value) {
+    } else if (value || !service.isStateless) {
       if (service.type === HarmonyConst.DEVICE_TYPE) {
         let command = service.command;
+        if (!service.isStateless && !value) {
+          command = service.offCommand;
+        }
         this.sendCommand(harmonyPlatform, command);
       } else if (service.type === HarmonyConst.DEVICEMACRO_TYPE) {
-        let commands = JSON.parse(service.command);
+        let command = service.command;
+        if (!service.isStateless && !value) {
+          command = service.offCommand;
+        }
+
+        let commands = JSON.parse(command);
         HarmonyTools.processCommands(this, harmonyPlatform, commands);
       } else if (service.type === HarmonyConst.SEQUENCE_TYPE) {
         let command = '{"sequenceId":"' + service.sequenceId + '"}';
@@ -1517,11 +1529,13 @@ HarmonyBase.prototype = {
       }
 
       // In order to behave like a push button reset the status to off
-      HarmonyTools.resetCharacteristic(
-        service,
-        Characteristic.On,
-        HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE
-      );
+      if (service.isStateless === undefined || service.isStateless === true) {
+        HarmonyTools.resetCharacteristic(
+          service,
+          Characteristic.On,
+          HarmonyConst.DELAY_FOR_STATELESS_SWITCH_UPDATE
+        );
+      }
     }
 
     callback();
@@ -1542,10 +1556,12 @@ HarmonyBase.prototype = {
         );
       });
     } else {
+      let stateless = (service.isStateless === undefined) | service.isStateless;
+
       this.handleCharacteristicUpdate(
         harmonyPlatform,
         service.getCharacteristic(Characteristic.On),
-        false,
+        stateless ? false : service.getCharacteristic(Characteristic.On).value,
         callback
       );
     }

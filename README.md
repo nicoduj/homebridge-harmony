@@ -32,6 +32,18 @@ This plugin is publishing harmony hub activities and devices as switches, with s
 2. Install this plugin using: `npm install -g homebridge-harmony`
 3. Update your Homebridge `config.json` using the sample below.
 
+## Note about homebridge configuration
+
+Since this plugin can expose external accessories (TV), you should probably set ports configuration in your homebridge conf with a dedicated range, like this :
+
+```json
+    "ports": {
+        "start": 52100,
+        "end": 52150,
+        "comment": "This section is used to control the range of ports that separate accessory (like camera or television) should be bind to."
+      },
+```
+
 ## Migration from 0.X to 1.X
 
 **You have to move your other platforms if you have more than one in a new key : "otherPlatforms": [{ }] , see sample below. The plugin MUST be adde donly One time in your config**
@@ -110,6 +122,11 @@ Fields:
 - `platform` **GLOBAL** must be "HarmonyHubWebSocket" (required).
 - `publishAllTVAsExternalAccessory` **GLOBAL** publish all TV accessory as external Accessories. This way, if another plugin on the same homebridge instance as one, the one on harmony will also be visible, but you will have to add them manually after the hub itself. Defaults to TRUE (if set to false, only second tv accessory or following will be published by this plugin as external accessories, first one will be linked to the hub and might not display a TV icon).
 - `cleanCache` **GLOBAL** option to clean all cached Accessory. Please use with caution, might be needed if you change names / config of the hub and there is some ghost devices in Homekit. Be sure that all your icloud sync is done while launching Homebridge with this option set to true. Set it back to false after and launch again ! It does not affect external accessories.
+
+- `DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS` **GLOBAL** retry timer in case of network loss (optionnal - defaults 60s).
+- `HUB_CONNECT_TIMEOUT` **GLOBAL** connect timeout (optionnal - defaults 10s).
+- `HUB_SEND_TIMEOUT` **GLOBAL** send timeout (optionnal - defaults 30s).
+
 - `name` is the name of the published Platform (required).
 - `hubName` is the name of your hub in harmony app (optional, but mandatory if you have mutliple hubs). In case both hubName and hubIP are not set, it will discover your hub automatically, providing there is only one
 - `hubIP` is the static IP address of the hub (optional). A static IP address is required.
@@ -166,6 +183,22 @@ will add
 
 All commands available are displayed at startup. If no name is specified, it will be added with a generated name.
 
+If you use a "/", it will do a non stateless switch and send commands bfire the / on On, and after on Off. Be aware that it can be out of sync .
+
+As a sample :
+
+```json
+  "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4|Button1;Play/Pause","Caisson;/","Sony PS4;/","MyDevice;/","MyDevice;Up;Up|2500;Down/Down;Down|2500;Up"]
+```
+
+will add
+
+- a switch for "Apple TV Gen 4" "Play" command on on, "Pause" command on off, named Button1,
+- a powerToggle switch for the device named "Caisson", which will send PowerToggle on on and off,
+- a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it) - thus no effect
+- a switch that will PowerOn on On and PowerOff on off to MyDevice since it doe not have a powerToggle and have both powerOn / PowerOff
+- a switch that will send Up , then Up, then wait 2.5 seconds, then send Down to MyDevice on On and reverse on Off
+
 **Option** `sequencesToPublishAsAccessoriesSwitch` is an array that behaves this way :
 
 - You should put the name of the sequence as it is named in harmony app,
@@ -185,28 +218,9 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 **Option** `remoteOverrideCommandsList` is an array that behaves this way :
 
 - You should put the name of the activity as it is named in harmony app,
-- Then you should put the name of the command you want to ovverride
-- Then you should put the name of the targeted device
-- And finally the name of the command
-- Optionally, number of commands to send
-
-As a sample :
-
-(before 1.2.0)
-
-```json
-    "remoteOverrideCommandsList": {
-        "La TV": {
-            "REWIND": "Ampli;Number0",
-            "BACK": "TV;Back"
-        },
-        "Un Film": {
-            "ARROW_LEFT": "TV;PreviousChannel"
-        }
-    }
-```
-
-(after 1.2.0)
+- Then an Array CommandsList with :
+  - the name of the command you want to ovverride
+  - the commands like in devicesToPublishAsAccessoriesSwitch (with the name of the device first)
 
 ```json
   "remoteOverrideCommandsList": [
@@ -214,8 +228,8 @@ As a sample :
         "ActivityName": "La TV",
         "CommandsList": [
           {
-            "CommandName": "REWIND",
-            "NewCommand": "Ampli;Number0;5"
+            "CommandName": "PAUSE",
+            "NewCommand": "Ampli;Number0;Number0"
           },
           {
             "CommandName": "BACK",
@@ -238,7 +252,7 @@ As a sample :
 will bahaves this way :
 
 - for "La TV" activity :
-  - override REWIND button in the remote with Number0 command for Ampli device, and send it 5 times
+  - override PAUSE button in the remote with Number0 command for Ampli device, and send it 5 times
   - override BACK button in the remote with Back Command of TV device
 - for "Un Film" activity :
   - override ARROW_LEFT in the remote with PreviousChannel of TV device

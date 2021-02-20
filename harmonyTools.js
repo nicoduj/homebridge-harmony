@@ -51,6 +51,17 @@ module.exports = {
     }
   },
 
+  transformActivityIdToActiveIdentifier: function (currentInputService) {
+    if (currentInputService !== undefined && currentInputService.activityId > 0)
+      return currentInputService.activityId;
+    else return 0;
+  },
+
+  transformActiveIdentifierToActivityId: function (activeIdentifier) {
+    if (activeIdentifier == 0) return -1;
+    else return activeIdentifier;
+  },
+
   checkTurnOffActivityOption: function (str) {
     if (str == null || str == undefined) return false;
 

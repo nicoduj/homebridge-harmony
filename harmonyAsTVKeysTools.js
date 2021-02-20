@@ -33,89 +33,76 @@ module.exports = {
       platform._currentActivity > HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE &&
       platform._currentInputService !== undefined
     ) {
-      keysMap[Characteristic.RemoteKey.ARROW_UP] = this.getOverrideCommand(
-        platform,
-        'ARROW_UP',
-        platform._currentInputService.DirectionUpCommand
-      );
+      let overrideARROWUP = this.getOverrideCommand(platform, 'ARROW_UP');
+      keysMap[Characteristic.RemoteKey.ARROW_UP] = overrideARROWUP
+        ? overrideARROWUP
+        : platform._currentInputService.DirectionUpCommand;
 
-      keysMap[Characteristic.RemoteKey.ARROW_DOWN] = this.getOverrideCommand(
-        platform,
-        'ARROW_DOWN',
-        platform._currentInputService.DirectionDownCommand
-      );
+      let overrideARROWDOWN = this.getOverrideCommand(platform, 'ARROW_DOWN');
+      keysMap[Characteristic.RemoteKey.ARROW_DOWN] = overrideARROWDOWN
+        ? overrideARROWDOWN
+        : platform._currentInputService.DirectionDownCommand;
 
-      keysMap[Characteristic.RemoteKey.ARROW_LEFT] = this.getOverrideCommand(
-        platform,
-        'ARROW_LEFT',
-        platform._currentInputService.DirectionLeftCommand
-      );
+      let overrideARROWLEFT = this.getOverrideCommand(platform, 'ARROW_LEFT');
+      keysMap[Characteristic.RemoteKey.ARROW_LEFT] = overrideARROWLEFT
+        ? overrideARROWLEFT
+        : platform._currentInputService.DirectionLeftCommand;
 
-      keysMap[Characteristic.RemoteKey.ARROW_RIGHT] = this.getOverrideCommand(
-        platform,
-        'ARROW_RIGHT',
-        platform._currentInputService.DirectionRightCommand
-      );
+      let overrideARROWRIGHT = this.getOverrideCommand(platform, 'ARROW_RIGHT');
+      keysMap[Characteristic.RemoteKey.ARROW_RIGHT] = overrideARROWRIGHT
+        ? overrideARROWRIGHT
+        : platform._currentInputService.DirectionRightCommand;
 
-      keysMap[Characteristic.RemoteKey.SELECT] = this.getOverrideCommand(
-        platform,
-        'SELECT',
-        getSelectKey(platform._currentInputService)
-      );
+      let overrideSELECT = this.getOverrideCommand(platform, 'SELECT');
+      keysMap[Characteristic.RemoteKey.SELECT] = overrideSELECT
+        ? overrideSELECT
+        : getSelectKey(platform._currentInputService);
 
-      keysMap[Characteristic.RemoteKey.PLAY_PAUSE] = this.getOverrideCommand(
-        platform,
-        'PLAY',
-        platform._currentInputService.PlayCommand
-      );
+      let overridePLAY = this.getOverrideCommand(platform, 'PLAY');
+      keysMap[Characteristic.RemoteKey.PLAY_PAUSE] = overridePLAY
+        ? overridePLAY
+        : platform._currentInputService.PlayCommand;
 
-      keysMap[Characteristic.RemoteKey.INFORMATION] = this.getOverrideCommand(
-        platform,
-        'INFORMATION',
-        getInfoKey(platform._currentInputService)
-      );
+      let overrideINFORMATION = this.getOverrideCommand(platform, 'INFORMATION');
+      keysMap[Characteristic.RemoteKey.INFORMATION] = overrideINFORMATION
+        ? overrideINFORMATION
+        : getInfoKey(platform._currentInputService);
 
-      keysMap[Characteristic.RemoteKey.BACK] = this.getOverrideCommand(
-        platform,
-        'BACK',
-        getBackKey(platform._currentInputService)
-      );
+      let overrideBACK = this.getOverrideCommand(platform, 'BACK');
+      keysMap[Characteristic.RemoteKey.BACK] = overrideBACK
+        ? overrideBACK
+        : getBackKey(platform._currentInputService);
 
-      keysMap[Characteristic.RemoteKey.EXIT] = this.getOverrideCommand(
-        platform,
-        'EXIT',
-        getExitKey(platform._currentInputService)
-      );
+      let overrideEXIT = this.getOverrideCommand(platform, 'EXIT');
+      keysMap[Characteristic.RemoteKey.EXIT] = overrideEXIT
+        ? overrideEXIT
+        : getExitKey(platform._currentInputService);
 
-      keysMap[Characteristic.RemoteKey.REWIND] = this.getOverrideCommand(
-        platform,
-        'REWIND',
-        platform._currentInputService.RewindCommand
-      );
+      let overrideREWIND = this.getOverrideCommand(platform, 'REWIND');
+      keysMap[Characteristic.RemoteKey.REWIND] = overrideREWIND
+        ? overrideREWIND
+        : platform._currentInputService.RewindCommand;
 
-      keysMap[Characteristic.RemoteKey.FAST_FORWARD] = this.getOverrideCommand(
-        platform,
-        'FAST_FORWARD',
-        platform._currentInputService.FastForwardCommand
-      );
+      let overrideFASTFORWARD = this.getOverrideCommand(platform, 'FAST_FORWARD');
+      keysMap[Characteristic.RemoteKey.FAST_FORWARD] = overrideFASTFORWARD
+        ? overrideFASTFORWARD
+        : platform._currentInputService.FastForwardCommand;
 
-      keysMap[Characteristic.RemoteKey.NEXT_TRACK] = this.getOverrideCommand(
-        platform,
-        'NEXT_TRACK',
-        platform._currentInputService.SkipForwardCommand
-      );
+      let overrideNEXTTRACK = this.getOverrideCommand(platform, 'NEXT_TRACK');
+      keysMap[Characteristic.RemoteKey.NEXT_TRACK] = overrideNEXTTRACK
+        ? overrideNEXTTRACK
+        : platform._currentInputService.SkipForwardCommand;
 
-      keysMap[Characteristic.RemoteKey.PREVIOUS_TRACK] = this.getOverrideCommand(
-        platform,
-        'PREVIOUS_TRACK',
-        platform._currentInputService.SkipBackwardCommand
-      );
+      let overridePREVIOUSTRACK = this.getOverrideCommand(platform, 'PREVIOUS_TRACK');
+      keysMap[Characteristic.RemoteKey.PREVIOUS_TRACK] = overridePREVIOUSTRACK
+        ? overridePREVIOUSTRACK
+        : platform._currentInputService.SkipBackwardCommand;
     }
     platform.log.debug('(' + platform.name + ')' + 'keysMap is :' + JSON.stringify(keysMap));
     return keysMap;
   },
 
-  getOverrideCommand: function (platform, command, defaultCommand, numberOfCommands = 1) {
+  getOverrideCommand: function (platform, command) {
     if (
       platform.remoteOverrideCommandsList &&
       platform.remoteOverrideCommandsList[platform._currentInputService.activityName] &&
@@ -124,49 +111,60 @@ module.exports = {
       let override =
         platform.remoteOverrideCommandsList[platform._currentInputService.activityName][command];
 
-      let overrideArray = override.split(';');
-      let device = overrideArray[0];
-      let cmd = overrideArray[1];
+      let functionsForCommand = [];
+      let commands = override.split(';');
+      let device = commands[0];
 
-      if (overrideArray.length > 2) numberOfCommands = overrideArray[2];
+      for (let l = 1, len = commands.length; l < len; l++) {
+        let commandTosend = commands[l].split('|');
+        let cmd = platform.harmonyBase.deviceCommands[[device, commandTosend[0]]];
+        if (cmd) {
+          if (commandTosend.length === 2) {
+            let fctWithDelay = cmd + '|' + commandTosend[1];
+            functionsForCommand.push(fctWithDelay);
+          } else {
+            functionsForCommand.push(cmd);
+          }
+          platform.log.debug(
+            '(' +
+              platform.name +
+              ')' +
+              'INFO - commands found for ovverride : ' +
+              platform._currentInputService.activityName +
+              '-' +
+              command +
+              ':' +
+              functionsForCommand
+          );
+        } else {
+          platform.log(
+            '(' +
+              platform.name +
+              ')' +
+              'WARNING - Command not found for ovverride : ' +
+              platform._currentInputService.activityName +
+              '-' +
+              device +
+              '-' +
+              commandTosend[0]
+          );
+        }
+      }
 
-      let commandToSend = platform.harmonyBase.deviceCommands[[device, cmd]];
-
-      if (commandToSend) {
-        commandToSend = commandToSend + '|' + numberOfCommands;
-
-        platform.log.debug(
-          '(' +
-            platform.name +
-            ')' +
-            'INFO - Found Override Command for ' +
-            command +
-            ' : ' +
-            device +
-            '/' +
-            cmd +
-            ' - ' +
-            commandToSend
-        );
-        return commandToSend;
+      if (functionsForCommand.length > 0) {
+        return functionsForCommand;
       } else {
-        platform.log.debug(
+        platform.log(
           '(' +
             platform.name +
             ')' +
-            'WARNING - Did not found Override Command for ' +
-            command +
-            ' : ' +
-            device +
-            '/' +
-            cmd
+            'ERROR - No commands found for ovverride : ' +
+            platform._currentInputService.activityName +
+            '-' +
+            command
         );
       }
     }
-
-    defaultCommand = defaultCommand + '|' + numberOfCommands;
-
-    return defaultCommand;
   },
 };
 

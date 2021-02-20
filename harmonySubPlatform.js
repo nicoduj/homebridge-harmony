@@ -397,7 +397,6 @@ HarmonySubPlatform.prototype = {
         Characteristic.SleepDiscoveryMode,
         Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE
       )
-      //.setCharacteristic(Characteristic.ActiveIdentifier, -1)
       .setCharacteristic(Characteristic.Active, false);
 
     this.bindCharacteristicEventsForTV(accessory);
@@ -504,7 +503,7 @@ HarmonySubPlatform.prototype = {
     this.harmonyBase.handleCharacteristicUpdate(
       this,
       this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
-      this._currentInputService !== undefined ? this._currentInputService.activityId : -1,
+      HarmonyTools.transformActivityIdToActiveIdentifier(this._currentInputService),
       null
     );
   },
@@ -525,7 +524,7 @@ HarmonySubPlatform.prototype = {
             service.type == HarmonyConst.GENERALVOLUMEUP_TYPE ||
             service.type == HarmonyConst.GENERALVOLUMEDOWN_TYPE
           )
-            this.refreshService(service, undefined);
+            this.refreshService(service, false);
         }
       }
     }
@@ -560,7 +559,7 @@ HarmonySubPlatform.prototype = {
   refreshCurrentActivityOnSubPlatform: function (response) {
     this._currentActivityLastUpdate = Date.now();
 
-    if (response == undefined) return;
+    if (response === undefined) return;
     this._currentActivity = response;
 
     this.localRefresh();
@@ -687,14 +686,14 @@ HarmonySubPlatform.prototype = {
       this.playStatus[this._currentActivity] = '';
     } else {
       this.log.debug('(' + this.name + ')' + 'INFO - sending PauseCommand for PLAY_PAUSE');
-      this.harmonyBase.sendCommand(
-        this,
-        HarmonyAsTVKeysTools.getOverrideCommand(
-          this,
-          'PAUSE',
-          this._currentInputService.PauseCommand
-        )
-      );
+
+      let overridePAUSE = HarmonyAsTVKeysTools.getOverrideCommand(this, 'PAUSE');
+      if (!overridePAUSE) {
+        this.harmonyBase.sendCommand(this, this._currentInputService.PauseCommand);
+      } else {
+        HarmonyTools.processCommands(this.harmonyBase, this, overridePAUSE);
+      }
+
       this.playStatus[this._currentActivity] = 'PAUSED';
     }
   },
@@ -724,12 +723,12 @@ HarmonySubPlatform.prototype = {
               this.name +
               ')' +
               'INFO - refreshCharacteristic : updating Characteristic.ActiveIdentifier to ' +
-              (this._currentInputService !== undefined ? this._currentInputService.activityId : -1)
+              HarmonyTools.transformActivityIdToActiveIdentifier(this._currentInputService)
           );
           this.harmonyBase.handleCharacteristicUpdate(
             this,
             characteristic,
-            this._currentInputService !== undefined ? this._currentInputService.activityId : -1,
+            HarmonyTools.transformActivityIdToActiveIdentifier(this._currentInputService),
             callback
           );
         }
@@ -740,7 +739,7 @@ HarmonySubPlatform.prototype = {
         if (characteristic.UUID == Characteristic.Active.UUID) {
           this.harmonyBase.handleCharacteristicUpdate(this, characteristic, false, callback);
         } else if (characteristic.UUID == Characteristic.ActiveIdentifier.UUID) {
-          this.harmonyBase.handleCharacteristicUpdate(this, characteristic, -1, callback);
+          this.harmonyBase.handleCharacteristicUpdate(this, characteristic, 0, callback);
         }
       }
     });
@@ -770,8 +769,9 @@ HarmonySubPlatform.prototype = {
           //we push back the execution to let the second event be taken care of in case of switching on with a dedicated input.
           setTimeout(() => {
             if (this._currentInputService == undefined) {
-              var currentActivity = service.getCharacteristic(Characteristic.ActiveIdentifier)
-                .value;
+              var currentActivity = HarmonyTools.transformActiveIdentifierToActivityId(
+                service.getCharacteristic(Characteristic.ActiveIdentifier).value
+              );
 
               if (currentActivity <= 0) {
                 this.log.debug(
@@ -823,7 +823,10 @@ HarmonySubPlatform.prototype = {
         this.log.debug(
           '(' + this.name + ')' + 'INFO - SET Characteristic.ActiveIdentifier ' + value
         );
-        this.sendInputCommand(homebridgeAccessory, '' + value);
+        this.sendInputCommand(
+          homebridgeAccessory,
+          '' + HarmonyTools.transformActiveIdentifierToActivityId(value)
+        );
         callback(null);
       }.bind(this)
     );
@@ -854,8 +857,19 @@ HarmonySubPlatform.prototype = {
           if (newValue === Characteristic.RemoteKey.PLAY_PAUSE) {
             this.handlePlayPause();
           } else if (this.keysMap[newValue]) {
-            this.log.debug('(' + this.name + ')' + 'INFO - sending command for ' + newValue);
-            this.harmonyBase.sendCommand(this, this.keysMap[newValue]);
+            this.log.debug(
+              '(' +
+                this.name +
+                ')' +
+                'INFO - sending command ' +
+                this.keysMap[newValue] +
+                'for ' +
+                newValue
+            );
+
+            if (Array.isArray(this.keysMap[newValue]))
+              HarmonyTools.processCommands(this.harmonyBase, this, this.keysMap[newValue]);
+            else this.harmonyBase.sendCommand(this, this.keysMap[newValue]);
           } else {
             this.log.debug('(' + this.name + ')' + 'INFO - no command to send for ' + newValue);
           }
@@ -871,14 +885,13 @@ HarmonySubPlatform.prototype = {
       function (value, callback) {
         if (this._currentInputService !== undefined) {
           this.log.debug('(' + this.name + ')' + 'INFO - SET Characteristic.Mute : ' + value);
-          this.harmonyBase.sendCommand(
-            this,
-            HarmonyAsTVKeysTools.getOverrideCommand(
-              this,
-              'MUTE',
-              this._currentInputService.MuteCommand
-            )
-          );
+
+          let overrideMUTE = HarmonyAsTVKeysTools.getOverrideCommand(this, 'MUTE');
+          if (!overrideMUTE) {
+            this.harmonyBase.sendCommand(this, this._currentInputService.MuteCommand);
+          } else {
+            HarmonyTools.processCommands(this.harmonyBase, this, overrideMUTE);
+          }
         }
         callback(null);
       }.bind(this)
@@ -902,25 +915,29 @@ HarmonySubPlatform.prototype = {
             '(' + this.name + ')' + 'INFO - SET Characteristic.VolumeSelector : ' + value
           );
           if (value === Characteristic.VolumeSelector.DECREMENT) {
-            this.harmonyBase.sendCommand(
-              this,
-              HarmonyAsTVKeysTools.getOverrideCommand(
+            let overrideVOLUMEDOWN = HarmonyAsTVKeysTools.getOverrideCommand(this, 'VOLUME_DOWN');
+            if (!overrideVOLUMEDOWN) {
+              this.harmonyBase.sendCommand(
                 this,
-                'VOLUME_DOWN',
-                this._currentInputService.VolumeDownCommand,
-                this.numberOfCommandsSentForVolumeControl
-              )
-            );
+                this._currentInputService.VolumeDownCommand +
+                  '|' +
+                  this.numberOfCommandsSentForVolumeControl
+              );
+            } else {
+              HarmonyTools.processCommands(this.harmonyBase, this, overrideVOLUMEDOWN);
+            }
           } else {
-            this.harmonyBase.sendCommand(
-              this,
-              HarmonyAsTVKeysTools.getOverrideCommand(
+            let overrideVOLUMEUP = HarmonyAsTVKeysTools.getOverrideCommand(this, 'VOLUME_UP');
+            if (!overrideVOLUMEUP) {
+              this.harmonyBase.sendCommand(
                 this,
-                'VOLUME_UP',
-                this._currentInputService.VolumeUpCommand,
-                this.numberOfCommandsSentForVolumeControl
-              )
-            );
+                this._currentInputService.VolumeUpCommand +
+                  '|' +
+                  this.numberOfCommandsSentForVolumeControl
+              );
+            } else {
+              HarmonyTools.processCommands(this.harmonyBase, this, overrideVOLUMEUP);
+            }
           }
         }
         callback(null);
@@ -962,7 +979,6 @@ HarmonySubPlatform.prototype = {
 
         var idConf = 0;
         if (service.UUID == Service.InputSource.UUID) idConf = service.activityId;
-        else if (service.type !== undefined) idConf = service.type;
 
         this.savedNames[idConf] = value;
         fs.writeFile(this.savedNamesFile, JSON.stringify(this.savedNames), (err) => {
@@ -1076,14 +1092,13 @@ HarmonySubPlatform.prototype = {
           this.log.debug(
             '(' + this.name + ')' + 'INFO - SET Characteristic.PowerModeSelection : ' + value
           );
-          this.harmonyBase.sendCommand(
-            this,
-            HarmonyAsTVKeysTools.getOverrideCommand(
-              this,
-              'SETUP',
-              this._currentInputService.SetupCommand
-            )
-          );
+
+          let overrideSETUP = HarmonyAsTVKeysTools.getOverrideCommand(this, 'SETUP');
+          if (!overrideSETUP) {
+            this.harmonyBase.sendCommand(this, this._currentInputService.SetupCommand);
+          } else {
+            HarmonyTools.processCommands(this.harmonyBase, this, overrideSETUP);
+          }
         }
         callback(null);
       }.bind(this)

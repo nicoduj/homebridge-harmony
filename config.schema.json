@@ -22,6 +22,18 @@
         "title": "Hub Name in your Harmony App",
         "type": "string"
       },
+      "DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS": {
+        "title": "retry timer in case of network loss (optionnal - defaults 60s)",
+        "type": "integer"
+      },
+      "HUB_CONNECT_TIMEOUT": {
+        "title": "connect timeout (optionnal - defaults 10s)",
+        "type": "integer"
+      },
+      "HUB_SEND_TIMEOUT": {
+        "title": "send timeout (optionnal - defaults 30s)",
+        "type": "integer"
+      },
       "cleanCache": {
         "title": "Clean cached accessories at startup",
         "type": "boolean"
@@ -289,6 +301,21 @@
             "hubName": {
               "title": "Hub Name in your Harmony App",
               "type": "string",
+              "required": false
+            },
+            "DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS": {
+              "title": "retry timer in case of network loss (optionnal - defaults 60s)",
+              "type": "integer",
+              "required": false
+            },
+            "HUB_CONNECT_TIMEOUT": {
+              "title": "connect timeout (optionnal - defaults 10s)",
+              "type": "integer",
+              "required": false
+            },
+            "HUB_SEND_TIMEOUT": {
+              "title": "send timeout (optionnal - defaults 30s)",
+              "type": "integer",
               "required": false
             },
             "TVAccessory": {
