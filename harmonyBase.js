@@ -1106,10 +1106,21 @@ HarmonyBase.prototype = {
         '(' + harmonyPlatform.name + ')' + 'Error - No function found for ' + switchName
       );
     } else {
+      harmonyPlatform.log.debug(
+        '(' +
+          harmonyPlatform.name +
+          ')' +
+          'Info - Functions found for ' +
+          switchName +
+          '-' +
+          JSON.stringify(commandFunctions)
+      );
+
       for (let j = 0, len = commandFunctions.length; j < len; j++) {
         if ((foundToggle && commandFunctions[j].key === 'PowerToggle') || !foundToggle) {
           if (harmonyPlatform.publishDevicesAsIndividualAccessories) {
-            let name = switchName + '-' + foundNonStateless ? 'Power' : commandFunctions[j].key;
+            let name = switchName + '-' + (foundNonStateless ? 'Power' : commandFunctions[j].key);
+
             myHarmonyAccessory = this.checkAccessory(harmonyPlatform, name);
             if (!myHarmonyAccessory) {
               myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
@@ -1120,7 +1131,7 @@ HarmonyBase.prototype = {
             harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
           }
 
-          let subType = switchName + '-' + foundNonStateless ? 'Power' : commandFunctions[j].key;
+          let subType = switchName + '-' + (foundNonStateless ? 'Power' : commandFunctions[j].key);
           let service = this.getSwitchService(
             harmonyPlatform,
             myHarmonyAccessory,

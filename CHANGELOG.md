@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.1
+
+- [FIX] For devices published with PowerToggle : Cannot add a bridged Accessory with the same UUID as another bridged Accessory #345
+
 ## 1.5.0
 
 - [FIX] Warning with homebridge 1.3.0 #315
