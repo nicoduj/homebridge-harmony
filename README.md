@@ -44,6 +44,8 @@ Since this plugin can expose external accessories (TV), you should probably set 
       },
 ```
 
+Also, if you use child Bridge (since Homebridge 1.3.0), it makes sense only if you publish switches / bridges accessories. If you are only running a default TV accessory, it will publish an empty bridge that might be confusing (see https://github.com/nicoduj/homebridge-harmony/issues/347 for more details)
+
 ## Migration from 0.X to 1.X
 
 **You have to move your other platforms if you have more than one in a new key : "otherPlatforms": [{ }] , see sample below. The plugin MUST be adde donly One time in your config**
@@ -183,7 +185,7 @@ will add
 
 All commands available are displayed at startup. If no name is specified, it will be added with a generated name.
 
-If you use a "/", it will do a non stateless switch and send commands bfire the / on On, and after on Off. Be aware that it can be out of sync .
+If you use a "/", it will do a non stateless switch and send commands before the / on On, and after on Off. Be aware that it can be out of sync .
 
 As a sample :
 

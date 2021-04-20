@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.2
+
+- [FIX] Config.schema.json not up to date #346
+- [NEW] change discover lib / update Ws lib to try to fix some issues #362 #361 #341
+
 ## 1.5.1
 
 - [FIX] For devices published with PowerToggle : Cannot add a bridged Accessory with the same UUID as another bridged Accessory #345

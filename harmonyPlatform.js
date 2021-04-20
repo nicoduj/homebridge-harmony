@@ -2,7 +2,8 @@ var AccessoryType;
 const HarmonySubPlatform = require('./harmonySubPlatform').HarmonySubPlatform;
 const HarmonyConst = require('./harmonyConst');
 const HarmonyTools = require('./harmonyTools.js');
-const HarmonyHubDiscover = require('harmonyhubjs-discover');
+const Explorer = require('@harmonyhub/discover').Explorer;
+const discover = new Explorer(61991);
 var EventEmitter = require('events');
 var inherits = require('util').inherits;
 
@@ -99,7 +100,6 @@ function HarmonyPlatform(log, config, api) {
           }
         }
         if (launchDiscovery) {
-          this.discover = new HarmonyHubDiscover(61991);
           this.discoverHub();
         }
       }.bind(this)
@@ -141,12 +141,18 @@ HarmonyPlatform.prototype = {
 
   //HUB discovery
   discoverHub: function () {
-    this.discover.on('update', (hubs) => {
+    discover.on('update', (hubs) => {
       // Combines the online & update events by returning an array with all known
       // hubs for ease of use.
       const knownHubs = hubs.reduce(function (prev, hub) {
         return (
-          prev + (prev.length > 0 ? ',' : '') + hub.ip + '|' + hub.friendlyName + '|' + hub.remoteId
+          prev +
+          (prev.length > 0 ? ',' : '') +
+          hub.ip +
+          '|' +
+          hub.friendlyName +
+          '|' +
+          hub.fullHubInfo.remoteId
         );
       }, '');
 
@@ -159,10 +165,10 @@ HarmonyPlatform.prototype = {
 
         this.discoverInProgress = true;
         this.knownHubsArray = undefined;
-        this.discover.start();
+        discover.start();
 
         setTimeout(() => {
-          this.discover.stop();
+          discover.stop();
           this.discoverInProgress = false;
           this.log('INFO - stopping hub discovery, hubs found : ' + this.knownHubsArray);
           this.emit('discoveredHubs', this.knownHubsArray);
