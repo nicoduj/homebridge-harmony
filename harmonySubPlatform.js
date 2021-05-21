@@ -682,7 +682,13 @@ HarmonySubPlatform.prototype = {
       this.playStatus[this._currentActivity] === 'PAUSED'
     ) {
       this.log.debug('(' + this.name + ')' + 'INFO - sending PlayCommand for PLAY_PAUSE');
-      this.harmonyBase.sendCommand(this, this.keysMap[Characteristic.RemoteKey.PLAY_PAUSE]);
+      //this.harmonyBase.sendCommand(this, this.keysMap[Characteristic.RemoteKey.PLAY_PAUSE]);
+      HarmonyTools.processCommands(
+        this.harmonyBase,
+        this,
+        this.keysMap[Characteristic.RemoteKey.PLAY_PAUSE]
+      );
+
       this.playStatus[this._currentActivity] = '';
     } else {
       this.log.debug('(' + this.name + ')' + 'INFO - sending PauseCommand for PLAY_PAUSE');

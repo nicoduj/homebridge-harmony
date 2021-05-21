@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.3
+
+- [FIX] PLAY and PAUSE commands not working #363
+
 ## 1.5.2
 
 - [FIX] Config.schema.json not up to date #346
