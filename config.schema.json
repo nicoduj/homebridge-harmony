@@ -651,7 +651,7 @@
             },
             {
               "type": "help",
-              "helpvalue": "<h6>Option to ovverride default commands mapping in TV Platform Mode</h6><em class='primary-text'>Command format : [Device Name];[Command Name].</em>"
+              "helpvalue": "<h6>Option to override default commands mapping in TV Platform Mode</h6><em class='primary-text'>Command format : [Device Name];[Command Name].</em>"
             },
             {
               "nodescription": true,
@@ -1021,7 +1021,7 @@
                         },
                         {
                           "type": "help",
-                          "helpvalue": "<h6>Option to ovverride default commands mapping in TV Platform Mode</h6><em class='primary-text'>Command format : [Device Name];[Command Name].</em>"
+                          "helpvalue": "<h6>Option to override default commands mapping in TV Platform Mode</h6><em class='primary-text'>Command format : [Device Name];[Command Name].</em>"
                         },
                         {
                           "nodescription": true,
