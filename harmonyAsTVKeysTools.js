@@ -129,7 +129,7 @@ module.exports = {
             '(' +
               platform.name +
               ')' +
-              'INFO - commands found for ovverride : ' +
+              'INFO - commands found for override : ' +
               platform._currentInputService.activityName +
               '-' +
               command +
@@ -141,7 +141,7 @@ module.exports = {
             '(' +
               platform.name +
               ')' +
-              'WARNING - Command not found for ovverride : ' +
+              'WARNING - Command not found for override : ' +
               platform._currentInputService.activityName +
               '-' +
               device +
@@ -158,7 +158,7 @@ module.exports = {
           '(' +
             platform.name +
             ')' +
-            'ERROR - No commands found for ovverride : ' +
+            'ERROR - No commands found for override : ' +
             platform._currentInputService.activityName +
             '-' +
             command

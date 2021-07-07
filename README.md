@@ -155,7 +155,7 @@ Fields:
 - `publishGeneralVolumeSlider` publish a volume slider, stateless, that will send a volume commands to current activity. Approximativley, it will send an Up / Down Volume command each 5%. It can be combined with `numberOfCommandsSentForVolumeControl` option to multiply the number of up / down commands sent.
 - `publishGeneralVolumeSwitches` publish switches, stateless, for volume up / down on TV Accessory. It can be combined with `numberOfCommandsSentForVolumeControl` option to multiply the number of up / down commands sent.
 - `linkVolumeControlToTV`links mute / volume switch to TV accessory if present
-- `remoteOverrideCommandsList` option to ovverride default commands mapping in TV Platform Mode. See below for format.
+- `remoteOverrideCommandsList` option to override default commands mapping in TV Platform Mode. See below for format.
 - `activitiesToPublishAsInputForTVMode` array of Activities you want to expose as inputs (all by default)
 - `numberOfCommandsSentForVolumeControl` option to set the number of commands to send for each volum (up or down) press. Defaults to 1
 - `showCommandsAtStartup` show commands and device losts at startup (defaults to false)
@@ -221,7 +221,7 @@ See [Logitech Harmony Sequence Configuration](https://support.myharmony.com/en-u
 
 - You should put the name of the activity as it is named in harmony app,
 - Then an Array CommandsList with :
-  - the name of the command you want to ovverride
+  - the name of the command you want to override
   - the commands like in devicesToPublishAsAccessoriesSwitch (with the name of the device first)
 
 ```json
