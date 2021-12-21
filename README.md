@@ -16,7 +16,7 @@
 
 [Logitech Harmony](https://www.myharmony.com/en-us/) plugin for [HomeBridge](https://github.com/homebridge/homebridge) using WebSockets.
 
-You can discuss this plugin on [Discord](https://discord.gg/DRxjgv) in #harmony channel
+You can discuss this plugin on [Discord](https://discord.gg/DsAMVktZjS) in #harmony channel
 
 [![Discord Status](https://img.shields.io/discord/432663330281226270.svg?label=discord)](https://discord.gg/KYcX25z)
 
