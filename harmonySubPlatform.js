@@ -248,6 +248,9 @@ HarmonySubPlatform.prototype = {
     let mainActivityConfigured = false;
     let defaultActivity = undefined;
 
+    //Pre-sort so the input sorces are set alphabetically. 
+    activities.sort((a, b) => a.label.localeCompare(b.label));
+
     for (let i = 0, len = activities.length; i < len; i++) {
       if (this.showInput(activities[i])) {
         let inputName = this.devMode ? 'DEV' + activities[i].label : activities[i].label;
