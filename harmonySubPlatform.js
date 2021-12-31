@@ -23,6 +23,8 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
 
   this.TVAccessory = HarmonyTools.checkParameter(config['TVAccessory'], true);
 
+  this.sortInput = HarmonyTools.checkParameter(config['sortInput'], 0);
+
   this.publishGeneralMuteSwitch = HarmonyTools.checkParameter(
     config['publishGeneralMuteSwitch'],
     false
@@ -248,8 +250,10 @@ HarmonySubPlatform.prototype = {
     let mainActivityConfigured = false;
     let defaultActivity = undefined;
 
-    //Pre-sort so the input sorces are set alphabetically. 
-    activities.sort((a, b) => a.label.localeCompare(b.label));
+    //Pre-sort so the input sorces are set alphabetically or by activityOrder
+
+    if (this.sortInput == 1) activities.sort((a, b) => a.label.localeCompare(b.label));
+    else if (this.sortInput > 1) activities.sort((a, b) => a.activityOrder - b.activityOrder);
 
     for (let i = 0, len = activities.length; i < len; i++) {
       if (this.showInput(activities[i])) {

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.4
+
+- [NEW] Option for sorting activities either alphabetically or by activity order in harmony conf (thx to @alapitz PR - Sort the activities alphabetically #384)
+
 ## 1.5.3
 
 - [FIX] PLAY and PAUSE commands not working #363

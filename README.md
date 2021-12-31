@@ -133,6 +133,7 @@ Fields:
 - `hubName` is the name of your hub in harmony app (optional, but mandatory if you have mutliple hubs). In case both hubName and hubIP are not set, it will discover your hub automatically, providing there is only one
 - `hubIP` is the static IP address of the hub (optional). A static IP address is required.
 - `TVAccessory` publish hub with its activities as a TV Accessory (defaults to true).
+- `SortInput` sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property(defaults to 0).
 - `switchAccessories` publish all activities as a Switch Accessory (defaults to false).
 - `activitiesToPublishAsAccessoriesSwitch` array of Activities you want to expose as switches (all by default if switchAccessories is set to true, otherwise specify the list you want)
 - `showTurnOffActivity` configures whether to publish a "switch" accessory to turn off every activity (defaults to false).
