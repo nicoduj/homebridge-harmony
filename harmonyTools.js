@@ -51,15 +51,21 @@ module.exports = {
     }
   },
 
-  transformActivityIdToActiveIdentifier: function (currentInputService) {
-    if (currentInputService !== undefined && currentInputService.activityId > 0)
-      return currentInputService.activityId;
+  transformActivityIdToActiveIdentifier: function (currentInputService, sources) {
+    if (currentInputService !== undefined && currentInputService.activityId > 0){
+      for (let i = 0, len = sources.length; i < len; i++){
+        if(sources[i].activityId == currentInputService.activityId)
+         return i;
+      }
+    }
     else return 0;
   },
 
-  transformActiveIdentifierToActivityId: function (activeIdentifier) {
-    if (activeIdentifier == 0) return -1;
-    else return activeIdentifier;
+  transformActiveIdentifierToActivityId: function (activeIdentifier, sources) {
+    if (sources.length > activeIdentifier){
+      return sources[activeIdentifier].activityId;
+    } 
+    else return -1;
   },
 
   checkTurnOffActivityOption: function (str) {

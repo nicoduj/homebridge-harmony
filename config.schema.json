@@ -340,7 +340,10 @@
             },
             "SortInput": {
               "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property (defaults to 0).",
-              "type": "integer"
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 2
             },
             "configureAccesscontrol": {
               "title": "Enable Access Control Service (false by default)",
