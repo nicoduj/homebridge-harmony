@@ -251,6 +251,7 @@ HarmonySubPlatform.prototype = {
     let defaultActivity = undefined;
 
     //Pre-sort so the input sorces are set alphabetically or by activityOrder
+    this.log.debug('(' + this.name + ')' + 'INFO - accessories : Sort Order : ' + this.sortInput);
     if (this.sortInput == 1) activities.sort((a, b) => a.label.localeCompare(b.label));
     else if (this.sortInput > 1) activities.sort((a, b) => a.activityOrder - b.activityOrder);
 
@@ -454,7 +455,8 @@ HarmonySubPlatform.prototype = {
     let inputSourceService = accessory.getServiceByUUIDAndSubType(this.name, subType);
 
     if (!inputSourceService) {
-      this.log('(' + this.name + ')' + 'INFO - Creating Input Service - ' + inputName);
+      this.log('(' + this.name + ')' + 'INFO - Creating Input Service - ' + inputName
+        + ' in position ' + order);
       inputSourceService = new Service.InputSource(this.name, 'Input' + this.name + inputName);
       inputSourceService.subtype = subType;
       accessory.addService(inputSourceService);
