@@ -780,7 +780,7 @@ HarmonySubPlatform.prototype = {
           setTimeout(() => {
             if (this._currentInputService == undefined) {
               var currentActivity = HarmonyTools.transformActiveIdentifierToActivityId(
-                  service.getCharacteristic(Characteristic.ActiveIdentifier),
+                  service.getCharacteristic(Characteristic.ActiveIdentifier).value,
                   this.inputServices
               );
 
