@@ -1,30 +1,33 @@
 language: node_js
 node_js:
-  - '10'
-  - '12'
-  - '13'
+  - '14'
+  - '15'
+  - '16'
 
 jobs:
   include:
     - stage: npm release
       if: tag IS present
-      node_js: '12'
+      node_js: '16'
       script: echo "Deploying to npm ..."
       deploy:
         provider: npm
         email: '$NPM_EMAIL'
         api_key: '$NPM_TOKEN'
+        tag: beta
         on:
           tags: true
         edge: true
     - stage: GitHub Release
       if: tag IS present
-      node_js: '12'
+      node_js: '16'
       script: echo "Deploying to GitHub releases ..."
       deploy:
         provider: releases
         api_key: $GITHUB_OAUTH_TOKEN
         cleanup: true
+        prerelease: true
+        tag: beta
         name: $TRAVIS_TAG
         on:
           tags: true

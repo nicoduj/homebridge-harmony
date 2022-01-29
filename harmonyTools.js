@@ -52,20 +52,17 @@ module.exports = {
   },
 
   transformActivityIdToActiveIdentifier: function (currentInputService, sources) {
-    if (currentInputService !== undefined && currentInputService.activityId > 0){
-      for (let i = 0, len = sources.length; i < len; i++){
-        if(sources[i].activityId == currentInputService.activityId)
-         return i;
+    if (currentInputService !== undefined && currentInputService.activityId > 0) {
+      for (let i = 0, len = sources.length; i < len; i++) {
+        if (sources[i].activityId == currentInputService.activityId) return i + 1;
       }
-    }
-    else return 0;
+    } else return 0;
   },
 
   transformActiveIdentifierToActivityId: function (activeIdentifier, sources) {
-    if (sources.length > activeIdentifier){
-      return sources[activeIdentifier].activityId;
-    } 
-    else return -1;
+    if (sources.length > activeIdentifier && activeIdentifier > 0) {
+      return sources[activeIdentifier - 1].activityId;
+    } else return -1;
   },
 
   checkTurnOffActivityOption: function (str) {

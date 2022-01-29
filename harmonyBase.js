@@ -441,7 +441,7 @@ HarmonyBase.prototype = {
 
   //REFRESH
   refreshCurrentActivity: function (harmonyPlatform, callback) {
-    //Infinite llop handling on errors / network loss ?
+    //Infinite loop handling on errors / network loss ?
 
     if (this.numberOfErrors >= HarmonyConst.MAX_SOCKET_ERROR) {
       harmonyPlatform.log(
@@ -1350,39 +1350,9 @@ HarmonyBase.prototype = {
   },
 
   //ACCESSORIES, SERVICES AND CHARACERISTICS
-  handleCharacteristicUpdate: function (harmonyPlatform, characteristic, value, callback) {
-    if (harmonyPlatform._currentActivity == HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
-      if (callback) {
-        callback(1);
-      }
-      //this.updateCharacteristicToErr(characteristic, callback);
-    } else {
-      this.updateCharacteristic(characteristic, value, callback);
-    }
-  },
 
-  /*
-  updateCharacteristicToErr: function (characteristic, callback) {
-    try {
-      if (callback) {
-        callback(1);
-      } else {
-        characteristic.updateValue(undefined);
-      }
-    } catch (error) {
-      characteristic.updateValue(undefined);
-    }
-  },
-  */
-
-  updateCharacteristic: function (characteristic, characteristicValue, callback) {
-    try {
-      if (callback) {
-        callback(undefined, characteristicValue);
-      } else {
-        characteristic.updateValue(characteristicValue);
-      }
-    } catch (error) {
+  handleCharacteristicUpdate: function (harmonyPlatform, characteristic, characteristicValue) {
+    if (harmonyPlatform._currentActivity !== HarmonyConst.CURRENT_ACTIVITY_NOT_SET_VALUE) {
       characteristic.updateValue(characteristicValue);
     }
   },
@@ -1553,6 +1523,11 @@ HarmonyBase.prototype = {
   },
 
   getSwitchOnCharacteristic(harmonyPlatform, service, callback) {
+    //return immediately
+    if (callback) {
+      callback(undefined, service.getCharacteristic(Characteristic.On).value);
+    }
+
     if (service.type === HarmonyConst.HOME_TYPE) {
       this.getHomeControlsAccessories(harmonyPlatform).then((responseHome) => {
         var newValue = false;
@@ -1562,8 +1537,7 @@ HarmonyBase.prototype = {
         this.handleCharacteristicUpdate(
           harmonyPlatform,
           service.getCharacteristic(Characteristic.On),
-          newValue,
-          callback
+          newValue
         );
       });
     } else {
@@ -1636,6 +1610,11 @@ HarmonyBase.prototype = {
   },
 
   getSliderOnCharacteristic: function (harmonyPlatform, service, callback) {
+    //return immediately
+    if (callback) {
+      callback(undefined, service.getCharacteristic(Characteristic.On).value);
+    }
+
     let isOn = false;
     //always on if current activity set and volumes is mapped , off otherwise
     if (
@@ -1649,8 +1628,7 @@ HarmonyBase.prototype = {
     this.handleCharacteristicUpdate(
       harmonyPlatform,
       service.getCharacteristic(Characteristic.On),
-      isOn,
-      callback
+      isOn
     );
   },
 
@@ -1697,6 +1675,11 @@ HarmonyBase.prototype = {
   },
 
   getSliderVolumeCharacteristic: function (harmonyPlatform, service, callback) {
+    //return immediately
+    if (callback) {
+      callback(undefined, service.getCharacteristic(Characteristic.Brightness).value);
+    }
+
     var newVolume = 0;
     //always on if current activity set and volumes is mapped , off otherwise
     if (
@@ -1710,8 +1693,7 @@ HarmonyBase.prototype = {
     this.handleCharacteristicUpdate(
       harmonyPlatform,
       service.getCharacteristic(Characteristic.Brightness),
-      newVolume,
-      callback
+      newVolume
     );
   },
 

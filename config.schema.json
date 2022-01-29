@@ -55,12 +55,12 @@
         "title": "TV accessory in homekit (Defaults to true if not set)",
         "type": "boolean"
       },
-      "SortInput": {
-        "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property (defaults to 0).",
+      "sortInput": {
+        "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).",
         "type": "integer",
         "default": 0,
         "minimum": 0,
-        "maximum": 2
+        "maximum": 3
       },
       "configureAccesscontrol": {
         "title": "Enable Access Control Service (false by default)",
@@ -338,12 +338,12 @@
               "title": "TV accessory in homekit (Defaults to true if not set)",
               "type": "boolean"
             },
-            "SortInput": {
-              "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property (defaults to 0).",
+            "sortInput": {
+              "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).",
               "type": "integer",
               "default": 0,
               "minimum": 0,
-              "maximum": 2
+              "maximum": 3
             },
             "configureAccesscontrol": {
               "title": "Enable Access Control Service (false by default)",
@@ -617,7 +617,7 @@
           "description": "Publish hub with its activities as a TV Accessory"
         },
         {
-          "key": "SortInput",
+          "key": "sortInput",
           "description": "sort input list in TV accessory"
         },
         {
@@ -991,7 +991,7 @@
                       "description": "Publish hub with its activities as a TV Accessory"
                     },
                     {
-                      "key": "otherPlatforms[].SortInput",
+                      "key": "otherPlatforms[].sortInput",
                       "description": "sort input list in TV accessory"
                     },
                     {

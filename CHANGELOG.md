@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.6.0(beta)
+
+- [NEW] Option for sorting activities either alphabetically or by activity order in harmony conf or by activitiesToPublishAsInputForTVMode option order (thx to @alapitz PR - Sort the activities alphabetically #384)
+- [FIX] trying to fix slow response message. Socket closed warning can still occur, but should reconnect and not block the bridge
+
 ## 1.5.4
 
 - [NEW] Option for sorting activities either alphabetically or by activity order in harmony conf (thx to @alapitz PR - Sort the activities alphabetically #384)
