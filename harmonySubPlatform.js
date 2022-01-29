@@ -23,7 +23,7 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
 
   this.TVAccessory = HarmonyTools.checkParameter(config['TVAccessory'], true);
 
-  this.sortInput = HarmonyTools.checkParameter(config['sortInput'], 0);
+  this.sortInput = HarmonyTools.checkParameter(config['SortInput'], 0);
 
   this.publishGeneralMuteSwitch = HarmonyTools.checkParameter(
     config['publishGeneralMuteSwitch'],
@@ -251,7 +251,7 @@ HarmonySubPlatform.prototype = {
     let defaultActivity = undefined;
 
     //Pre-sort so the input sorces are set alphabetically or by activityOrder
-
+    this.log.debug('(' + this.name + ')' + 'INFO - accessories : Sort Order : ' + this.sortInput);
     if (this.sortInput == 1) activities.sort((a, b) => a.label.localeCompare(b.label));
     else if (this.sortInput > 1) activities.sort((a, b) => a.activityOrder - b.activityOrder);
 
@@ -275,7 +275,8 @@ HarmonySubPlatform.prototype = {
           myHarmonyAccessory,
           inputName,
           inputId,
-          activities[i]
+          activities[i],
+          this.inputServices.length
         );
 
         this.mainService.addLinkedService(inputSourceService);
@@ -449,12 +450,13 @@ HarmonySubPlatform.prototype = {
     this.mainService.addLinkedService(this.tvSpeakerService);
   },
 
-  configureInputSourceService: function (accessory, inputName, inputId, activity) {
+  configureInputSourceService: function (accessory, inputName, inputId, activity, order) {
     let subType = inputName + ' Activity';
     let inputSourceService = accessory.getServiceByUUIDAndSubType(this.name, subType);
 
     if (!inputSourceService) {
-      this.log('(' + this.name + ')' + 'INFO - Creating Input Service - ' + inputName);
+      this.log('(' + this.name + ')' + 'INFO - Creating Input Service - ' + inputName
+        + ' in position ' + order);
       inputSourceService = new Service.InputSource(this.name, 'Input' + this.name + inputName);
       inputSourceService.subtype = subType;
       accessory.addService(inputSourceService);
@@ -476,7 +478,7 @@ HarmonySubPlatform.prototype = {
     }
 
     inputSourceService
-      .setCharacteristic(Characteristic.Identifier, inputId)
+      .setCharacteristic(Characteristic.Identifier, order)
       .setCharacteristic(Characteristic.Name, inputName)
       .setCharacteristic(Characteristic.ConfiguredName, inputServiceName)
       .setCharacteristic(Characteristic.InputSourceType, Characteristic.InputSourceType.APPLICATION)
@@ -510,7 +512,7 @@ HarmonySubPlatform.prototype = {
     this.harmonyBase.handleCharacteristicUpdate(
       this,
       this.mainService.getCharacteristic(Characteristic.ActiveIdentifier),
-      HarmonyTools.transformActivityIdToActiveIdentifier(this._currentInputService),
+      HarmonyTools.transformActivityIdToActiveIdentifier(this._currentInputService, this.inputServices),
       null
     );
   },
@@ -615,11 +617,8 @@ HarmonySubPlatform.prototype = {
 
     let inputName = commandToSend == -1 ? 'PowerOff' : '';
 
-    for (let i = 0, len = this.inputServices.length; i < len; i++) {
-      if (this.inputServices[i].activityId == commandToSend) {
-        inputName = this.inputServices[i].activityName;
-        break;
-      }
+    if(this.inputServices.length > value){
+      inputName = this.inputServices[value].activityName;
     }
 
     if (HarmonyTools.isActivtyToBeSkipped(this, inputName)) {
@@ -736,12 +735,12 @@ HarmonySubPlatform.prototype = {
               this.name +
               ')' +
               'INFO - refreshCharacteristic : updating Characteristic.ActiveIdentifier to ' +
-              HarmonyTools.transformActivityIdToActiveIdentifier(this._currentInputService)
+              HarmonyTools.transformActivityIdToActiveIdentifier(this._currentInputService, this.inputServices)
           );
           this.harmonyBase.handleCharacteristicUpdate(
             this,
             characteristic,
-            HarmonyTools.transformActivityIdToActiveIdentifier(this._currentInputService),
+            HarmonyTools.transformActivityIdToActiveIdentifier(this._currentInputService, this.inputServices),
             callback
           );
         }
@@ -783,7 +782,8 @@ HarmonySubPlatform.prototype = {
           setTimeout(() => {
             if (this._currentInputService == undefined) {
               var currentActivity = HarmonyTools.transformActiveIdentifierToActivityId(
-                service.getCharacteristic(Characteristic.ActiveIdentifier).value
+                  service.getCharacteristic(Characteristic.ActiveIdentifier).value,
+                  this.inputServices
               );
 
               if (currentActivity <= 0) {
@@ -838,7 +838,10 @@ HarmonySubPlatform.prototype = {
         );
         this.sendInputCommand(
           homebridgeAccessory,
-          '' + HarmonyTools.transformActiveIdentifierToActivityId(value)
+          '' + HarmonyTools.transformActiveIdentifierToActivityId(
+                value,
+                this.inputServices
+              )
         );
         callback(null);
       }.bind(this)
