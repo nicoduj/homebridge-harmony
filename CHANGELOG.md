@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.6.0(beta2)
+
+- [WorkInProgress] Switching activities powers off activity #395
+- [WorkInProgress] This plugin slows down Homebridge / socket closed messages #387
+
 ## 1.6.0(beta)
 
 - [NEW] Option for sorting activities either alphabetically or by activity order in harmony conf or by activitiesToPublishAsInputForTVMode option order (thx to @alapitz PR - Sort the activities alphabetically #384)

@@ -60,7 +60,7 @@ module.exports = {
   },
 
   transformActiveIdentifierToActivityId: function (activeIdentifier, sources) {
-    if (sources.length > activeIdentifier && activeIdentifier > 0) {
+    if (sources.length >= activeIdentifier && activeIdentifier > 0) {
       return sources[activeIdentifier - 1].activityId;
     } else return -1;
   },

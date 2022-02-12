@@ -191,7 +191,21 @@ HarmonyBase.prototype = {
               hubInfo[0]
           );
           harmonyPlatform.hubIP = hubInfo[0];
-          this.refreshCurrentActivity(harmonyPlatform, () => {});
+
+          this.harmony
+            .connect(harmonyPlatform.hubIP)
+            .then(() => {
+              this.refreshCurrentActivity(harmonyPlatform, () => {});
+            })
+            .catch((e3) => {
+              harmonyPlatform.log(
+                '(' +
+                  harmonyPlatform.name +
+                  ')' +
+                  'Error - Error connecting after IP refreshed  ' +
+                  e3.message
+              );
+            });
         }
         found = true;
         break;
@@ -242,6 +256,16 @@ HarmonyBase.prototype = {
         if (harmonyPlatform.hubRemoteId == undefined) {
           this.checkHubsFound(harmonyPlatform, knownHubsArray);
         } else {
+          this.harmony.close().catch((e2) => {
+            harmonyPlatform.log(
+              '(' +
+                harmonyPlatform.name +
+                ')' +
+                'Error - Error closing after hub IP changed ' +
+                e2.message
+            );
+          });
+
           this.updateHub(harmonyPlatform, knownHubsArray);
         }
       });
@@ -258,9 +282,28 @@ HarmonyBase.prototype = {
     this.harmony.on('close', () => {
       harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'WARNING - socket closed');
 
+      this.harmony.close().catch((e2) => {
+        harmonyPlatform.log(
+          '(' + harmonyPlatform.name + ')' + 'Error - Error closing  ' + e2.message
+        );
+      });
+
       setTimeout(() => {
         if (harmonyPlatform.hubRemoteId == undefined) {
-          this.refreshCurrentActivity(harmonyPlatform, () => {});
+          this.harmony
+            .connect(harmonyPlatform.hubIP)
+            .then(() => {
+              this.refreshCurrentActivity(harmonyPlatform, () => {});
+            })
+            .catch((e3) => {
+              harmonyPlatform.log(
+                '(' +
+                  harmonyPlatform.name +
+                  ')' +
+                  'Error - Error connecting after socket closed  ' +
+                  e3.message
+              );
+            });
         } else {
           harmonyPlatform.mainPlatform.discoverHub();
         }

@@ -27,7 +27,6 @@ jobs:
         api_key: $GITHUB_OAUTH_TOKEN
         cleanup: true
         prerelease: true
-        tag: beta
         name: $TRAVIS_TAG
         on:
           tags: true
