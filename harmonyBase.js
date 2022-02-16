@@ -282,12 +282,6 @@ HarmonyBase.prototype = {
     this.harmony.on('close', () => {
       harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'WARNING - socket closed');
 
-      this.harmony.close().catch((e2) => {
-        harmonyPlatform.log(
-          '(' + harmonyPlatform.name + ')' + 'Error - Error closing  ' + e2.message
-        );
-      });
-
       setTimeout(() => {
         if (harmonyPlatform.hubRemoteId == undefined) {
           this.harmony
