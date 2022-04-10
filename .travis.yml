@@ -14,7 +14,7 @@ jobs:
         provider: npm
         email: '$NPM_EMAIL'
         api_key: '$NPM_TOKEN'
-        tag: beta
+        # tag: beta
         on:
           tags: true
         edge: true
@@ -26,7 +26,7 @@ jobs:
         provider: releases
         api_key: $GITHUB_OAUTH_TOKEN
         cleanup: true
-        prerelease: true
+        # prerelease: true
         name: $TRAVIS_TAG
         on:
           tags: true

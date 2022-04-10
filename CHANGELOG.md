@@ -2,19 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.6.0(beta3)
+## 1.6.0
 
-- [WorkInProgress] This plugin slows down Homebridge / socket closed messages #387
-
-## 1.6.0(beta2)
-
-- [WorkInProgress] Switching activities powers off activity #395
-- [WorkInProgress] This plugin slows down Homebridge / socket closed messages #387
-
-## 1.6.0(beta)
-
+- [FIX] This plugin slows down Homebridge / socket closed messages #387 #380
+- [FIX] Switching activities powers off activity #395
 - [NEW] Option for sorting activities either alphabetically or by activity order in harmony conf or by activitiesToPublishAsInputForTVMode option order (thx to @alapitz PR - Sort the activities alphabetically #384)
-- [FIX] trying to fix slow response message. Socket closed warning can still occur, but should reconnect and not block the bridge
 
 ## 1.5.4
 
