@@ -256,18 +256,11 @@ HarmonySubPlatform.prototype = {
 
     if (this.sortInput == 1) activities.sort((a, b) => a.label.localeCompare(b.label));
     else if (this.sortInput == 2) activities.sort((a, b) => a.activityOrder - b.activityOrder);
-    else if (this.sortInput == 2) activities.sort((a, b) => a.activityOrder - b.activityOrder);
     else if (this.sortInput > 2 && this.activitiesToPublishAsInputForTVMode) {
-      const sorter = (a, b) => {
-        if (this.activitiesToPublishAsInputForTVMode.includes(a.label)) {
-          return -1;
-        }
-        if (this.activitiesToPublishAsInputForTVMode.includes(b.label)) {
-          return 1;
-        }
-        return 0;
-      };
-      activities.sort(sorter);
+      var refArray = this.activitiesToPublishAsInputForTVMode;
+      activities.sort(function (a, b) {
+        return refArray.indexOf(a.label) - refArray.indexOf(b.label);
+      });
     }
 
     for (let i = 0, len = activities.length; i < len; i++) {
