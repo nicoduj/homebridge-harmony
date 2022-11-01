@@ -52,8 +52,9 @@
         "type": "boolean"
       },
       "TVAccessory": {
-        "title": "TV accessory in homekit (Defaults to true if not set)",
-        "type": "boolean"
+        "title": "TV accessory in homekit",
+        "type": "boolean",
+        "default": true
       },
       "sortInput": {
         "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).",
@@ -335,8 +336,9 @@
               "required": false
             },
             "TVAccessory": {
-              "title": "TV accessory in homekit (Defaults to true if not set)",
-              "type": "boolean"
+              "title": "TV accessory in homekit",
+              "type": "boolean",
+              "default": false
             },
             "sortInput": {
               "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).",
