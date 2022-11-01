@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.6.2
+
+- [FIX] Add correct help message to sequencesToPublishAsAccessoriesSwitch in config UI #416. Thanks to @lisanet
+- [FIX] fix for issue #410. This fixes the 'TV showing as undefined' #415. Thanks to @lisanet
+
 ## 1.6.1
 
 - [FIX] Fixing order issue with sortInput set to 3 #375
