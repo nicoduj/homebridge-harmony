@@ -52,8 +52,9 @@
         "type": "boolean"
       },
       "TVAccessory": {
-        "title": "TV accessory in homekit (Defaults to true if not set)",
-        "type": "boolean"
+        "title": "TV accessory in homekit",
+        "type": "boolean",
+        "default": true
       },
       "sortInput": {
         "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).",
@@ -335,8 +336,9 @@
               "required": false
             },
             "TVAccessory": {
-              "title": "TV accessory in homekit (Defaults to true if not set)",
-              "type": "boolean"
+              "title": "TV accessory in homekit",
+              "type": "boolean",
+              "default": false
             },
             "sortInput": {
               "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).",
@@ -828,7 +830,7 @@
         },
         {
           "type": "help",
-          "helpvalue": "<h6>Devices to publish as accessories switch</h6>          <p>This option is an array that behaves this way :</p>          <ul>          <li>You should put the name of the device as it is named in harmony app,</li>          <li>You can add a specific command or multiple ones <strong>JUST AFTER A &quot;;&quot; or a series of &quot;;&quot;</strong> if you want a switch to be added for this specific command or serie of commands (a default delay of 350ms will be added between each command if no sepecif delay is specified),</li>          <li>If you do not specify any specific command, the plugin will add either powerToggle if found in Power command group, or PowerOn and/or PowerOff if there is no powerToggle feature,</li>          </ul>          <p>As a sample :</p>          <pre><code class='lang-json'>  <span class='hljs-string'>\"devicesToPublishAsAccessoriesSwitch\"</span> : [<span class='hljs-string'>\"Apple TV Gen 4|Button1;Play\"</span>,<span class='hljs-string'>\"Apple TV Gen 4;DirectionDown\"</span>,<span class='hljs-string'>\"Caisson\"</span>,<span class='hljs-string'>\"Sony PS4\"</span>,<span class='hljs-string'>\"MyDevice;Up;Up|2500;Down\"</span>]          </code></pre>          <p>will add</p>          <ul>          <li>a switch for &quot;Apple TV Gen 4&quot; &quot;Play&quot; command, named Button1,</li>          <li>a switch for &quot;Apple TV Gen 4&quot; &quot;DirectionDown&quot; command,</li>          <li>a powerToggle switch for the device named &quot;Caisson&quot;,</li>          <li>a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it)</li>          <li>a switch that will send Up , then Up, then wait 2.5 seconds, then send Down to MyDevice</li>          </ul>          <p>All commands available are displayed at startup. If no name is specified, it will be added with a generated name.</p>          <p>If you use a &quot;/&quot;, it will do a non stateless switch and send commands bfire the / on On, and after on Off. Be aware that it can be out of sync .</p>          <p>As a sample :</p>          <pre><code class='lang-json'>  <span class='hljs-string'>\"devicesToPublishAsAccessoriesSwitch\"</span> : [<span class='hljs-string'>\"Apple TV Gen 4|Button1;Play/Pause\"</span>,<span class='hljs-string'>\"Caisson;/\"</span>,<span class='hljs-string'>\"Sony PS4;/\"</span>,<span class='hljs-string'>\"MyDevice;/\"</span>,<span class='hljs-string'>\"MyDevice;Up;Up|2500;Down/Down;Down|2500;Up\"</span>]          </code></pre>          <p>will add</p>          <ul>          <li>a switch for &quot;Apple TV Gen 4&quot; &quot;Play&quot; command on on, &quot;Pause&quot; command on off, named Button1,</li>          <li>a powerToggle switch for the device named &quot;Caisson&quot;, which will send PowerToggle on on and off,</li>          <li>a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it) - thus no effect</li>          <li>a switch that will PowerOn on On and PowerOff on off to MyDevice since it doe not have a powerToggle and have both powerOn / PowerOff</li>          <li>a switch that will send Up , then Up, then wait 2.5 seconds, then send Down to MyDevice on On and reverse on Off</li>          </ul>"
+          "helpvalue": "<h6>Sequences to publish as accessories switch</h6> <p>This option is an array that behaves this way :</p>  <ul> <li>You should put the name of the sequence as it is named in harmony app,</li> </ul>  <p>As a sample :</p>  <pre><code class='lang-json'>  <span class='hljs-string'>\"sequencesToPublishAsAccessoriesSwitch\"</span> : [<span class='hljs-string'>\"Test\"</span>]  </code></pre>  <p>will expose the sequence Test as a button.</p>  <p>See <a href=\"https://support.myharmony.com/en-us/creating-button-sequences\">Logitech Harmony Sequence Configuration</a> for sequences configuration.</p> <p>Please note that the sequence can only be triggered if its activity is in use. (Sequences are linked to an activity by design in harmony app.)</p>"
         },
         {
           "nodescription": true,
