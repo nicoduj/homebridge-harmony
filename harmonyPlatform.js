@@ -30,7 +30,7 @@ function HarmonyPlatform(log, config, api) {
   this.plaformsConfigs = [];
   this.plaformsConfigs.push(config);
 
-  if (config['otherPlatforms']) {
+  if (config['otherPlatforms'] && config['otherPlatforms'].length > 0) {
     this.plaformsConfigs.push.apply(this.plaformsConfigs, config['otherPlatforms']);
   }
 

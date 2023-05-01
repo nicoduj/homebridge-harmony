@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.6.3
+
+- [FIX] Change heading level h6 to h5 #418. Thanks to @lisanet
+- [FIX] handling empty other platform
+
 ## 1.6.2
 
 - [FIX] Add correct help message to sequencesToPublishAsAccessoriesSwitch in config UI #416. Thanks to @lisanet
