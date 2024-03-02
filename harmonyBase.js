@@ -1221,7 +1221,7 @@ HarmonyBase.prototype = {
     let functionsKey = '';
 
     //check stateless
-    var OnOffcommands = commands.split('/');
+    var OnOffcommands = commands.split('\\');
 
     for (let a = 0, len = OnOffcommands.length; a < len; a++) {
       let commands = OnOffcommands[a].split(';');
@@ -1345,9 +1345,9 @@ HarmonyBase.prototype = {
             let controlGroup = devices[i].controlGroup;
 
             //default mode
-            if (commands.length === 1 || (commands.length === 2 && commands[1] === '/')) {
+            if (commands.length === 1 || (commands.length === 2 && commands[1] === '\\')) {
               var isStateless =
-                harmonyPlatform.devicesToPublishAsAccessoriesSwitch[c].split('/').length == 1;
+                harmonyPlatform.devicesToPublishAsAccessoriesSwitch[c].split('\\').length == 1;
 
               accessoriesToAdd.push.apply(
                 accessoriesToAdd,
