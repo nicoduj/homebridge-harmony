@@ -186,12 +186,12 @@ will add
 
 All commands available are displayed at startup. If no name is specified, it will be added with a generated name.
 
-If you use a "/", it will do a non stateless switch and send commands before the / on On, and after on Off. Be aware that it can be out of sync .
+If you use a "\", it will do a non stateless switch and send commands before the \ on On, and after on Off. Be aware that it can be out of sync .
 
 As a sample :
 
 ```json
-  "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4|Button1;Play/Pause","Caisson;/","Sony PS4;/","MyDevice;/","MyDevice;Up;Up|2500;Down/Down;Down|2500;Up"]
+  "devicesToPublishAsAccessoriesSwitch" : ["Apple TV Gen 4|Button1;Play\Pause","Caisson;/","Sony PS4;/","MyDevice;/","MyDevice;Up;Up|2500;Down\Down;Down|2500;Up"]
 ```
 
 will add
