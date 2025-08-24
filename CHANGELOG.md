@@ -2,11 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
-## 2.0.0beta
+## 2.0.0
+
+### Fixed
 
 - [FIX] #350, moving / separator to §
-- [NEW] #444, homebridge 2.0 support
+- [FIX] Incorrect PlatformAccessory API reference causing plugin startup failures
+- [FIX] Missing variable declarations causing ReferenceErrors in strict mode
+- [FIX] TV accessory category detection logic error
+- [FIX] HOME_TYPE constant reference missing namespace prefix
+- [FIX] AccessoryType.SWITCH assignment error in volume accessories
+- [FIX] Variable scoping issues with hubInfo, switchName, commandToSend variables
+- [FIX] Missing let declarations for mainServiceName and inputServiceName variables
+
+### Added
+
+- [NEW] #444, Full Homebridge 2.0 API compatibility
 - [NEW] #405, Allow to configure AUDIO_RECEIVER accessory
+- [NEW] Support for Node.js v23
+- [NEW] Enhanced error handling and logging
+- [NEW] Improved TypeScript compatibility preparation
+
+### Changed
+
+- [BREAKING] Updated minimum Homebridge version to 1.6.0
+- [UPDATE] Modernized platform plugin structure for better compatibility
+- [UPDATE] Enhanced TV service creation and linking patterns
+- [UPDATE] Improved accessory registration handling
 
 ## 1.6.3
 

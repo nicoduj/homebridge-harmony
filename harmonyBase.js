@@ -149,7 +149,7 @@ HarmonyBase.prototype = {
       );
     } else if (knownHubsArray) {
       for (let hub of knownHubsArray) {
-        hubInfo = hub.split('|');
+        let hubInfo = hub.split('|');
         if (harmonyPlatform.hubName == undefined || harmonyPlatform.hubName == hubInfo[1]) {
           harmonyPlatform.hubIP = hubInfo[0];
           harmonyPlatform.hubRemoteId = hubInfo[2];
@@ -176,7 +176,7 @@ HarmonyBase.prototype = {
   updateHub: function (harmonyPlatform, knownHubsArray) {
     var found = false;
     for (let hub of knownHubsArray) {
-      hubInfo = hub.split('|');
+      let hubInfo = hub.split('|');
       if (harmonyPlatform.hubRemoteId == hubInfo[2]) {
         if (harmonyPlatform.hubIP != hubInfo[0]) {
           harmonyPlatform.log(
@@ -352,7 +352,9 @@ HarmonyBase.prototype = {
     //creating accessories
 
     for (const accessory of accessoriesToAdd) {
-      let isTv = accessory.category == (AccessoryType.AUDIO_RECEIVER || AccessoryType.TELEVISION);
+      let isTv =
+        accessory.category === AccessoryType.AUDIO_RECEIVER ||
+        accessory.category === AccessoryType.TELEVISION;
 
       if (
         isTv &&
@@ -602,7 +604,7 @@ HarmonyBase.prototype = {
 
       for (let s = 0; s < myHarmonyAccessory.services.length; s++) {
         let service = myHarmonyAccessory.services[s];
-        if (service.type == HOME_TYPE) {
+        if (service.type == HarmonyConst.HOME_TYPE) {
           let newValue = data[service.HomeId];
 
           if (newValue) {
@@ -724,7 +726,7 @@ HarmonyBase.prototype = {
         myHarmonyAccessory = this.createAccessory(harmonyPlatform, name);
         accessoriesToAdd.push(myHarmonyAccessory);
       }
-      myHarmonyAccessory.category = AccessoryType;
+      myHarmonyAccessory.category = AccessoryType.SWITCH;
       harmonyPlatform._confirmedAccessories.push(myHarmonyAccessory);
     }
     return myHarmonyAccessory;
@@ -1115,7 +1117,7 @@ HarmonyBase.prototype = {
   ) {
     let accessoriesToAdd = [];
 
-    switchName = harmonyPlatform.devMode ? 'DEV' + device.label : device.label;
+    let switchName = harmonyPlatform.devMode ? 'DEV' + device.label : device.label;
 
     harmonyPlatform.log(
       '(' + harmonyPlatform.name + ')' + 'INFO - Discovered Device : ' + switchName
@@ -1784,6 +1786,7 @@ HarmonyBase.prototype = {
 
     let numberOFcommandsToSend = 1;
     let commandToSendArray = incommingCommandToSend.split('|');
+    let commandToSend;
     if (commandToSendArray.length > 1) {
       commandToSend = commandToSendArray[0];
       if (commandToSendArray[1] != undefined) numberOFcommandsToSend = commandToSendArray[1];

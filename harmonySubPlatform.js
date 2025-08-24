@@ -236,7 +236,7 @@ HarmonySubPlatform.prototype = {
     let accessoriesToAdd = [];
     let name = (this.devMode ? 'DEV' : '') + 'TV';
 
-    myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
+    let myHarmonyAccessory = this.harmonyBase.checkAccessory(this, name);
 
     if (!myHarmonyAccessory) {
       myHarmonyAccessory = this.harmonyBase.createAccessory(this, name);
@@ -404,6 +404,7 @@ HarmonySubPlatform.prototype = {
     }
     this._confirmedServices.push(this.mainService);
 
+    let mainServiceName;
     if (this.savedNames && this.savedNames[0]) {
       mainServiceName = this.savedNames[0];
     } else {
@@ -490,6 +491,7 @@ HarmonySubPlatform.prototype = {
 
     HarmonyAsTVKeysTools.mapKeys(this, controlGroup, inputName, inputSourceService);
 
+    let inputServiceName;
     if (this.savedNames && this.savedNames[inputId]) {
       this.log(
         '(' + this.name + ')' + 'INFO - Input Service name saved - ' + this.savedNames[inputId]
