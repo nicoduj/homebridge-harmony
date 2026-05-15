@@ -295,6 +295,7 @@ Thanks to
 
 - [iandday] for the Harmoney WebSocket protocol implementation and understanding of it.
 - [lopelex] for his clean plugin.
+- [bladestar2105] for commiting missing homebridge2 changes.
 - every tester / contributor that test, and give feedback in any way , and especially
   - [gitgayhub] for Home controls in 0.6.0
   - [donavanbecker] for testing multiple hubs auto discovery (and supporting homebirdge :) )
