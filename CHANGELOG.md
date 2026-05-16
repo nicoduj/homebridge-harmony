@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.2
+
+- [FIX] Fixing incorrect config schema required fields
+
 ## 2.0.1
 
 - [FIX] Fixing incorrect naming after added for nested services
