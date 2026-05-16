@@ -10,8 +10,7 @@
       "name": {
         "title": "Name of your hub",
         "type": "string",
-        "minLength": 3,
-        "required": true
+        "minLength": 3
       },
       "hubIP": {
         "title": "IP Address of your hub (must be fixed)",
@@ -99,12 +98,10 @@
           "properties": {
             "ActivityName": {
               "title": "Activity Name",
-              "type": "string",
-              "required": true
+              "type": "string"
             },
             "CommandsList": {
               "type": "array",
-              "required": true,
               "items": {
                 "title": "Commands override list",
                 "type": "object",
@@ -112,7 +109,6 @@
                   "CommandName": {
                     "title": "Command Name",
                     "type": "string",
-                    "required": true,
                     "oneOf": [
                       {
                         "title": "REWIND",
@@ -191,13 +187,14 @@
                   "NewCommand": {
                     "title": "New Command",
                     "type": "string",
-                    "required": true,
                     "pattern": "^[A-Za-z0-9]+;[A-Za-z0-9]+(;[0-9]+)?$"
                   }
-                }
+                },
+                "required": ["CommandName", "NewCommand"]
               }
             }
-          }
+          },
+          "required": ["ActivityName", "CommandsList"]
         }
       },
       "switchAccessories": {
@@ -311,34 +308,28 @@
             "name": {
               "title": "Name of your other hub (must be unique)",
               "type": "string",
-              "minLength": 3,
-              "required": true
+              "minLength": 3
             },
             "hubIP": {
               "title": "IP Address of your other hub (must be fixed)",
               "type": "string",
-              "format": "ipv4",
-              "required": false
+              "format": "ipv4"
             },
             "hubName": {
               "title": "Hub Name in your Harmony App",
-              "type": "string",
-              "required": false
+              "type": "string"
             },
             "DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS": {
               "title": "retry timer in case of network loss (optionnal - defaults 60s)",
-              "type": "integer",
-              "required": false
+              "type": "integer"
             },
             "HUB_CONNECT_TIMEOUT": {
               "title": "connect timeout (optionnal - defaults 10s)",
-              "type": "integer",
-              "required": false
+              "type": "integer"
             },
             "HUB_SEND_TIMEOUT": {
               "title": "send timeout (optionnal - defaults 30s)",
-              "type": "integer",
-              "required": false
+              "type": "integer"
             },
             "TVAccessory": {
               "title": "TV accessory in homekit",
@@ -388,12 +379,10 @@
                 "properties": {
                   "ActivityName": {
                     "title": "Activity Name",
-                    "type": "string",
-                    "required": true
+                    "type": "string"
                   },
                   "CommandsList": {
                     "type": "array",
-                    "required": true,
                     "items": {
                       "title": "Commands override list",
                       "type": "object",
@@ -401,7 +390,6 @@
                         "CommandName": {
                           "title": "Command Name",
                           "type": "string",
-                          "required": true,
                           "oneOf": [
                             {
                               "title": "REWIND",
@@ -480,13 +468,14 @@
                         "NewCommand": {
                           "title": "New Command",
                           "type": "string",
-                          "required": true,
                           "pattern": "^[A-Za-z0-9]+;[A-Za-z0-9]+(;[0-9]+)?$"
                         }
-                      }
+                      },
+                      "required": ["CommandName", "NewCommand"]
                     }
                   }
-                }
+                },
+                "required": ["ActivityName", "CommandsList"]
               }
             },
             "switchAccessories": {
@@ -591,10 +580,12 @@
               "title": "Show commands at startup",
               "type": "boolean"
             }
-          }
+          },
+          "required": ["name"]
         }
       }
-    }
+    },
+    "required": ["name"]
   },
   "layout": [
     {
