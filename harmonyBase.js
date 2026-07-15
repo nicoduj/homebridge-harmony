@@ -281,26 +281,46 @@ HarmonyBase.prototype = {
     this.harmony.on('close', () => {
       harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'WARNING - socket closed');
 
-      setTimeout(() => {
-        if (HarmonyTools.isNil(harmonyPlatform.hubRemoteId)) {
-          this.harmony
-            .connect(harmonyPlatform.hubIP)
-            .then(() => {
-              this.refreshCurrentActivity(harmonyPlatform, () => {});
-            })
-            .catch((e3) => {
-              harmonyPlatform.log(
-                '(' +
-                  harmonyPlatform.name +
-                  ')' +
-                  'Error - Error connecting after socket closed  ' +
-                  e3.message
-              );
-            });
-        } else {
-          harmonyPlatform.mainPlatform.discoverHub();
-        }
-      }, HarmonyConst.DELAY_BEFORE_RECONNECT);
+      // Hub outages outlast DELAY_BEFORE_RECONNECT, so a single connect attempt
+      // always lands while the hub is still down (ECONNREFUSED) and the plugin
+      // then stays disconnected — push notifications stop until something else
+      // reopens the socket. Retry until the hub is reachable again, with a guard
+      // so overlapping 'close' events can't spawn parallel retry loops.
+      if (this.reconnectAttemptsLeft > 0) return;
+      this.reconnectAttemptsLeft = 120;
+
+      const attemptReconnect = () => {
+        setTimeout(() => {
+          if (HarmonyTools.isNil(harmonyPlatform.hubRemoteId)) {
+            this.harmony
+              .connect(harmonyPlatform.hubIP)
+              .then(() => {
+                this.reconnectAttemptsLeft = 0;
+                harmonyPlatform.log(
+                  '(' + harmonyPlatform.name + ')' + 'INFO - reconnected after socket close'
+                );
+                this.refreshCurrentActivity(harmonyPlatform, () => {});
+              })
+              .catch((e3) => {
+                this.reconnectAttemptsLeft = this.reconnectAttemptsLeft - 1;
+                harmonyPlatform.log(
+                  '(' +
+                    harmonyPlatform.name +
+                    ')' +
+                    'Error - Error connecting after socket closed (' +
+                    this.reconnectAttemptsLeft +
+                    ' attempts left) ' +
+                    e3.message
+                );
+                if (this.reconnectAttemptsLeft > 0) attemptReconnect();
+              });
+          } else {
+            this.reconnectAttemptsLeft = 0;
+            harmonyPlatform.mainPlatform.discoverHub();
+          }
+        }, HarmonyConst.DELAY_BEFORE_RECONNECT);
+      };
+      attemptReconnect();
     });
 
     this.harmony.on('automationState', (message) => {
