@@ -319,7 +319,8 @@
             },
             "hubName": {
               "title": "Hub Name in your Harmony App",
-              "type": "string"
+              "type": "string",
+              "minLength": 3
             },
             "DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS": {
               "title": "retry timer in case of network loss (optionnal - defaults 60s)",
@@ -335,18 +336,15 @@
             },
             "TVAccessory": {
               "title": "TV accessory in homekit",
-              "type": "boolean",
-              "default": false
+              "type": "boolean"
             },
             "ReceiverIcon": {
               "title": "TV accessory with a receiver Icon",
-              "type": "boolean",
-              "default": false
+              "type": "boolean"
             },
             "sortInput": {
               "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).",
               "type": "integer",
-              "default": 0,
               "minimum": 0,
               "maximum": 3
             },
@@ -583,7 +581,8 @@
               "type": "boolean"
             }
           },
-          "required": ["name"]
+          "required": ["name"],
+          "anyOf": [{"required": ["hubName"]}, {"required": ["hubIP"]}]
         }
       }
     },
