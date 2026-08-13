@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## 2.0.4
+## 2.0.5
 
 - [FIX] #468 improving shcema config validation
 
