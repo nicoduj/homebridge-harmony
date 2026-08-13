@@ -908,8 +908,8 @@ HarmonyBase.prototype = {
         '(' + harmonyPlatform.name + ')' + 'INFO - Loading general mute Switch...'
       );
 
-      let subType = 'GeneralMuteSwitch';
-      let name = subType;
+      var subType = 'GeneralMuteSwitch';
+      var name = subType;
       var accessoriesToAdd = [];
 
       var myHarmonyAccessory = this.checkVolumeAccessory(harmonyPlatform, accessoriesToAdd, name);
@@ -1493,6 +1493,7 @@ HarmonyBase.prototype = {
           serviceSubType
       );
       service = new Service.Switch(switchName, serviceSubType);
+      service.name = HarmonyTools.isNil(serviceSubType) ? switchName : serviceSubType;
       service.addOptionalCharacteristic(Characteristic.ConfiguredName);
       service.setCharacteristic(Characteristic.ConfiguredName, switchName);
       accessory.addService(service);
@@ -1651,6 +1652,7 @@ HarmonyBase.prototype = {
           serviceSubType
       );
       service = new Service.Lightbulb(sliderName, serviceSubType);
+      service.name = HarmonyTools.isNil(serviceSubType) ? sliderName : serviceSubType;
       service.addOptionalCharacteristic(Characteristic.ConfiguredName);
       service.setCharacteristic(Characteristic.ConfiguredName, sliderName);
       accessory.addService(service);

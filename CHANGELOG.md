@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.4
+
+- [FIX] #465 characteristic was supplied illegal value: null! Home for switches
+
+## 2.0.3
+
+- [FIX] #467 Retry reconnect after socket close until hub is reachable again by @cronus130
+
 ## 2.0.2
 
 - [FIX] Fixing incorrect config schema required fields

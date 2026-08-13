@@ -301,6 +301,8 @@
       },
       "otherPlatforms": {
         "type": "array",
+        "default": [],
+        "minItems": 0,
         "items": {
           "title": "Hub Config",
           "type": "object",
@@ -959,7 +961,7 @@
           "nodescription": true,
           "notitle": true,
           "key": "otherPlatforms",
-          "title": "{{ 'Hub ' + $index+1}}",
+          "title": "{{ 'Hub ' + ($index + 1)}}",
           "type": "tabarray",
           "items": [
             {
