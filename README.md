@@ -305,6 +305,8 @@ Thanks to
 [gitgayhub]: https://github.com/gitgayhub
 [donavanbecker]: https://github.com/donavanbecker
 [bladestar2105]: https://github.com/Bladestar2105
+[cronus130]: https://github.com/cronus130
+
 
 ## Donating
 
