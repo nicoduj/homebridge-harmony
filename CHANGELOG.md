@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## 2.0.4
 
+- [FIX] #468 improving shcema config validation
+
+## 2.0.4
+
 - [FIX] #465 characteristic was supplied illegal value: null! Home for switches
 
 ## 2.0.3
