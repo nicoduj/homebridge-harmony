@@ -289,24 +289,20 @@ See [CHANGELOG][].
 
 [changelog]: CHANGELOG.md
 
-## Inspiration
+## Inspiration and acknowledgments
 
 Thanks to
 
-- [iandday] for the Harmoney WebSocket protocol implementation and understanding of it.
-- [lopelex] for his clean plugin.
-- [bladestar2105] for commiting missing homebridge2 changes.
+- [iandday] for the Harmoney WebSocket protocol implementation and understanding of it. https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py
+- [lopelex] for his clean plugin. https://github.com/lopelex/harmony-websocket
 - every tester / contributor that test, and give feedback in any way , and especially
   - [gitgayhub] for Home controls in 0.6.0
-  - [donavanbecker] for testing multiple hubs auto discovery (and supporting homebirdge :) )
-
-[lopelex]: https://github.com/lopelex/harmony-websocket
-[iandday]: https://github.com/iandday/pyharmony/blob/126e4d5042883f5f718e97d30de67083deedcea0/pyharmony/client.py
-[gitgayhub]: https://github.com/gitgayhub
-[donavanbecker]: https://github.com/donavanbecker
-[bladestar2105]: https://github.com/Bladestar2105
-[cronus130]: https://github.com/cronus130
-
+  - [donavanbecker] for testing multiple hubs auto discovery (and supporting homebridge :)
+  - [gitgayhub]: https://github.com/gitgayhub
+  - [donavanbecker]: https://github.com/donavanbecker
+  - [bladestar2105]: https://github.com/Bladestar2105 for commiting missing homebridge2 changes.
+  - [cronus130]: https://github.com/cronus130 for bugs reports and pull requests
+  - [mwcassens]: https://github.com/mwcassens for bug reports
 
 ## Donating
 
