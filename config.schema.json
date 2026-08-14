@@ -21,6 +21,10 @@
         "title": "Hub Name in your Harmony App",
         "type": "string"
       },
+      "otherHubs": {
+        "title": "Add other hubs",
+        "type": "boolean"
+      },
       "DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS": {
         "title": "retry timer in case of network loss (optionnal - defaults 60s)",
         "type": "integer",
@@ -586,9 +590,26 @@
         }
       }
     },
-    "required": ["name"]
+    "if": {
+      "properties": {
+        "otherHubs": {
+          "enum": [false]
+        }
+      }
+    },
+    "then": {
+      "required": ["name"]
+    },
+    "else": {
+      "required": ["name"],
+      "anyOf": [{"required": ["hubName"]}, {"required": ["hubIP"]}]
+    }
   },
   "layout": [
+    {
+      "type": "help",
+      "helpvalue": "<em class='text-danger'>You must enter a hub IP (preferred) or Harmony Hub Name for each hub.</em>"
+    },
     {
       "type": "flex",
       "flex-flow": "row wrap",
@@ -621,21 +642,23 @@
           "description": "Publish hub with its activities as a TV Accessory"
         },
         {
-          "key": "ReceiverIcon",
-          "description": "Publish TV accessory with a receiver Icon"
-        },
-        {
-          "key": "sortInput",
-          "description": "sort input list in TV accessory"
-        },
-        {
           "type": "fieldset",
           "title": "TV Accessory options",
-          "condition": "model.TVAccessory",
+          "condition": {
+            "functionBody": "return (model.TVAccessory)"
+          },
           "items": [
             {
               "key": "mainActivity",
               "description": "Set the main activity of the TV mode"
+            },
+            {
+              "key": "ReceiverIcon",
+              "description": "Publish TV accessory with a receiver Icon"
+            },
+            {
+              "key": "sortInput",
+              "description": "sort input list in TV accessory"
             },
             {
               "type": "help",
@@ -741,7 +764,9 @@
         {
           "type": "fieldset",
           "title": "Switch Accessories options",
-          "condition": "model.switchAccessories",
+          "condition": {
+            "functionBody": "return (model.switchAccessories)"
+          },
           "items": [
             {
               "key": "publishSwitchActivitiesAsIndividualAccessories",
@@ -831,7 +856,9 @@
         },
         {
           "key": "publishDevicesAsIndividualAccessories",
-          "condition": "model.devicesToPublishAsAccessoriesSwitch",
+          "condition": {
+            "functionBody": "return (model.devicesToPublishAsAccessoriesSwitch)"
+          },
           "description": "Option to publish devices as individual accessories."
         },
         {
@@ -862,7 +889,9 @@
         },
         {
           "key": "publishSequencesAsIndividualAccessories",
-          "condition": "model.sequencesToPublishAsAccessoriesSwitch",
+          "condition": {
+            "functionBody": "return (model.sequencesToPublishAsAccessoriesSwitch)"
+          },
           "description": "Option to publish sequences as individual accessories."
         },
         {
@@ -893,7 +922,9 @@
         },
         {
           "key": "publishHomeControlsAsIndividualAccessories",
-          "condition": "model.homeControlsToPublishAsAccessoriesSwitch",
+          "condition": {
+            "functionBody": "return (model.homeControlsToPublishAsAccessoriesSwitch)"
+          },
           "description": "Option to publish Home controls as individual accessories."
         }
       ]
@@ -948,25 +979,66 @@
     },
     {
       "type": "fieldset",
-      "title": "Other Hubs",
+      "title": "General",
+      "expandable": true,
+      "items": [
+        {
+          "key": "publishAllTVAsExternalAccessory",
+          "description": "Publish all TV accessory as external Accessories. This way, if another plugin on the same homebridge instance as one, the one on harmony will also be visible, but you will have to add them manually after the hub itself. Defaults to true. (if set to false, only second tv accessory or following will be published by this plugin as external accessories, first one will be linked to the hub and might not dispaly a TV icon)."
+        }
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Advanced",
       "expandable": true,
       "expanded": false,
       "items": [
         {
           "type": "help",
+          "helpvalue": "<em class='text-danger'>Use only if you know what you are doing !</em>"
+        },
+        "cleanCache",
+        "DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS",
+        "HUB_CONNECT_TIMEOUT",
+        "HUB_SEND_TIMEOUT"
+      ]
+    },
+    {
+      "type": "fieldset",
+      "title": "Other Hubs",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        {
+          "key": "otherHubs",
+          "description": "Add other hubs to this instance. This way, you can have multiple hubs in the same homebridge instance."
+        },
+        {
+          "condition": {
+            "functionBody": "return (model.otherHubs)"
+          },
+          "type": "help",
           "helpvalue": "<h5>Instances of other hubs</h5><em class='primary-text'>Add a section for each other hub you have. Properties are the same.</em>"
         },
         {
+          "condition": {
+            "functionBody": "return (model.otherHubs)"
+          },
           "nodescription": true,
           "notitle": true,
           "key": "otherPlatforms",
-          "title": "{{ 'Hub ' + ($index + 1)}}",
+          "title": "{{ 'Hub ' + ($index?$index + 1 : '')}}",
           "type": "tabarray",
           "items": [
             {
               "type": "div",
               "displayFlex": false,
               "items": [
+                {
+                  "type": "help",
+                  "helpvalue": "<em class='text-danger'>You must enter a hub IP (preferred) or Harmony Hub Name for each hub.</em>"
+                },
                 {
                   "type": "flex",
                   "flex-flow": "row wrap",
@@ -990,7 +1062,7 @@
                 },
                 {
                   "type": "fieldset",
-                  "title": "TV Accessory",
+                  "title": "Other Hub - TV Accessory",
                   "expandable": true,
                   "expanded": false,
                   "items": [
@@ -999,21 +1071,23 @@
                       "description": "Publish hub with its activities as a TV Accessory"
                     },
                     {
-                      "key": "otherPlatforms[].ReceiverIcon",
-                      "description": "Publish TV Accessory with a reciever icon"
-                    },
-                    {
-                      "key": "otherPlatforms[].sortInput",
-                      "description": "sort input list in TV accessory"
-                    },
-                    {
                       "type": "fieldset",
                       "title": "TV Accessory options",
-                      "condition": "otherPlatforms[arrayIndex].TVAccessory",
+                      "condition": {
+                        "functionBody": "return (model.otherPlatforms[arrayIndices].TVAccessory)"
+                      },
                       "items": [
                         {
                           "key": "otherPlatforms[].mainActivity",
                           "description": "Set the main activity of the TV mode"
+                        },
+                        {
+                          "key": "otherPlatforms[].ReceiverIcon",
+                          "description": "Publish TV Accessory with a reciever icon"
+                        },
+                        {
+                          "key": "otherPlatforms[].sortInput",
+                          "description": "sort input list in TV accessory"
                         },
                         {
                           "type": "help",
@@ -1110,7 +1184,7 @@
                 },
                 {
                   "type": "fieldset",
-                  "title": "Switch Accessories",
+                  "title": "Other Hub - Switch Accessories",
                   "expandable": true,
                   "expanded": false,
                   "items": [
@@ -1119,7 +1193,9 @@
                       "description": "Publish all activities as a Switch Accessory"
                     },
                     {
-                      "condition": "otherPlatforms[arrayIndex].switchAccessories",
+                      "condition": {
+                        "functionBody": "return (model.otherPlatforms[arrayIndices].switchAccessories)"
+                      },
                       "type": "fieldset",
                       "title": "Switch Accessories options",
                       "items": [
@@ -1179,13 +1255,13 @@
                 },
                 {
                   "type": "fieldset",
-                  "title": "Other Accessories",
+                  "title": "Other Hub - Other Accessories",
                   "expandable": true,
                   "expanded": false,
                   "items": [
                     {
                       "type": "help",
-                      "helpvalue": "<h5>Devices to publish as accessories switch</h5><em class='primary-text'><ul>\r\n<li>You should put the name of the device as it is named in harmony app,</li>\r\n\r\n<li>You can add a specific command or multiple ones <strong>JUST AFTER A \";\" or a series of \";\"</strong> if you want a switch to be added for this specific command or serie of commands (a default delay of 350ms will be added between each command if no sepecif delay is specified),</li>\r\n\r\n<li>If you do not specify any specific command, the plugin will add either powerToggle if found in Power command group, or PowerOn and/or PowerOff if there is no powerToggle feature,</li>\r\n</ul>\r\n\r\n<p>As a sample :</p>\r\n\r\n<pre><code class=\"json language-json\">  \"devicesToPublishAsAccessoriesSwitch\" : [\"Apple TV Gen 4|Button1;Play\",\"Apple TV Gen 4;DirectionDown\",\"Caisson\",\"Sony PS4\",\"MyDevice;Up;Up|2500;Down\"]\r\n</code></pre>\r\n\r\n<p>will add</p>\r\n\r\n<ul>\r\n<li>a switch for \"Apple TV Gen 4\" \"Play\" command, named Button1,</li>\r\n\r\n<li>a switch for \"Apple TV Gen 4\" \"DirectionDown\" command,</li>\r\n\r\n<li>a powerToggle switch for the device named \"Caisson\",</li>\r\n\r\n<li>a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it)</li>\r\n\r\n<li>a switch that will send Up , then Up, then wait 2.5 seconds, then send Down to MyDevice</li>\r\n</ul>\r\n\r\n<p>All commands available are displayed at startup. If no name is specified, it will be added with a generated name.</p></em>"
+                      "helpvalue": "<h5>Devices to publish as accessories switch</h5>          <p>This option is an array that behaves this way :</p>          <ul>          <li>You should put the name of the device as it is named in harmony app,</li>          <li>You can add a specific command or multiple ones <strong>JUST AFTER A &quot;;&quot; or a series of &quot;;&quot;</strong> if you want a switch to be added for this specific command or serie of commands (a default delay of 350ms will be added between each command if no sepecif delay is specified),</li>          <li>If you do not specify any specific command, the plugin will add either powerToggle if found in Power command group, or PowerOn and/or PowerOff if there is no powerToggle feature,</li>          </ul>          <p>As a sample :</p>          <pre><code class='lang-json'>  <span class='hljs-string'>\"devicesToPublishAsAccessoriesSwitch\"</span> : [<span class='hljs-string'>\"Apple TV Gen 4|Button1;Play\"</span>,<span class='hljs-string'>\"Apple TV Gen 4;DirectionDown\"</span>,<span class='hljs-string'>\"Caisson\"</span>,<span class='hljs-string'>\"Sony PS4\"</span>,<span class='hljs-string'>\"MyDevice;Up;Up|2500;Down\"</span>]          </code></pre>          <p>will add</p>          <ul>          <li>a switch for &quot;Apple TV Gen 4&quot; &quot;Play&quot; command, named Button1,</li>          <li>a switch for &quot;Apple TV Gen 4&quot; &quot;DirectionDown&quot; command,</li>          <li>a powerToggle switch for the device named &quot;Caisson&quot;,</li>          <li>a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it)</li>          <li>a switch that will send Up , then Up, then wait 2.5 seconds, then send Down to MyDevice</li>          </ul>          <p>All commands available are displayed at startup. If no name is specified, it will be added with a generated name.</p>          <p>If you use a &quot;/&quot;, it will do a non stateless switch and send commands bfire the / on On, and after on Off. Be aware that it can be out of sync .</p>          <p>As a sample :</p>          <pre><code class='lang-json'>  <span class='hljs-string'>\"devicesToPublishAsAccessoriesSwitch\"</span> : [<span class='hljs-string'>\"Apple TV Gen 4|Button1;Play/Pause\"</span>,<span class='hljs-string'>\"Caisson;/\"</span>,<span class='hljs-string'>\"Sony PS4;/\"</span>,<span class='hljs-string'>\"MyDevice;/\"</span>,<span class='hljs-string'>\"MyDevice;Up;Up|2500;Down/Down;Down|2500;Up\"</span>]          </code></pre>          <p>will add</p>          <ul>          <li>a switch for &quot;Apple TV Gen 4&quot; &quot;Play&quot; command on on, &quot;Pause&quot; command on off, named Button1,</li>          <li>a powerToggle switch for the device named &quot;Caisson&quot;, which will send PowerToggle on on and off,</li>          <li>a powerOff switch only for PS4 (since there is no powerToggle nor powerOn command for it) - thus no effect</li>          <li>a switch that will PowerOn on On and PowerOff on off to MyDevice since it doe not have a powerToggle and have both powerOn / PowerOff</li>          <li>a switch that will send Up , then Up, then wait 2.5 seconds, then send Down to MyDevice on On and reverse on Off</li>          </ul>"
                     },
                     {
                       "nodescription": true,
@@ -1211,12 +1287,14 @@
                     },
                     {
                       "key": "otherPlatforms[].publishDevicesAsIndividualAccessories",
-                      "condition": "otherPlatforms[arrayIndex].devicesToPublishAsAccessoriesSwitch",
+                      "condition": {
+                        "functionBody": "return (model.otherPlatforms[arrayIndices].devicesToPublishAsAccessoriesSwitch)"
+                      },
                       "description": "Option to publish devices as individual accessories."
                     },
                     {
                       "type": "help",
-                      "helpvalue": "<h5>Sequences to publish as accessories switch</h5><em class='primary-text'>Enter the names of sequences you want to expose as switch.</em>"
+                      "helpvalue": "<h5>Sequences to publish as accessories switch</h5> <p>This option is an array that behaves this way :</p>  <ul> <li>You should put the name of the sequence as it is named in harmony app,</li> </ul>  <p>As a sample :</p>  <pre><code class='lang-json'>  <span class='hljs-string'>\"sequencesToPublishAsAccessoriesSwitch\"</span> : [<span class='hljs-string'>\"Test\"</span>]  </code></pre>  <p>will expose the sequence Test as a button.</p>  <p>See <a href=\"https://support.myharmony.com/en-us/creating-button-sequences\">Logitech Harmony Sequence Configuration</a> for sequences configuration.</p> <p>Please note that the sequence can only be triggered if its activity is in use. (Sequences are linked to an activity by design in harmony app.)</p>"
                     },
                     {
                       "nodescription": true,
@@ -1242,7 +1320,9 @@
                     },
                     {
                       "key": "otherPlatforms[].publishSequencesAsIndividualAccessories",
-                      "condition": "otherPlatforms[arrayIndex].sequencesToPublishAsAccessoriesSwitch",
+                      "condition": {
+                        "functionBody": "return (model.otherPlatforms[arrayIndices].sequencesToPublishAsAccessoriesSwitch)"
+                      },
                       "description": "Option to publish sequences as individual accessories."
                     },
                     {
@@ -1273,14 +1353,16 @@
                     },
                     {
                       "key": "otherPlatforms[].publishHomeControlsAsIndividualAccessories",
-                      "condition": "otherPlatforms[arrayIndex].homeControlsToPublishAsAccessoriesSwitch",
+                      "condition": {
+                        "functionBody": "return (model.otherPlatforms[arrayIndices].homeControlsToPublishAsAccessoriesSwitch)"
+                      },
                       "description": "Option to publish Home controls as individual accessories."
                     }
                   ]
                 },
                 {
                   "type": "fieldset",
-                  "title": "Other Options",
+                  "title": "Other Hub - Other Options",
                   "expandable": true,
                   "expanded": false,
                   "items": [
@@ -1296,15 +1378,15 @@
                       "type": "help",
                       "helpvalue": "<h5>Activities to trigger only if their state is different from the action sent</h5><em class='primary-text'>Can be useful if your devices in the activity have the same on / off command and you want to automate them outside off the home app. For TV mode, and PowerOff feature, PowerOff is added by default, but you have to add it manually to this list if this list is set.</em>",
                       "condition": {
-                        "functionBody": "return (model.otherPlatforms[arrayIndices[0]].addAllActivitiesToSkippedIfSameStateActivitiesList === false )"
+                        "functionBody": "return (model.otherPlatforms[arrayIndices].addAllActivitiesToSkippedIfSameStateActivitiesList === false )"
                       }
                     },
                     {
                       "nodescription": true,
                       "notitle": true,
-                      "key": "skippedIfSameStateActivities",
+                      "key": "otherPlatforms[].skippedIfSameStateActivities",
                       "condition": {
-                        "functionBody": "return (model.otherPlatforms[arrayIndices[0]].addAllActivitiesToSkippedIfSameStateActivitiesList === false )"
+                        "functionBody": "return (model.otherPlatforms[arrayIndices].addAllActivitiesToSkippedIfSameStateActivitiesList === false )"
                       },
                       "type": "array",
                       "title": "Activity",
@@ -1330,33 +1412,6 @@
             }
           ]
         }
-      ]
-    },
-    {
-      "type": "fieldset",
-      "title": "General",
-      "expandable": true,
-      "items": [
-        {
-          "key": "publishAllTVAsExternalAccessory",
-          "description": "Publish all TV accessory as external Accessories. This way, if another plugin on the same homebridge instance as one, the one on harmony will also be visible, but you will have to add them manually after the hub itself. Defaults to true. (if set to false, only second tv accessory or following will be published by this plugin as external accessories, first one will be linked to the hub and might not dispaly a TV icon)."
-        }
-      ]
-    },
-    {
-      "type": "fieldset",
-      "title": "Advanced",
-      "expandable": true,
-      "expanded": false,
-      "items": [
-        {
-          "type": "help",
-          "helpvalue": "<em class='text-danger'>Use only if you know what you are doing !</em>"
-        },
-        "cleanCache",
-        "DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS",
-        "HUB_CONNECT_TIMEOUT",
-        "HUB_SEND_TIMEOUT"
       ]
     }
   ]

@@ -2,9 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.6
+
+- [FIX] #468 improving further schema config validation and rework
+
 ## 2.0.5
 
-- [FIX] #468 improving shcema config validation
+- [FIX] #468 improving schema config validation
 
 ## 2.0.4
 
