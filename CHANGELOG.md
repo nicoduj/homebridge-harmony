@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.7
+
+- [FIX] #469 This plugin generated a warning from the characteristic 'Name' (custom names for device commands swtich and sliders)
+
 ## 2.0.6
 
 - [FIX] #468 improving further schema config validation and rework

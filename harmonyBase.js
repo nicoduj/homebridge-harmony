@@ -1132,7 +1132,13 @@ HarmonyBase.prototype = {
     let switchName = device.label;
 
     harmonyPlatform.log(
-      '(' + harmonyPlatform.name + ')' + 'INFO - Discovered Device : ' + switchName
+      '(' +
+        harmonyPlatform.name +
+        ')' +
+        'INFO - Discovered Device (default command): ' +
+        switchName +
+        '-' +
+        customSwitchName
     );
 
     let foundToggle = false;
@@ -1227,9 +1233,6 @@ HarmonyBase.prototype = {
 
     let switchName = device.label;
 
-    harmonyPlatform.log(
-      '(' + harmonyPlatform.name + ')' + 'INFO - Discovered Device : ' + switchName
-    );
     let functionsForSwitch = [];
     let functionsOffForSwitch = [];
     let functionsKey = '';
@@ -1354,9 +1357,10 @@ HarmonyBase.prototype = {
           let ServiceName = nameSwitchArray[0];
 
           if (devices[i].label === ServiceName) {
-            let customSwitchName = nameSwitchArray.length > 1 ? nameSwitchArray[1] : undefined;
+            var customSwitchName = nameSwitchArray.length > 1 ? nameSwitchArray[1] : undefined;
+
             //check  functions
-            let controlGroup = devices[i].controlGroup;
+            var controlGroup = devices[i].controlGroup;
 
             //default mode
             if (commands.length === 1 || (commands.length === 2 && commands[1] === '§')) {
@@ -1497,7 +1501,7 @@ HarmonyBase.prototype = {
       service.addOptionalCharacteristic(Characteristic.ConfiguredName);
       service.setCharacteristic(Characteristic.ConfiguredName, switchName);
       accessory.addService(service);
-    }
+    } else service.name = HarmonyTools.isNil(serviceSubType) ? switchName : serviceSubType;
     return service;
   },
 
@@ -1656,7 +1660,7 @@ HarmonyBase.prototype = {
       service.addOptionalCharacteristic(Characteristic.ConfiguredName);
       service.setCharacteristic(Characteristic.ConfiguredName, sliderName);
       accessory.addService(service);
-    }
+    } else service.name = HarmonyTools.isNil(serviceSubType) ? sliderName : serviceSubType;
     return service;
   },
 
