@@ -279,6 +279,7 @@ HarmonyBase.prototype = {
     });
 
     this.harmony.on('close', () => {
+      if (harmonyPlatform.volumeControl) harmonyPlatform.volumeControl.cancel();
       harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'WARNING - socket closed');
 
       // Hub outages outlast DELAY_BEFORE_RECONNECT, so a single connect attempt
@@ -1685,6 +1686,10 @@ HarmonyBase.prototype = {
   },
 
   getSliderOnCharacteristic: function (harmonyPlatform, service, callback) {
+    if (harmonyPlatform.relativeVolumeControl) {
+      callback(undefined, harmonyPlatform.volumeControl.available(service));
+      return;
+    }
     //return immediately
     if (callback) {
       callback(undefined, service.getCharacteristic(Characteristic.On).value);
@@ -1708,6 +1713,10 @@ HarmonyBase.prototype = {
   },
 
   setSliderVolumeCharacteristic: function (harmonyPlatform, service, value, callback) {
+    if (harmonyPlatform.relativeVolumeControl) {
+      harmonyPlatform.volumeControl.setSlider(service, value).then(() => callback(), callback);
+      return;
+    }
     let diff = value - 50;
     let numberOfcommandstoSend = diff / 5;
     if (
@@ -1750,6 +1759,10 @@ HarmonyBase.prototype = {
   },
 
   getSliderVolumeCharacteristic: function (harmonyPlatform, service, callback) {
+    if (harmonyPlatform.relativeVolumeControl) {
+      callback(undefined, harmonyPlatform.volumeControl.sliderValue(service));
+      return;
+    }
     //return immediately
     if (callback) {
       callback(undefined, service.getCharacteristic(Characteristic.Brightness).value);

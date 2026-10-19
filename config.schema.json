@@ -242,6 +242,12 @@
         "title": "Publish a general volume switch",
         "type": "boolean"
       },
+      "relativeVolumeControl": {
+        "title": "Use relative volume controls",
+        "type": "boolean",
+        "default": false,
+        "description": "Advertise native volume up/down, preserve the linked adjustment slider, and send only additional movement during a drag. The slider is not the TV's actual volume level."
+      },
       "publishGeneralVolumeSwitches": {
         "title": "Publish general volume up and down switches",
         "type": "boolean"
@@ -522,6 +528,12 @@
             "publishGeneralVolumeSlider": {
               "title": "publishGeneralVolumeSlider",
               "type": "boolean"
+            },
+            "relativeVolumeControl": {
+              "title": "Use relative volume controls",
+              "type": "boolean",
+              "default": false,
+              "description": "Native volume up/down and a relative adjustment slider; does not report the TV's actual volume level."
             },
             "publishGeneralVolumeSwitches": {
               "title": "Publish general volume up and down switches",
@@ -811,6 +823,10 @@
         {
           "key": "publishGeneralVolumeSlider",
           "description": "Publish a volume slider, stateless, that will send a volume command to current activity"
+        },
+        {
+          "key": "relativeVolumeControl",
+          "description": "Use native volume up/down and avoid repeated volume bursts during a slider drag. The slider recentres after release; it is not an absolute volume level."
         },
         {
           "key": "publishGeneralVolumeSwitches",
@@ -1242,6 +1258,10 @@
                     {
                       "key": "otherPlatforms[].publishGeneralVolumeSlider",
                       "description": "Publish a volume slider, stateless, that will send a volume command to current activity"
+                    },
+                    {
+                      "key": "otherPlatforms[].relativeVolumeControl",
+                      "description": "Use native volume up/down and avoid repeated volume bursts during a slider drag. The slider recentres after release; it is not an absolute volume level."
                     },
                     {
                       "key": "otherPlatforms[].publishGeneralVolumeSwitches",

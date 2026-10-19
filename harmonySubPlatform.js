@@ -6,6 +6,7 @@ import {HarmonyBase} from './harmonyBase.js';
 import HarmonyConst from './harmonyConst.js';
 import HarmonyTools from './harmonyTools.js';
 import HarmonyAsTVKeysTools from './harmonyAsTVKeysTools.js';
+import {HarmonyRelativeVolume} from './harmonyRelativeVolume.js';
 
 function HarmonySubPlatform(log, config, api, mainPlatform) {
   Service = api.hap.Service;
@@ -46,6 +47,9 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
     config['numberOfCommandsSentForVolumeControl'],
     1
   );
+
+  this.relativeVolumeControl = config['relativeVolumeControl'] === true;
+  if (this.relativeVolumeControl) this.volumeControl = new HarmonyRelativeVolume(this);
 
   if (this.TVAccessory) {
     this.mainActivity = config['mainActivity'];
@@ -468,7 +472,9 @@ HarmonySubPlatform.prototype = {
       .setCharacteristic(Characteristic.Active, Characteristic.Active.ACTIVE)
       .setCharacteristic(
         Characteristic.VolumeControlType,
-        Characteristic.VolumeControlType.ABSOLUTE
+        this.relativeVolumeControl
+          ? Characteristic.VolumeControlType.RELATIVE
+          : Characteristic.VolumeControlType.ABSOLUTE
       );
 
     this._confirmedServices.push(this.tvSpeakerService);
@@ -561,6 +567,14 @@ HarmonySubPlatform.prototype = {
     //TV
     if (this.TVAccessory) this.handleRefreshOfCharacteristic();
 
+    if (this.relativeVolumeControl) {
+      for (const service of this._confirmedServices) {
+        if (service.type === HarmonyConst.GENERALVOLUME_TYPE) {
+          this.volumeControl.refreshSlider(service);
+        }
+      }
+    }
+
     //SWITCH ACTIVITIEs
     if (this.isPlatformWithSwitch) {
       for (let a = 0; a < this._foundAccessories.length; a++) {
@@ -609,6 +623,8 @@ HarmonySubPlatform.prototype = {
     this._currentActivityLastUpdate = Date.now();
 
     if (HarmonyTools.isNil(response)) return;
+    if (this.relativeVolumeControl && this._currentActivity !== response)
+      this.volumeControl.cancel();
     this._currentActivity = response;
 
     this.localRefresh();
@@ -726,12 +742,13 @@ HarmonySubPlatform.prototype = {
       this.playStatus[this._currentActivity] === 'PAUSED'
     ) {
       this.log.debug('(' + this.name + ')' + 'INFO - sending PlayCommand for PLAY_PAUSE');
-      //this.harmonyBase.sendCommand(this, this.keysMap[Characteristic.RemoteKey.PLAY_PAUSE]);
-      HarmonyTools.processCommands(
-        this.harmonyBase,
-        this,
-        this.keysMap[Characteristic.RemoteKey.PLAY_PAUSE]
-      );
+      const playCommand = this.keysMap[Characteristic.RemoteKey.PLAY_PAUSE];
+      if (typeof playCommand === 'string') {
+        // Ordinary mapped keys are strings; processCommands accepts only macro arrays.
+        this.harmonyBase.sendCommand(this, playCommand);
+      } else {
+        HarmonyTools.processCommands(this.harmonyBase, this, playCommand);
+      }
 
       this.playStatus[this._currentActivity] = '';
     } else {
@@ -970,6 +987,13 @@ HarmonySubPlatform.prototype = {
     characteristic.on(
       'set',
       function (value, callback) {
+        if (this.relativeVolumeControl) {
+          if (value !== 0 && value !== 1) return callback(new this.api.hap.HapStatusError(-70410));
+          this.volumeControl
+            .step(value === Characteristic.VolumeSelector.DECREMENT ? -1 : 1)
+            .then(() => callback(null), callback);
+          return;
+        }
         if (HarmonyTools.isNotNil(this._currentInputService)) {
           this.log.debug(
             '(' + this.name + ')' + 'INFO - SET Characteristic.VolumeSelector : ' + value
@@ -1194,7 +1218,15 @@ HarmonySubPlatform.prototype = {
     this.bindVolumeSelectorCharacteristic(
       this.tvSpeakerService.getCharacteristic(Characteristic.VolumeSelector)
     );
-    this.bindVolumeCharacteristic(this.tvSpeakerService.getCharacteristic(Characteristic.Volume));
+    if (this.relativeVolumeControl) {
+      // Optional absolute Volume would imply a real level, which Harmony cannot report.
+      const volume = this.tvSpeakerService.characteristics.find(
+        (c) => c.UUID === Characteristic.Volume.UUID
+      );
+      if (volume) this.tvSpeakerService.removeCharacteristic(volume);
+    } else {
+      this.bindVolumeCharacteristic(this.tvSpeakerService.getCharacteristic(Characteristic.Volume));
+    }
   },
 
   bindCharacteristicEventsForInputs: function () {
@@ -1246,6 +1278,7 @@ HarmonySubPlatform.prototype = {
     );
 
     if (service.type == HarmonyConst.GENERALVOLUME_TYPE) {
+      if (this.relativeVolumeControl) return this.volumeControl.available(service);
       return (
         this._currentActivity > -1 &&
         HarmonyTools.isNotNil(service.volumeDownCommands[this._currentActivity]) &&
@@ -1278,6 +1311,8 @@ HarmonySubPlatform.prototype = {
 
   handleActivityOk: function (commandToSend) {
     this._currentSetAttemps = 0;
+    if (this.relativeVolumeControl && this._currentActivity !== commandToSend)
+      this.volumeControl.cancel();
     this._currentActivity = commandToSend;
     this._currentActivityLastUpdate = Date.now();
 
@@ -1338,6 +1373,8 @@ HarmonySubPlatform.prototype = {
   },
 
   activityCommand: function (homebridgeAccessory, commandToSend) {
+    if (this.relativeVolumeControl && this._currentActivity !== commandToSend)
+      this.volumeControl.cancel();
     this.harmonyBase.harmony
       .startActivity(commandToSend)
       .then((data) => {
