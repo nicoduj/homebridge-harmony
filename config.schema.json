@@ -65,7 +65,7 @@
         "default": false
       },
       "RemoteIcon": {
-        "title": "TV accessory with a remote controller icon",
+        "title": "Experimental remote controller icon (may hide controls)",
         "type": "boolean",
         "default": false
       },
@@ -352,7 +352,7 @@
               "type": "boolean"
             },
             "RemoteIcon": {
-              "title": "TV accessory with a remote controller icon",
+              "title": "Experimental remote controller icon (may hide controls)",
               "type": "boolean",
               "default": false
             },
@@ -668,7 +668,7 @@
             },
             {
               "key": "RemoteIcon",
-              "description": "Request Apple's remote controller icon (overrides ReceiverIcon). Requires a separately paired external TV accessory; existing bridged accessories are not migrated. Linked volume controls can remain in the same accessory. Home controls the final tile artwork."
+              "description": "Experimental: remote artwork appears, but tested Apple Home apps hide the TV and volume controls. Leave disabled for normal use. Overrides ReceiverIcon and requires a separately paired external accessory; existing bridged accessories are not migrated."
             },
             {
               "key": "sortInput",
@@ -1101,7 +1101,7 @@
                         },
                         {
                           "key": "otherPlatforms[].RemoteIcon",
-                          "description": "Request Apple's remote controller icon (overrides ReceiverIcon). Requires a separately paired external TV accessory; existing bridged accessories are not migrated. Linked volume controls can remain in the same accessory. Home controls the final tile artwork."
+                          "description": "Experimental: remote artwork appears, but tested Apple Home apps hide the TV and volume controls. Leave disabled for normal use. Overrides ReceiverIcon and requires a separately paired external accessory; existing bridged accessories are not migrated."
                         },
                         {
                           "key": "otherPlatforms[].sortInput",
