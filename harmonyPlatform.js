@@ -130,7 +130,8 @@ HarmonyPlatform.prototype = {
 
       if (
         accessory.category == AccessoryType.TELEVISION ||
-        accessory.category == AccessoryType.AUDIO_RECEIVER
+        accessory.category == AccessoryType.AUDIO_RECEIVER ||
+        accessory.category == AccessoryType.TARGET_CONTROLLER
       ) {
         this._oneTVAdded = true;
         this.log(

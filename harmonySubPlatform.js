@@ -22,6 +22,7 @@ function HarmonySubPlatform(log, config, api, mainPlatform) {
 
   this.TVAccessory = HarmonyTools.checkParameter(config['TVAccessory'], true);
   this.receiverIcon = HarmonyTools.checkParameter(config['ReceiverIcon'], false);
+  this.remoteIcon = HarmonyTools.checkParameter(config['RemoteIcon'], false);
 
   this.sortInput = HarmonyTools.checkParameter(config['sortInput'], 0);
 
@@ -259,6 +260,7 @@ HarmonySubPlatform.prototype = {
 
     myHarmonyAccessory.category = AccessoryType.TELEVISION;
     if (this.receiverIcon) myHarmonyAccessory.category = AccessoryType.AUDIO_RECEIVER;
+    if (this.remoteIcon) myHarmonyAccessory.category = AccessoryType.TARGET_CONTROLLER;
 
     this._confirmedAccessories.push(myHarmonyAccessory);
 
@@ -416,6 +418,9 @@ HarmonySubPlatform.prototype = {
       this.mainService.name = HarmonyTools.isNil(subType) ? this.name : subType;
       accessory.addService(this.mainService);
     }
+
+    // Prefer the TV service when the remote also contains a volume slider (Lightbulb).
+    this.mainService.setPrimaryService(this.remoteIcon);
 
     var mainServiceName;
 

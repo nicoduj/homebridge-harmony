@@ -64,6 +64,11 @@
         "type": "boolean",
         "default": false
       },
+      "RemoteIcon": {
+        "title": "TV accessory with a remote controller icon",
+        "type": "boolean",
+        "default": false
+      },
       "sortInput": {
         "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).",
         "type": "integer",
@@ -345,6 +350,11 @@
             "ReceiverIcon": {
               "title": "TV accessory with a receiver Icon",
               "type": "boolean"
+            },
+            "RemoteIcon": {
+              "title": "TV accessory with a remote controller icon",
+              "type": "boolean",
+              "default": false
             },
             "sortInput": {
               "title": "sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).",
@@ -655,6 +665,10 @@
             {
               "key": "ReceiverIcon",
               "description": "Publish TV accessory with a receiver Icon"
+            },
+            {
+              "key": "RemoteIcon",
+              "description": "Request Apple's remote controller icon (overrides ReceiverIcon). Requires a separately paired external TV accessory; existing bridged accessories are not migrated. Linked volume controls can remain in the same accessory. Home controls the final tile artwork."
             },
             {
               "key": "sortInput",
@@ -1084,6 +1098,10 @@
                         {
                           "key": "otherPlatforms[].ReceiverIcon",
                           "description": "Publish TV Accessory with a reciever icon"
+                        },
+                        {
+                          "key": "otherPlatforms[].RemoteIcon",
+                          "description": "Request Apple's remote controller icon (overrides ReceiverIcon). Requires a separately paired external TV accessory; existing bridged accessories are not migrated. Linked volume controls can remain in the same accessory. Home controls the final tile artwork."
                         },
                         {
                           "key": "otherPlatforms[].sortInput",
