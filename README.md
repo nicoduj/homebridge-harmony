@@ -133,15 +133,14 @@ Fields:
 - `hubIP` is the static IP address of the hub (optional). A static IP address is required.
 - `TVAccessory` publish hub with its activities as a TV Accessory (defaults to true).
 - `ReceiverIcon` publish TV Accessory with a receiver icon (defaults to false).
-- `RemoteIcon` request Apple's remote controller icon for the TV accessory (defaults to false, overrides `ReceiverIcon` when both are true). Available per hub, including `otherPlatforms`. This selects HomeKit's `TARGET_CONTROLLER` category and marks the Television service as primary. It does not add a separate remote accessory or change the activity/volume controls.
 
-  **Experimental; leave disabled for normal use.** Live testing on macOS 26.7.1 displayed the remote artwork, but opening the tile showed only accessory settings: Home hid both the TV and volume controls. The same behavior was reported on iPhone. The services remained present in HAP; marking the TV primary did not make Home expose them. Disabling `RemoteIcon` restored the combined controls after reopening Home, without another pairing. The remote category therefore does not currently provide a usable combined TV/volume tile in the tested Home apps.
+  **TV icon with a combined volume control:** use `TVAccessory: true`, `ReceiverIcon: false`, `publishGeneralVolumeSlider: true` and `linkVolumeControlToTV: true`. Publish and pair the TV as an external accessory, then keep it as a single tile in Apple Home. This was visually verified on macOS 26.7.1: Apple's TV icon appears while TV power/input and the volume slider remain accessible together.
 
-  To keep TV controls and the general volume slider in one accessory, keep `publishGeneralVolumeSlider: true` and `linkVolumeControlToTV: true`, and use **Show as Single Tile** in Apple Home if necessary. The volume slider remains a Lightbulb service; Apple Home decides the final artwork for a combined tile, which can vary by OS version.
+  External accessories advertise their own HomeKit category. With `publishAllTVAsExternalAccessory: false`, the first TV stays bridged and newly created additional TVs are external. Cached TVs are recognized by their Television service as well as their category, since Homebridge can restore them with category OTHER.
 
-  Category artwork requires a separately paired, externally published accessory. `RemoteIcon` does not migrate an existing bridged accessory or change its identity. Setting `publishAllTVAsExternalAccessory: true` alone does not migrate an already cached accessory either. Existing bridged users must deliberately plan removal/re-pairing before expecting a category icon; this can require repairing scenes and automations. Do not clear accessory caches merely to try the icon.
+  Existing bridged accessories are preserved. Changing `publishAllTVAsExternalAccessory` alone does not migrate them. If migrating one existing hub, plan a targeted removal and re-pairing of only that accessory, including repairing any affected scenes or automations. Do not clear the whole accessory cache to change an icon.
 
-  See the [HomeKit bridge icon examples](https://nrchkb.github.io/wiki/service/television/#icons) and [HAP-NodeJS category documentation](https://developers.homebridge.io/HAP-NodeJS/interfaces/PublishInfo.html#category). These describe category artwork; they do not guarantee the current Home app's rendering of a TV with a linked Lightbulb slider.
+  See the [HomeKit category examples](https://nrchkb.github.io/wiki/service/television/#icons) and [HAP-NodeJS category documentation](https://developers.homebridge.io/HAP-NodeJS/interfaces/PublishInfo.html#category).
 
 - `sortInput` sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).
 - `switchAccessories` publish all activities as a Switch Accessory (defaults to false).

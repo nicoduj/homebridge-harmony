@@ -131,8 +131,7 @@ HarmonyPlatform.prototype = {
       if (
         accessory.getService(this.api.hap.Service.Television) ||
         accessory.category == AccessoryType.TELEVISION ||
-        accessory.category == AccessoryType.AUDIO_RECEIVER ||
-        accessory.category == AccessoryType.TARGET_CONTROLLER
+        accessory.category == AccessoryType.AUDIO_RECEIVER
       ) {
         this._oneTVAdded = true;
         this.log(

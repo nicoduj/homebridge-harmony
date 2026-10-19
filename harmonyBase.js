@@ -370,8 +370,7 @@ HarmonyBase.prototype = {
     for (const accessory of accessoriesToAdd) {
       let isTv =
         accessory.category === AccessoryType.AUDIO_RECEIVER ||
-        accessory.category === AccessoryType.TELEVISION ||
-        accessory.category === AccessoryType.TARGET_CONTROLLER;
+        accessory.category === AccessoryType.TELEVISION;
       if (
         isTv &&
         (harmonyPlatform.mainPlatform._oneTVAdded ||

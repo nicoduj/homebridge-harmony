@@ -6,7 +6,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "node -e \"import('./index.js').then(() => console.log('No syntax errors! (node ' + process.version + ')'))\" && node --test test/remote-icon.test.js"
+    "test": "node -e \"import('./index.js').then(() => console.log('No syntax errors! (node ' + process.version + ')'))\" && node --test test/tv-publication.test.js"
   },
   "license": "ISC",
   "repository": {
