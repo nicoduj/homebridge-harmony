@@ -209,6 +209,38 @@ test('per-hub remote setting does not affect another hub or ordinary switches', 
   assert.equal(f.main._oneTVAdded, undefined);
 });
 
+test('cached TV with the default Homebridge category still reserves the bridged TV slot', (t) => {
+  const f = fixture(t, {
+    publishAllTVAsExternalAccessory: false,
+    ...combined,
+    otherPlatforms: [{name: 'Second Hub', RemoteIcon: true, ...combined}],
+  });
+  const [accessory] = f.platform.readTVAccessories(data());
+  // Homebridge caches its underlying HAP category, which can remain OTHER
+  // even after the plugin changes PlatformAccessory.category.
+  accessory.category = Categories.OTHER;
+  f.main.configureAccessory(accessory);
+  assert.equal(f.main._oneTVAdded, true);
+  f.platform.readAccessories(data(), {});
+  f.main.platforms[1].readAccessories(data(), {});
+  assert.equal(f.published.length, 1);
+  assert.equal(f.published[0].category, Categories.TARGET_CONTROLLER);
+  assert.ok(f.published[0].getService(Service.Lightbulb));
+  assert.equal(f.platform.TVFoundAccessory, accessory);
+  assert.equal(f.registered.length, 0);
+  assert.equal(f.removed.length, 0);
+});
+
+test('ordinary cached accessories with the default category do not reserve the TV slot', (t) => {
+  const f = fixture(t, {publishAllTVAsExternalAccessory: false});
+  const accessory = new PlatformAccessory('Test Switch', hap.uuid.generate('Test Switch'));
+  accessory.category = Categories.OTHER;
+  accessory.context.subPlatformName = f.platform.name;
+  accessory.addService(Service.Switch);
+  f.main.configureAccessory(accessory);
+  assert.equal(f.main._oneTVAdded, undefined);
+});
+
 test('both configuration forms expose the opt-in setting', () => {
   const schema = JSON.parse(
     readFileSync(new URL('../config.schema.json', import.meta.url), 'utf8')

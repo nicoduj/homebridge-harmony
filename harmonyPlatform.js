@@ -129,6 +129,7 @@ HarmonyPlatform.prototype = {
       platform._foundAccessories.push(accessory);
 
       if (
+        accessory.getService(this.api.hap.Service.Television) ||
         accessory.category == AccessoryType.TELEVISION ||
         accessory.category == AccessoryType.AUDIO_RECEIVER ||
         accessory.category == AccessoryType.TARGET_CONTROLLER
