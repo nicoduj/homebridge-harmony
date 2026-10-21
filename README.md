@@ -126,7 +126,7 @@ Fields:
 
 - `DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS` **GLOBAL** retry timer in case of network loss (optionnal - defaults 60s).
 - `HUB_CONNECT_TIMEOUT` **GLOBAL** connect timeout (optionnal - defaults 10s).
-- `HUB_SEND_TIMEOUT` **GLOBAL** send timeout (optionnal - defaults 30s).
+- `HUB_SEND_TIMEOUT` **GLOBAL** transport timeout in milliseconds (optional; defaults to 30000). Unanswered requests are released when this expires. Native TV writes have a separate six-second response budget; timing out does not undo a command already transmitted to the hub.
 
 - `name` is the name of the published Platform (required).
 - `hubName` is the name of your hub in harmony app (optional, but mandatory if you have mutliple hubs). In case both hubName and hubIP are not set, it will discover your hub automatically, providing there is only one
@@ -137,6 +137,8 @@ Fields:
   **TV icon with a combined volume control:** use `TVAccessory: true`, `ReceiverIcon: false`, `publishGeneralVolumeSlider: true` and `linkVolumeControlToTV: true`. Publish and pair the TV as an external accessory, then keep it as a single tile in Apple Home. This was visually verified on macOS 26.7.1: Apple's TV icon appears while TV power/input and the volume slider remain accessible together.
 
   To use native relative volume and the improved slider behaviour below, also enable `relativeVolumeControl: true` for that hub. Select the separately paired TV in iPhone Control Centre → Remote for navigation, Back, Play/Pause and the iPhone's physical volume buttons. These controls use the mappings of the current Harmony activity. The Remote interface is provided by Apple and is separate from the Home tile; this plugin does not add a custom remote interface inside Home.
+
+  TV power, input selection, navigation, playback, mute, settings and native volume wait for hub acknowledgement and report rejected or timed-out commands to HomeKit. This also applies with `relativeVolumeControl: false`. Remote macros wait for each acknowledgement, keep their configured delays between commands, and stop after failure or the six-second write budget. Activity selection can retry an explicit hub-busy reply within that budget; failed or unanswered commands are not retried. Acknowledgement confirms receipt by the hub, not the resulting state of an infrared-controlled device.
 
   External accessories advertise their own HomeKit category. With `publishAllTVAsExternalAccessory: false`, the first TV stays bridged and newly created additional TVs are external. Cached TVs are recognized by their Television service as well as their category, since Homebridge can restore them with category OTHER.
 

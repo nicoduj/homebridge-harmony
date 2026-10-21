@@ -375,14 +375,13 @@ HarmonySubPlatform.prototype = {
       });
       accessControl.on(
         AccessControlEvent.PASSWORD_SETTING_UPDATED,
-        (password, passwordRequired) => {
+        (_password, passwordRequired) => {
           if (passwordRequired) {
             this.log(
               '(' +
                 this.name +
                 ')' +
-                'INFO - New access control - Required password is: ' +
-                password +
+                'INFO - New access control - Password required' +
                 '/' +
                 myHarmonyAccessory.displayName
             );
@@ -662,7 +661,7 @@ HarmonySubPlatform.prototype = {
   },
 
   ///COMANDS
-  sendInputCommand: function (homebridgeAccessory, value) {
+  sendInputCommand: function (homebridgeAccessory, value, deadline = Infinity) {
     let doCommand = true;
     let commandToSend = value;
 
@@ -707,7 +706,14 @@ HarmonySubPlatform.prototype = {
     }
 
     if (doCommand) {
-      this.activityCommand(homebridgeAccessory, commandToSend);
+      this.activityRequestVersion = (this.activityRequestVersion || 0) + 1;
+      this.inputCommand = this.activityCommand(
+        homebridgeAccessory,
+        commandToSend,
+        deadline,
+        this.activityRequestVersion
+      );
+      return this.inputCommand;
     } else {
       setTimeout(() => {
         this.refreshPlatform();
@@ -715,54 +721,45 @@ HarmonySubPlatform.prototype = {
     }
   },
 
-  handlePlayPause: function () {
-    this.log.debug(
-      '(' +
-        this.name +
-        ')' +
-        'INFO - current play status is : ' +
-        this.playStatus[this._currentActivity] +
-        ' with playPause option set to :' +
-        this.playPauseBehavior
-    );
-    this.log.debug(
-      '(' +
-        this.name +
-        ')' +
-        'INFO - pauseCommand defined for  : ' +
-        this._currentActivity +
-        ' is ' +
-        this._currentInputService.PauseCommand
-    );
+  sendMappedCommand(command, deadline) {
+    if (Array.isArray(command) && command.length) {
+      return HarmonyTools.processCommands(this.harmonyBase, this, command, deadline);
+    }
+    if (typeof command === 'string' && command && command !== 'undefined') {
+      return this.harmonyBase.sendCommand(this, command, deadline);
+    }
+    throw new this.api.hap.HapStatusError(-70412);
+  },
 
-    if (
+  handlePlayPause: async function (deadline) {
+    if (!this._currentInputService) throw new this.api.hap.HapStatusError(-70412);
+    const activity = this._currentActivity;
+    const play =
       !this.playPauseBehavior ||
       HarmonyTools.isNil(this._currentInputService.PauseCommand) ||
-      HarmonyTools.isNil(this.playStatus[this._currentActivity]) ||
-      this.playStatus[this._currentActivity] === 'PAUSED'
-    ) {
-      this.log.debug('(' + this.name + ')' + 'INFO - sending PlayCommand for PLAY_PAUSE');
-      const playCommand = this.keysMap[Characteristic.RemoteKey.PLAY_PAUSE];
-      if (typeof playCommand === 'string') {
-        // Ordinary mapped keys are strings; processCommands accepts only macro arrays.
-        this.harmonyBase.sendCommand(this, playCommand);
-      } else {
-        HarmonyTools.processCommands(this.harmonyBase, this, playCommand);
+      HarmonyTools.isNil(this.playStatus[activity]) ||
+      this.playStatus[activity] === 'PAUSED';
+    const command = play
+      ? this.keysMap[Characteristic.RemoteKey.PLAY_PAUSE]
+      : HarmonyAsTVKeysTools.getOverrideCommand(this, 'PAUSE') ||
+        this._currentInputService.PauseCommand;
+    await this.sendMappedCommand(command, deadline);
+    if (this._currentActivity === activity) this.playStatus[activity] = play ? '' : 'PAUSED';
+  },
+
+  writeTVCommand(callback, action) {
+    const deadline = Date.now() + 6000;
+    HarmonyTools.withDeadline(() => action(deadline), deadline).then(
+      () => callback(null),
+      (error) => {
+        this.log('(' + this.name + ') ERROR - TV command: ' + error.message);
+        callback(
+          error instanceof this.api.hap.HapStatusError
+            ? error
+            : new this.api.hap.HapStatusError(-70402)
+        );
       }
-
-      this.playStatus[this._currentActivity] = '';
-    } else {
-      this.log.debug('(' + this.name + ')' + 'INFO - sending PauseCommand for PLAY_PAUSE');
-
-      let overridePAUSE = HarmonyAsTVKeysTools.getOverrideCommand(this, 'PAUSE');
-      if (!overridePAUSE) {
-        this.harmonyBase.sendCommand(this, this._currentInputService.PauseCommand);
-      } else {
-        HarmonyTools.processCommands(this.harmonyBase, this, overridePAUSE);
-      }
-
-      this.playStatus[this._currentActivity] = 'PAUSED';
-    }
+    );
   },
 
   //HOMEKIT CHARACTERISTICS EVENTS
@@ -824,64 +821,26 @@ HarmonySubPlatform.prototype = {
   bindActiveCharacteristic(characteristic, service, homebridgeAccessory) {
     //set to main activity / activeIdentifier or off
 
-    characteristic.on(
-      'set',
-      function (value, callback) {
-        this.log.debug('(' + this.name + ')' + 'INFO - SET Characteristic.Active ' + value);
-        this.log.debug(
-          '(' +
-            this.name +
-            ')' +
-            'INFO - value of Characteristic.ActiveIdentifier ' +
-            service.getCharacteristic(Characteristic.ActiveIdentifier).value
-        );
-
-        if (value == 0) {
-          this.log.debug('(' + this.name + ')' + 'INFO - switching off');
-          this.sendInputCommand(homebridgeAccessory, '-1');
-
-          callback(null);
-        } else {
-          //we push back the execution to let the second event be taken care of in case of switching on with a dedicated input.
-          setTimeout(() => {
-            if (HarmonyTools.isNil(this._currentInputService)) {
-              var currentActivity = HarmonyTools.transformActiveIdentifierToActivityId(
-                service.getCharacteristic(Characteristic.ActiveIdentifier).value,
-                this.inputServices
-              );
-
-              if (currentActivity <= 0) {
-                this.log.debug(
-                  '(' +
-                    this.name +
-                    ')' +
-                    'INFO - launching with default Activity - ' +
-                    this.mainActivityId
-                );
-                this.sendInputCommand(homebridgeAccessory, '' + this.mainActivityId);
-              } else {
-                this.log.debug(
-                  '(' +
-                    this.name +
-                    ')' +
-                    'INFO - not launching, an activeinput is set - ' +
-                    currentActivity
-                );
-              }
-            } else {
-              this.log.debug(
-                '(' +
-                  this.name +
-                  ')' +
-                  'INFO - not launching, there is a current Activity defined -' +
-                  this.mainActivityId
-              );
-            }
-          }, HarmonyConst.DELAY_TO_UPDATE_STATUS);
-          callback(null);
+    characteristic.on('set', (value, callback) => {
+      const version = this.activityRequestVersion;
+      this.writeTVCommand(callback, async (deadline) => {
+        if (value === 0) return this.sendInputCommand(homebridgeAccessory, '-1', deadline);
+        // Home may send ActiveIdentifier alongside Active. Preserve that selection.
+        await new Promise((resolve) => setTimeout(resolve, HarmonyConst.DELAY_TO_UPDATE_STATUS));
+        if (version !== this.activityRequestVersion) return this.inputCommand;
+        if (HarmonyTools.isNil(this._currentInputService)) {
+          const activity = HarmonyTools.transformActiveIdentifierToActivityId(
+            service.getCharacteristic(Characteristic.ActiveIdentifier).value,
+            this.inputServices
+          );
+          return this.sendInputCommand(
+            homebridgeAccessory,
+            '' + (activity > 0 ? activity : this.mainActivityId),
+            deadline
+          );
         }
-      }.bind(this)
-    );
+      });
+    });
 
     characteristic.on(
       'get',
@@ -894,19 +853,16 @@ HarmonySubPlatform.prototype = {
 
   bindActiveIdentifierCharacteristic: function (characteristic, homebridgeAccessory) {
     //set the current Activity
-    characteristic.on(
-      'set',
-      function (value, callback) {
-        this.log.debug(
-          '(' + this.name + ')' + 'INFO - SET Characteristic.ActiveIdentifier ' + value
+    characteristic.on('set', (value, callback) => {
+      this.writeTVCommand(callback, (deadline) => {
+        const activity = HarmonyTools.transformActiveIdentifierToActivityId(
+          value,
+          this.inputServices
         );
-        this.sendInputCommand(
-          homebridgeAccessory,
-          '' + HarmonyTools.transformActiveIdentifierToActivityId(value, this.inputServices)
-        );
-        callback(null);
-      }.bind(this)
-    );
+        if (activity <= 0) throw new this.api.hap.HapStatusError(-70410);
+        return this.sendInputCommand(homebridgeAccessory, '' + activity, deadline);
+      });
+    });
     characteristic.on(
       'get',
       function (callback) {
@@ -917,62 +873,26 @@ HarmonySubPlatform.prototype = {
   },
 
   bindRemoteKeyCharacteristic: function (characteristic) {
-    characteristic.on(
-      'set',
-      function (newValue, callback) {
-        this.log.debug(
-          '(' +
-            this.name +
-            ')' +
-            'INFO - SET Characteristic.RemoteKey : ' +
-            newValue +
-            ' with currentActivity ' +
-            this._currentActivity
-        );
-
-        if (this._currentActivity > 0) {
-          if (newValue === Characteristic.RemoteKey.PLAY_PAUSE) {
-            this.handlePlayPause();
-          } else if (this.keysMap[newValue]) {
-            this.log.debug(
-              '(' +
-                this.name +
-                ')' +
-                'INFO - sending command ' +
-                this.keysMap[newValue] +
-                'for ' +
-                newValue
-            );
-
-            if (Array.isArray(this.keysMap[newValue]))
-              HarmonyTools.processCommands(this.harmonyBase, this, this.keysMap[newValue]);
-            else this.harmonyBase.sendCommand(this, this.keysMap[newValue]);
-          } else {
-            this.log.debug('(' + this.name + ')' + 'INFO - no command to send for ' + newValue);
-          }
-        }
-        callback(null);
-      }.bind(this)
-    );
+    characteristic.on('set', (value, callback) => {
+      this.writeTVCommand(callback, (deadline) => {
+        if (!(this._currentActivity > 0)) throw new this.api.hap.HapStatusError(-70402);
+        return value === Characteristic.RemoteKey.PLAY_PAUSE
+          ? this.handlePlayPause(deadline)
+          : this.sendMappedCommand(this.keysMap[value], deadline);
+      });
+    });
   },
 
   bindMuteCharacteristic(characteristic) {
-    characteristic.on(
-      'set',
-      function (value, callback) {
-        if (HarmonyTools.isNotNil(this._currentInputService)) {
-          this.log.debug('(' + this.name + ')' + 'INFO - SET Characteristic.Mute : ' + value);
-
-          let overrideMUTE = HarmonyAsTVKeysTools.getOverrideCommand(this, 'MUTE');
-          if (!overrideMUTE) {
-            this.harmonyBase.sendCommand(this, this._currentInputService.MuteCommand);
-          } else {
-            HarmonyTools.processCommands(this.harmonyBase, this, overrideMUTE);
-          }
-        }
-        callback(null);
-      }.bind(this)
-    );
+    characteristic.on('set', (value, callback) => {
+      this.writeTVCommand(callback, (deadline) => {
+        if (!this._currentInputService) throw new this.api.hap.HapStatusError(-70402);
+        const command =
+          HarmonyAsTVKeysTools.getOverrideCommand(this, 'MUTE') ||
+          this._currentInputService.MuteCommand;
+        return this.sendMappedCommand(command, deadline);
+      });
+    });
 
     characteristic.on(
       'get',
@@ -984,49 +904,30 @@ HarmonySubPlatform.prototype = {
   },
 
   bindVolumeSelectorCharacteristic(characteristic) {
-    characteristic.on(
-      'set',
-      function (value, callback) {
-        if (this.relativeVolumeControl) {
-          if (value !== 0 && value !== 1) return callback(new this.api.hap.HapStatusError(-70410));
-          this.volumeControl
-            .step(value === Characteristic.VolumeSelector.DECREMENT ? -1 : 1)
-            .then(() => callback(null), callback);
-          return;
-        }
-        if (HarmonyTools.isNotNil(this._currentInputService)) {
-          this.log.debug(
-            '(' + this.name + ')' + 'INFO - SET Characteristic.VolumeSelector : ' + value
-          );
-          if (value === Characteristic.VolumeSelector.DECREMENT) {
-            let overrideVOLUMEDOWN = HarmonyAsTVKeysTools.getOverrideCommand(this, 'VOLUME_DOWN');
-            if (!overrideVOLUMEDOWN) {
-              this.harmonyBase.sendCommand(
-                this,
-                this._currentInputService.VolumeDownCommand +
-                  '|' +
-                  this.numberOfCommandsSentForVolumeControl
-              );
-            } else {
-              HarmonyTools.processCommands(this.harmonyBase, this, overrideVOLUMEDOWN);
-            }
-          } else {
-            let overrideVOLUMEUP = HarmonyAsTVKeysTools.getOverrideCommand(this, 'VOLUME_UP');
-            if (!overrideVOLUMEUP) {
-              this.harmonyBase.sendCommand(
-                this,
-                this._currentInputService.VolumeUpCommand +
-                  '|' +
-                  this.numberOfCommandsSentForVolumeControl
-              );
-            } else {
-              HarmonyTools.processCommands(this.harmonyBase, this, overrideVOLUMEUP);
-            }
-          }
-        }
-        callback(null);
-      }.bind(this)
-    );
+    characteristic.on('set', (value, callback) => {
+      if (value !== 0 && value !== 1) return callback(new this.api.hap.HapStatusError(-70410));
+      if (this.relativeVolumeControl) {
+        this.volumeControl
+          .step(value === Characteristic.VolumeSelector.DECREMENT ? -1 : 1)
+          .then(() => callback(null), callback);
+        return;
+      }
+      this.writeTVCommand(callback, (deadline) => {
+        if (!this._currentInputService) throw new this.api.hap.HapStatusError(-70402);
+        const down = value === Characteristic.VolumeSelector.DECREMENT;
+        const override = HarmonyAsTVKeysTools.getOverrideCommand(
+          this,
+          down ? 'VOLUME_DOWN' : 'VOLUME_UP'
+        );
+        const command = down
+          ? this._currentInputService.VolumeDownCommand
+          : this._currentInputService.VolumeUpCommand;
+        return this.sendMappedCommand(
+          override || command + '|' + this.numberOfCommandsSentForVolumeControl,
+          deadline
+        );
+      });
+    });
   },
 
   bindVolumeCharacteristic(characteristic) {
@@ -1169,24 +1070,15 @@ HarmonySubPlatform.prototype = {
   },
 
   bindPowerModeSelectionCharacteristic(characteristic) {
-    characteristic.on(
-      'set',
-      function (value, callback) {
-        if (HarmonyTools.isNotNil(this._currentInputService)) {
-          this.log.debug(
-            '(' + this.name + ')' + 'INFO - SET Characteristic.PowerModeSelection : ' + value
-          );
-
-          let overrideSETUP = HarmonyAsTVKeysTools.getOverrideCommand(this, 'SETUP');
-          if (!overrideSETUP) {
-            this.harmonyBase.sendCommand(this, this._currentInputService.SetupCommand);
-          } else {
-            HarmonyTools.processCommands(this.harmonyBase, this, overrideSETUP);
-          }
-        }
-        callback(null);
-      }.bind(this)
-    );
+    characteristic.on('set', (value, callback) => {
+      this.writeTVCommand(callback, (deadline) => {
+        if (!this._currentInputService) throw new this.api.hap.HapStatusError(-70402);
+        const command =
+          HarmonyAsTVKeysTools.getOverrideCommand(this, 'SETUP') ||
+          this._currentInputService.SetupCommand;
+        return this.sendMappedCommand(command, deadline);
+      });
+    });
   },
 
   bindCharacteristicEventsForTV: function (homebridgeAccessory) {
@@ -1349,11 +1241,12 @@ HarmonySubPlatform.prototype = {
     return service;
   },
 
-  handleActivityInProgress: function (homebridgeAccessory, commandToSend) {
+  handleActivityInProgress: function (homebridgeAccessory, commandToSend, version) {
     this._currentSetAttemps = this._currentSetAttemps + 1;
 
     //we try again with a delay of 1sec since an activity is in progress and we couldn't update the one.
     setTimeout(() => {
+      if (version !== this.activityRequestVersion || this.harmonyBase.stopped) return;
       if (this._currentSetAttemps < HarmonyConst.MAX_ATTEMPS_STATUS_UPDATE) {
         this.log.debug(
           '(' + this.name + ')' + 'INFO - activityCommand : RETRY to send command ' + commandToSend
@@ -1372,41 +1265,55 @@ HarmonySubPlatform.prototype = {
     }, HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE);
   },
 
-  activityCommand: function (homebridgeAccessory, commandToSend) {
-    if (this.relativeVolumeControl && this._currentActivity !== commandToSend)
-      this.volumeControl.cancel();
-    this.harmonyBase.harmony
-      .startActivity(commandToSend)
-      .then((data) => {
-        this.log.debug(
-          '(' +
-            this.name +
-            ')' +
-            'INFO - activityCommand : Returned from hub ' +
-            JSON.stringify(data)
-        );
-
-        if (HarmonyTools.isCommandOk(data)) {
-          this.handleActivityOk(commandToSend);
-          if (this.TVAccessory) this.handleRefreshOfCharacteristic();
-        } else if (HarmonyTools.isCommandInProgress(data)) {
-          this.log.debug(
-            '(' +
-              this.name +
-              ')' +
-              'WARNING - activityCommand : could not SET status : ' +
-              JSON.stringify(data)
-          );
-          this.handleActivityInProgress(homebridgeAccessory, commandToSend);
+  activityCommand: function (
+    homebridgeAccessory,
+    commandToSend,
+    deadline = Infinity,
+    version = this.activityRequestVersion
+  ) {
+    const operation = (async () => {
+      if (version !== this.activityRequestVersion || this.harmonyBase.stopped) {
+        throw new Error('Activity request cancelled');
+      }
+      if (this.relativeVolumeControl && this._currentActivity !== commandToSend)
+        this.volumeControl.cancel();
+      const data = await HarmonyTools.withDeadline(
+        () => this.harmonyBase.harmony.startActivity(commandToSend),
+        deadline
+      );
+      if (version !== this.activityRequestVersion || this.harmonyBase.stopped) {
+        throw new Error('Activity request cancelled');
+      }
+      if (HarmonyTools.isCommandOk(data)) {
+        this.handleActivityOk(commandToSend);
+        if (this.TVAccessory) this.handleRefreshOfCharacteristic();
+      } else if (HarmonyTools.isCommandInProgress(data)) {
+        if (!Number.isFinite(deadline)) {
+          this.handleActivityInProgress(homebridgeAccessory, commandToSend, version);
         } else {
-          this.log(
-            '(' + this.name + ')' + 'ERROR - activityCommand : could not SET status, no data'
+          await HarmonyTools.withDeadline(
+            () =>
+              new Promise((resolve) =>
+                setTimeout(
+                  resolve,
+                  Math.min(HarmonyConst.DELAY_BETWEEN_ATTEMPS_STATUS_UPDATE, deadline - Date.now())
+                )
+              ),
+            deadline
           );
+          if (version !== this.activityRequestVersion)
+            throw new Error('Activity request cancelled');
+          if (this._currentActivity !== commandToSend)
+            return this.activityCommand(homebridgeAccessory, commandToSend, deadline, version);
         }
-      })
-      .catch((e) => {
-        this.log('(' + this.name + ')' + 'ERROR - activityCommand : ' + e);
-      });
+      } else {
+        throw new Error('Hub rejected activity');
+      }
+    })();
+    operation.catch((error) =>
+      this.log('(' + this.name + ') ERROR - activityCommand: ' + error.message)
+    );
+    return operation;
   },
 
   setSwitchOnCharacteristic: function (
