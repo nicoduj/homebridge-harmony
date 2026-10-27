@@ -319,6 +319,7 @@ Thanks to
   - [bladestar2105]: https://github.com/Bladestar2105 for commiting missing homebridge2 changes.
   - [cronus130]: https://github.com/cronus130 for bugs reports and pull requests
   - [mwcassens]: https://github.com/mwcassens for bug reports
+  - [jakemike1]: https://github.com/jakemike1 for his contribution to new functionalities
 
 ## Donating
 
