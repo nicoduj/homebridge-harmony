@@ -1,12 +1,13 @@
 var Service, Characteristic, Accessory, AccessoryType, UUIDGen;
-import Harmony from 'harmony-websocket';
+import {HarmonyClient} from './harmonyClient.js';
 import HarmonyConst from './harmonyConst.js';
 import HarmonyTools from './harmonyTools.js';
 
 function HarmonyBase(api) {
   Service = api.hap.Service;
   Characteristic = api.hap.Characteristic;
-  this.harmony = new Harmony();
+  this.harmony = new HarmonyClient();
+  this.stopped = false;
   this.numberAttemps = 0;
   this.numberOfErrors = 0;
   this.generalErrorTimer = undefined;
@@ -91,26 +92,42 @@ HarmonyBase.prototype = {
 
   //HUB init
   initHub: function (harmonyPlatform) {
-    this.harmony
-      .connect(harmonyPlatform.hubIP)
-      .then(() => this.harmony.getConfig())
+    if (this.stopped) return Promise.resolve();
+    if (this.initialization) return this.initialization;
+    clearTimeout(this.initRetryTimer);
+    this.initRetryTimer = undefined;
+    this.closedDuringInitialization = false;
+    this.initialization = Promise.resolve()
+      .then(() => {
+        if (this.stopped) throw new Error('Initialization cancelled');
+        return this.harmony.connect(harmonyPlatform.hubIP);
+      })
+      .then(() => {
+        if (this.stopped) throw new Error('Initialization cancelled');
+        return this.harmony.getConfig();
+      })
       .then((response) => {
+        if (this.stopped) return;
         harmonyPlatform.log.debug(
           '(' + harmonyPlatform.name + ')' + 'INFO - Hub config : ' + JSON.stringify(response)
         );
-        this.getHomeControlsAccessories(harmonyPlatform).then((responseHome) => {
+        return this.getHomeControlsAccessories(harmonyPlatform).then((responseHome) => {
+          if (this.stopped) return;
           harmonyPlatform.readAccessories(response, responseHome);
           this.numberAttemps = 0;
         });
       })
-      .catch((e) => {
+      .catch(async (e) => {
+        if (this.stopped) return;
         this.numberAttemps = this.numberAttemps + 1;
         if (this.harmony.isOpened()) {
-          this.harmony.close().catch((e2) => {
-            harmonyPlatform.log(
-              '(' + harmonyPlatform.name + ')' + 'Error - Error closing  ' + e2.message
-            );
-          });
+          await Promise.resolve()
+            .then(() => this.harmony.close())
+            .catch((e2) => {
+              harmonyPlatform.log(
+                '(' + harmonyPlatform.name + ')' + 'Error - Error closing  ' + e2.message
+              );
+            });
         }
 
         harmonyPlatform.log(
@@ -124,10 +141,38 @@ HarmonyBase.prototype = {
             ')'
         );
 
-        setTimeout(() => {
+        if (this.stopped) return;
+        this.initRetryTimer = setTimeout(() => {
+          this.initRetryTimer = undefined;
           this.configureAccessories(harmonyPlatform);
         }, HarmonyConst.DELAY_BEFORE_RECONNECT);
+      })
+      .finally(() => {
+        this.initialization = undefined;
+        if (
+          !this.stopped &&
+          this.closedDuringInitialization &&
+          !this.initRetryTimer &&
+          !this.harmony.isOpened()
+        )
+          this.harmony.emit('close');
       });
+    return this.initialization;
+  },
+
+  shutdown(harmonyPlatform) {
+    this.stopped = true;
+    clearTimeout(this.initRetryTimer);
+    clearTimeout(this.reconnectTimer);
+    clearTimeout(this.generalErrorTimer);
+    this.harmony.removeAllListeners();
+    const logError = (error) =>
+      harmonyPlatform.log('(' + harmonyPlatform.name + ') Error closing hub: ' + error.message);
+    try {
+      Promise.resolve(this.harmony.close()).catch(logError);
+    } catch (error) {
+      logError(error);
+    }
   },
 
   //hub discovery events handling
@@ -227,6 +272,7 @@ HarmonyBase.prototype = {
 
   //Configuration entry point
   configureAccessories: function (harmonyPlatform) {
+    if (this.stopped) return;
     if (HarmonyTools.isPlatformEmpty(harmonyPlatform)) {
       harmonyPlatform.log(
         '(' +
@@ -279,6 +325,7 @@ HarmonyBase.prototype = {
     });
 
     this.harmony.on('close', () => {
+      if (harmonyPlatform.volumeControl) harmonyPlatform.volumeControl.cancel();
       harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'WARNING - socket closed');
 
       // Hub outages outlast DELAY_BEFORE_RECONNECT, so a single connect attempt
@@ -286,22 +333,31 @@ HarmonyBase.prototype = {
       // then stays disconnected — push notifications stop until something else
       // reopens the socket. Retry until the hub is reachable again, with a guard
       // so overlapping 'close' events can't spawn parallel retry loops.
+      if (this.stopped) return;
+      if (this.initialization) {
+        this.closedDuringInitialization = true;
+        return;
+      }
       if (this.reconnectAttemptsLeft > 0) return;
       this.reconnectAttemptsLeft = 120;
 
       const attemptReconnect = () => {
-        setTimeout(() => {
+        if (this.stopped) return;
+        this.reconnectTimer = setTimeout(() => {
+          if (this.stopped) return;
           if (HarmonyTools.isNil(harmonyPlatform.hubRemoteId)) {
             this.harmony
               .connect(harmonyPlatform.hubIP)
               .then(() => {
                 this.reconnectAttemptsLeft = 0;
+                if (this.stopped) return;
                 harmonyPlatform.log(
                   '(' + harmonyPlatform.name + ')' + 'INFO - reconnected after socket close'
                 );
                 this.refreshCurrentActivity(harmonyPlatform, () => {});
               })
               .catch((e3) => {
+                if (this.stopped) return;
                 this.reconnectAttemptsLeft = this.reconnectAttemptsLeft - 1;
                 harmonyPlatform.log(
                   '(' +
@@ -467,15 +523,11 @@ HarmonyBase.prototype = {
 
   cleanServices: function (harmonyPlatform) {
     //cleaning services
+    const confirmed = new Set(harmonyPlatform._confirmedServices);
     for (let acc of harmonyPlatform._foundAccessories) {
       let servicestoRemove = [];
       for (let serv of acc.services) {
-        if (
-          HarmonyTools.isNotNil(serv.subtype) &&
-          !harmonyPlatform._confirmedServices.find(
-            (x) => x.UUID == serv.UUID && x.subtype == serv.subtype
-          )
-        ) {
+        if (HarmonyTools.isNotNil(serv.subtype) && !confirmed.has(serv)) {
           servicestoRemove.push(serv);
         }
       }
@@ -1685,6 +1737,10 @@ HarmonyBase.prototype = {
   },
 
   getSliderOnCharacteristic: function (harmonyPlatform, service, callback) {
+    if (harmonyPlatform.relativeVolumeControl) {
+      callback(undefined, harmonyPlatform.volumeControl.available(service));
+      return;
+    }
     //return immediately
     if (callback) {
       callback(undefined, service.getCharacteristic(Characteristic.On).value);
@@ -1708,6 +1764,10 @@ HarmonyBase.prototype = {
   },
 
   setSliderVolumeCharacteristic: function (harmonyPlatform, service, value, callback) {
+    if (harmonyPlatform.relativeVolumeControl) {
+      harmonyPlatform.volumeControl.setSlider(service, value).then(() => callback(), callback);
+      return;
+    }
     let diff = value - 50;
     let numberOfcommandstoSend = diff / 5;
     if (
@@ -1750,6 +1810,10 @@ HarmonyBase.prototype = {
   },
 
   getSliderVolumeCharacteristic: function (harmonyPlatform, service, callback) {
+    if (harmonyPlatform.relativeVolumeControl) {
+      callback(undefined, harmonyPlatform.volumeControl.sliderValue(service));
+      return;
+    }
     //return immediately
     if (callback) {
       callback(undefined, service.getCharacteristic(Characteristic.Brightness).value);
@@ -1812,51 +1876,31 @@ HarmonyBase.prototype = {
   },
 
   //COMMAND
-  sendCommand: function (harmonyPlatform, incommingCommandToSend) {
-    if (!incommingCommandToSend) {
-      harmonyPlatform.log.debug(
-        '(' + harmonyPlatform.name + ')' + 'INFO - sendCommand : Command not available '
-      );
-      return;
-    }
-
-    let numberOFcommandsToSend = 1;
-    let commandToSendArray = incommingCommandToSend.split('|');
-    let commandToSend;
-    if (commandToSendArray.length > 1) {
-      commandToSend = commandToSendArray[0];
-      if (commandToSendArray[1] != undefined) numberOFcommandsToSend = commandToSendArray[1];
-    } else {
-      commandToSend = commandToSendArray[0];
-    }
-
-    if (commandToSend == 'undefined' || commandToSend == '') {
-      return;
-    }
-
-    harmonyPlatform.log.debug(
-      '(' +
-        harmonyPlatform.name +
-        ')' +
-        'INFO - sendingCommand' +
-        commandToSend +
-        ' ' +
-        numberOFcommandsToSend +
-        ' times'
-    );
-
-    for (let i = 0, len = numberOFcommandsToSend; i < len; i++) {
-      this.harmony
-        .sendCommand(commandToSend)
-        .then((data) => {
-          harmonyPlatform.log.debug(
-            '(' + harmonyPlatform.name + ')' + 'INFO - sendCommand done' + JSON.stringify(data)
-          );
-        })
-        .catch((e) => {
-          harmonyPlatform.log('(' + harmonyPlatform.name + ')' + 'ERROR - sendCommand : ' + e);
-        });
-    }
+  sendCommand: function (harmonyPlatform, incomingCommand, deadline = Infinity) {
+    const operation = (async () => {
+      if (typeof incomingCommand !== 'string') throw new Error('Command not available');
+      const [command, repetitions] = incomingCommand.split('|');
+      const count = repetitions === undefined ? 1 : Number(repetitions);
+      if (!command || command === 'undefined') throw new Error('Command not available');
+      if (!Number.isInteger(count) || count < 0 || count > 100) {
+        throw new Error('Invalid command repetition count');
+      }
+      for (let n = 0; n < count; n++) {
+        const response = await HarmonyTools.withDeadline(
+          () => this.harmony.sendCommand(command),
+          deadline
+        );
+        if (!response || Number(response.code) !== 200) {
+          throw new Error('Hub rejected command');
+        }
+      }
+    })();
+    // Older switch callers intentionally do not await. Handle their failures while
+    // returning the original promise so TV callers can report errors to HomeKit.
+    operation.catch((error) => {
+      harmonyPlatform.log('(' + harmonyPlatform.name + ') ERROR - sendCommand: ' + error.message);
+    });
+    return operation;
   },
 
   sendAutomationCommand: function (harmonyPlatform, commandToSend) {

@@ -55,8 +55,8 @@ function HarmonyPlatform(log, config, api) {
         this.log('INFO - shutdown');
         for (let i = 0, len = this.platforms.length; i < len; i++) {
           let platform = this.platforms[i];
-          platform.harmonyBase.harmony.removeAllListeners();
-          platform.harmonyBase.harmony.close();
+          if (platform.volumeControl) platform.volumeControl.dispose();
+          platform.harmonyBase.shutdown(platform);
         }
       }.bind(this)
     )
@@ -129,6 +129,7 @@ HarmonyPlatform.prototype = {
       platform._foundAccessories.push(accessory);
 
       if (
+        accessory.getService(this.api.hap.Service.Television) ||
         accessory.category == AccessoryType.TELEVISION ||
         accessory.category == AccessoryType.AUDIO_RECEIVER
       ) {

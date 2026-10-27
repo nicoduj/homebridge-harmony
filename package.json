@@ -6,7 +6,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "node -e \"import('./index.js').then(() => console.log('No syntax errors! (node ' + process.version + ')'))\""
+    "test": "node -e \"import('./index.js').then(() => console.log('No syntax errors! (node ' + process.version + ')'))\" && node --test test/*.test.js"
   },
   "license": "ISC",
   "repository": {
@@ -34,6 +34,7 @@
   },
   "homepage": "https://github.com/nicoduj/homebridge-harmony#readme",
   "devDependencies": {
+    "@homebridge/hap-nodejs": "^2.2.2",
     "husky": "^3.1.0",
     "prettier": "2.0.0",
     "pretty-quick": "^2.0.0"

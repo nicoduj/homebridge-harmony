@@ -126,13 +126,26 @@ Fields:
 
 - `DELAY_BEFORE_RETRY_AFTER_NETWORK_LOSS` **GLOBAL** retry timer in case of network loss (optionnal - defaults 60s).
 - `HUB_CONNECT_TIMEOUT` **GLOBAL** connect timeout (optionnal - defaults 10s).
-- `HUB_SEND_TIMEOUT` **GLOBAL** send timeout (optionnal - defaults 30s).
+- `HUB_SEND_TIMEOUT` **GLOBAL** transport timeout in milliseconds (optional; defaults to 30000). Unanswered requests are released when this expires. Native TV writes have a separate six-second response budget; timing out does not undo a command already transmitted to the hub.
 
 - `name` is the name of the published Platform (required).
 - `hubName` is the name of your hub in harmony app (optional, but mandatory if you have mutliple hubs). In case both hubName and hubIP are not set, it will discover your hub automatically, providing there is only one
 - `hubIP` is the static IP address of the hub (optional). A static IP address is required.
 - `TVAccessory` publish hub with its activities as a TV Accessory (defaults to true).
 - `ReceiverIcon` publish TV Accessory with a receiver icon (defaults to false).
+
+  **TV icon with a combined volume control:** use `TVAccessory: true`, `ReceiverIcon: false`, `publishGeneralVolumeSlider: true` and `linkVolumeControlToTV: true`. Publish and pair the TV as an external accessory, then keep it as a single tile in Apple Home. This was visually verified on macOS 26.7.1: Apple's TV icon appears while TV power/input and the volume slider remain accessible together.
+
+  To use native relative volume and the improved slider behaviour below, also enable `relativeVolumeControl: true` for that hub. Select the separately paired TV in iPhone Control Centre → Remote for navigation, Back, Play/Pause and the iPhone's physical volume buttons. These controls use the mappings of the current Harmony activity. The Remote interface is provided by Apple and is separate from the Home tile; this plugin does not add a custom remote interface inside Home.
+
+  TV power, input selection, navigation, playback, mute, settings and native volume wait for hub acknowledgement and report rejected or timed-out commands to HomeKit. This also applies with `relativeVolumeControl: false`. Remote macros wait for each acknowledgement, keep their configured delays between commands, and stop after failure or the six-second write budget. Activity selection can retry an explicit hub-busy reply within that budget; failed or unanswered commands are not retried. Acknowledgement confirms receipt by the hub, not the resulting state of an infrared-controlled device.
+
+  External accessories advertise their own HomeKit category. With `publishAllTVAsExternalAccessory: false`, the first TV stays bridged and newly created additional TVs are external. Cached TVs are recognized by their Television service as well as their category, since Homebridge can restore them with category OTHER.
+
+  Existing bridged accessories are preserved. Changing `publishAllTVAsExternalAccessory` alone does not migrate them. If migrating one existing hub, plan a targeted removal and re-pairing of only that accessory, including repairing any affected scenes or automations. Do not clear the whole accessory cache to change an icon.
+
+  See the [HomeKit category examples](https://nrchkb.github.io/wiki/service/television/#icons) and [HAP-NodeJS category documentation](https://developers.homebridge.io/HAP-NodeJS/interfaces/PublishInfo.html#category).
+
 - `sortInput` sort input list in TV accessory : 0-default,1:Alpha,2:activityOrder property of hub, 3:activitiesToPublishAsInputForTVMode order (defaults to 0).
 - `switchAccessories` publish all activities as a Switch Accessory (defaults to false).
 - `activitiesToPublishAsAccessoriesSwitch` array of Activities you want to expose as switches (all by default if switchAccessories is set to true, otherwise specify the list you want)
@@ -154,6 +167,9 @@ Fields:
 - `configureAccesscontrol` configure Access control service (false by default)
 - `publishGeneralMuteSwitch` publish a mute switch, stateless, that will send a mute command to current activity.
 - `publishGeneralVolumeSlider` publish a volume slider, stateless, that will send a volume commands to current activity. Approximativley, it will send an Up / Down Volume command each 5%. It can be combined with `numberOfCommandsSentForVolumeControl` option to multiply the number of up / down commands sent.
+- `relativeVolumeControl` **optional, per hub, defaults to false**: advertise relative native volume buttons instead of an absolute volume level, and improve the general volume slider. Harmony does not report measured volume: the slider rests at 50 while available and 0 when unavailable. Each five points of movement sends one step at the configured multiplier; a continuous 55 → 60 → 65 drag sends three steps total. Repeated positions send nothing, reversing the drag reverses the adjustment, and the slider recentres after work finishes and 500 ms without another write. Works with linked or separate general volume sliders. Existing volume switches keep their original behaviour.
+
+  Relative volume commands are serialized per hub and wait for successful hub replies. There is no added polling. Missing mappings, disconnected/off hubs, failed replies and queue overflow return HomeKit errors. `VOLUME_UP`/`VOLUME_DOWN` overrides apply to both native buttons and the slider; an unresolved override is rejected instead of falling back to the original device. Work is limited to 20 queued commands, 10 commands per override and a multiplier of 1–5; override delays are capped at one second. Each write has a six-second budget including queue time, with a maximum four-second wait per command. Activity changes, disconnects and shutdown cancel stale queued work; failed or timed-out commands are never retried. A command already transmitted to the hub cannot be recalled, and a successful hub reply does not measure the resulting loudness.
 - `publishGeneralVolumeSwitches` publish switches, stateless, for volume up / down on TV Accessory. It can be combined with `numberOfCommandsSentForVolumeControl` option to multiply the number of up / down commands sent.
 - `linkVolumeControlToTV`links mute / volume switch to TV accessory if present
 - `remoteOverrideCommandsList` option to override default commands mapping in TV Platform Mode. See below for format.

@@ -156,20 +156,53 @@ const HarmonyTools = {
     );
   },
 
-  processCommands: async function (hb, platform, commands) {
-    const safeCommands = Array.isArray(commands) ? commands.slice(0, MAX_MACRO_COMMANDS) : [];
-
-    for (const command of safeCommands) {
-      if (typeof command !== 'string' || command.length === 0) {
-        continue;
-      }
-
-      let commandTosend = command.split('|');
-      let timeToWait = Number(commandTosend.length === 2 ? commandTosend[1] : NaN);
-      if (!Number.isFinite(timeToWait)) timeToWait = HarmonyConst.DELAY_FOR_MACRO;
-      timeToWait = Math.max(0, Math.min(timeToWait, MAX_MACRO_DELAY));
-      await processCommand(hb, platform, commandTosend[0], timeToWait);
+  withDeadline: async function (action, deadline = Infinity) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw new Error('Harmony command timed out');
+    let timer;
+    try {
+      const operation = Promise.resolve().then(action);
+      if (!Number.isFinite(deadline)) return await operation;
+      return await Promise.race([
+        operation,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Harmony command timed out')), remaining);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
     }
+  },
+
+  processCommands: function (hb, platform, commands, deadline = Infinity) {
+    const operation = (async () => {
+      const safeCommands = Array.isArray(commands)
+        ? commands
+            .slice(0, MAX_MACRO_COMMANDS)
+            .filter((command) => typeof command === 'string' && command.length > 0)
+        : [];
+      for (let n = 0; n < safeCommands.length; n++) {
+        const [command, delay] = safeCommands[n].split('|');
+        await hb.sendCommand(platform, command, deadline);
+        // Delays separate commands; no artificial wait after the final acknowledgement.
+        if (n + 1 < safeCommands.length) {
+          let timeToWait = Number(delay === undefined ? NaN : delay);
+          if (!Number.isFinite(timeToWait)) timeToWait = HarmonyConst.DELAY_FOR_MACRO;
+          timeToWait = Math.max(0, Math.min(timeToWait, MAX_MACRO_DELAY));
+          await HarmonyTools.withDeadline(
+            () =>
+              new Promise((resolve) =>
+                setTimeout(resolve, Math.min(timeToWait, deadline - Date.now()))
+              ),
+            deadline
+          );
+        }
+      }
+    })();
+    operation.catch((error) => {
+      platform.log('(' + platform.name + ') ERROR - command macro: ' + error.message);
+    });
+    return operation;
   },
 
   disablePreviousActivity: function (platform, characteristic, service, commandToSend, on) {
@@ -234,16 +267,5 @@ const HarmonyTools = {
     }, delay);
   },
 };
-
-async function processCommand(hb, platform, command, timeToWait) {
-  // notice that we can await a function
-  // that returns a promise
-  await hb.sendCommand(platform, command);
-  await delay(timeToWait);
-}
-
-function delay(timeToWait) {
-  return new Promise((resolve) => setTimeout(resolve, timeToWait));
-}
 
 export default HarmonyTools;
