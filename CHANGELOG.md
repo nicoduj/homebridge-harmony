@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.1.1
+
+- [FIX] #469 This plugin generated a warning from the characteristic 'Name' (custom names for device commands swtich and sliders)
+
 ## 2.1.0
 
 - [NEW] Fixes cached-TV publication and command failure handling, and adds opt-in relative volume controls. A separately paired Harmony TV can keep Apple's TV icon with power, activity selection and a slider in one Home tile; Control Centre Remote provides navigation, playback and native volume buttons.
