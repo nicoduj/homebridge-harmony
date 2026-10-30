@@ -1469,6 +1469,23 @@ HarmonyBase.prototype = {
     var uuid = UUIDGen.generate(fullName);
     var foundAccessory = harmonyPlatform._foundAccessories.find((x) => x.UUID == uuid);
 
+    //legacy handling for breaking chnage in name to preserve autmatio,s / cached accessories
+    if (!foundAccessory) {
+      var legacyFullName = fullName.replace(/ /g, '-');
+      var uuid2 = UUIDGen.generate(legacyFullName);
+      foundAccessory = harmonyPlatform._foundAccessories.find((x) => x.UUID == uuid2);
+      if (foundAccessory) {
+        harmonyPlatform.log(
+          '(' +
+            harmonyPlatform.name +
+            ')' +
+            'WARNING - found legacy accessory with name : ' +
+            legacyFullName
+        );
+      }
+      uuid = uuid2;
+    }
+
     if (foundAccessory) {
       var serialNumber = foundAccessory
         .getService(Service.AccessoryInformation)
